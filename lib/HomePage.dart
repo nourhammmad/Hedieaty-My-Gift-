@@ -18,7 +18,10 @@ class _HomePageState extends State<HomePage> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(title:const Text("Hedieaty",style: TextStyle(fontSize: 50,fontFamily: "Lobster",fontWeight:FontWeight.bold),),centerTitle: true,toolbarHeight: 70,),
+      appBar: AppBar(title:const Text("Hedieaty",style: TextStyle(fontSize: 45,fontFamily: "Lobster",fontWeight:FontWeight.bold),),
+          titleSpacing: 73.0,toolbarHeight: 70,
+          leading: IconButton(onPressed: (){},alignment: Alignment.topLeft, icon: Icon(Icons.menu,size: 35,)),
+          actions:[IconButton(onPressed: (){}, alignment: Alignment.topRight,icon: Icon(Icons.account_circle_outlined,size: 35,color: Colors.black,)),])
     );
   }
 }
