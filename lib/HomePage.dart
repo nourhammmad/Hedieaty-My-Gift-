@@ -26,12 +26,15 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.indigo.shade50,
+
         title: const Text(
           "Hedieaty",
           style: TextStyle(
             fontSize: 45,
             fontFamily: "Lobster",
             fontWeight: FontWeight.bold,
+            color: Colors.indigo,
           ),
         ),
         titleSpacing: 73.0,
@@ -39,7 +42,7 @@ class _HomePageState extends State<HomePage> {
         leading: IconButton(
           onPressed: () {},
           alignment: Alignment.topLeft,
-          icon: const Icon(Icons.menu, size: 35),
+          icon: const Icon(Icons.menu, size: 35,color: Colors.indigo,),
         ),
         actions: [
           IconButton(
@@ -48,7 +51,7 @@ class _HomePageState extends State<HomePage> {
             icon: const Icon(
               Icons.account_circle_outlined,
               size: 35,
-              color: Colors.black,
+              color: Colors.indigo,
             ),
           ),
         ],
@@ -79,7 +82,7 @@ class _HomePageState extends State<HomePage> {
                   width: double.infinity,
                   margin: const EdgeInsets.all(16.0),
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade100,
+                    color: Colors.indigo.shade100,
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: Center(
@@ -91,7 +94,7 @@ class _HomePageState extends State<HomePage> {
                         fontFamily: "Lobster",
                         color: _isPressed
                             ? Colors.blueGrey.shade800
-                            : Colors.blue.shade400,
+                            : Colors.indigo.shade400,
                       ),
                     ),
                   ),
@@ -117,10 +120,10 @@ class _HomePageState extends State<HomePage> {
             right: 20,
             child: FloatingActionButton(
               onPressed: () {},
-              backgroundColor: Colors.blue.shade100,
+              backgroundColor: Colors.indigo.shade100,
               child: Icon(
                 Icons.person_add,
-                color: Colors.blue.shade400,
+                color: Colors.indigo.shade400,
                 size: 40,
               ),
             ),
