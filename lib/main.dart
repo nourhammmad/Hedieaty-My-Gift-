@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'HomePage.dart';
+import 'FriendsPage.dart';
+import 'MyProfile.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -16,7 +19,13 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
           scaffoldBackgroundColor:Colors.indigo.shade50
       ),
-      home: const HomePage(),
+      initialRoute:'/FriendsPage',
+      routes:{
+        '/':(context)=>HomePage(),
+        '/FriendsPage':(context)=>FriendsPage(),
+        '/MyProfile':(context)=>MyProfile(),
+
+      }
     );
   }
 }

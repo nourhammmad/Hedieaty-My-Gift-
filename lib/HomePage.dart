@@ -10,15 +10,18 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   bool _isPressed = false; // Track the button state
 
-  // List of friends
+  // List of friends (will be replaced by db)
+  //Use final if the list itself should not be replaced,
+  // but you still need to modify its contents
+  // (add, remove, or update elements).
   final List<Map<String, String>> friends = [
     {"name": "Nour", "image": "asset/pp1.jpg"},
     {"name": "Liam", "image": "asset/pp2.jpg"},
     {"name": "Emma", "image": "asset/pp3.jpg"},
     {"name": "Oliver", "image": "asset/pp4.jpg"},
-    {"name": "Nour", "image": "asset/pp1.jpg"},
-    {"name": "Liam", "image": "asset/pp2.jpg"},
-    {"name": "Emma", "image": "asset/pp3.jpg"},
+    {"name": "Nina", "image": "asset/pp1.jpg"},
+    {"name": "Harry", "image": "asset/pp2.jpg"},
+    {"name": "Taylor", "image": "asset/pp3.jpg"},
     {"name": "Oliver", "image": "asset/pp4.jpg"},
   ];
 
@@ -27,18 +30,28 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.indigo.shade50,
-
-        title: const Text(
-          "Hedieaty",
-          style: TextStyle(
-            fontSize: 45,
-            fontFamily: "Lobster",
-            fontWeight: FontWeight.bold,
-            color: Colors.indigo,
-          ),
+        title: Row(
+          children: [
+            const Text(
+              "Hedieaty",
+              style: TextStyle(
+                fontSize: 45,
+                fontFamily: "Lobster",
+                fontWeight: FontWeight.bold,
+                color: Colors.indigo,
+              ),
+            ),
+            const Icon(Icons.card_giftcard,color: Colors.indigo,size: 25,),
+          ],
         ),
-        titleSpacing: 73.0,
+
+        titleSpacing: 69.0,
         toolbarHeight: 70,
+        //AppBar menu icon
+        //i used leading here top get the menu icon
+        //to the left if i put it inside actions it'd have been to the
+        //right next to account icon
+        //The actions property aligns its children to the right of the AppBar.
         leading: IconButton(
           onPressed: () {},
           alignment: Alignment.topLeft,
@@ -46,7 +59,7 @@ class _HomePageState extends State<HomePage> {
         ),
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () {Navigator.pushNamed(context, '/MyProfile');},
             alignment: Alignment.topRight,
             icon: const Icon(
               Icons.account_circle_outlined,
@@ -56,11 +69,21 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
+      ///////////////////END OF APPBAR///////////////////
+      // If you used only a Column, the button would be pushed to the bottom
+      // of the layout and would scroll with the content. But using a Stack
+      // ensures the button stays in place while the list can scroll
+      // independently.
       body: Stack(
         children: [
           Column(
             children: [
               // Button at the top
+              //A GestureDetector in Flutter is used to detect and respond to different
+              // types of user interactions or gestures, such as taps, swipes, long presses
+              // , and drags. It acts as an invisible layer that wraps around
+              // widgets and enables them to handle touch events.
+              //like onTapDown w kda
               GestureDetector(
                 onTapDown: (_) {
                   setState(() {
@@ -80,11 +103,12 @@ class _HomePageState extends State<HomePage> {
                 child: Container(
                   height: 60,
                   width: double.infinity,
-                  margin: const EdgeInsets.all(16.0),
+                  margin: const EdgeInsets.all(10.0),
                   decoration: BoxDecoration(
                     color: Colors.indigo.shade100,
                     borderRadius: BorderRadius.circular(30),
                   ),
+                  //wrapped with center
                   child: Center(
                     child: Text(
                       'Create Your Own Event/List',
@@ -101,6 +125,8 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               // Friend list embedded below the button
+              //Column aligns its children vertically, and the friend list
+              // (ListView.builder) should take up the remaining space.
               Expanded(
                 child: ListView.builder(
                   itemCount: friends.length,
@@ -135,7 +161,7 @@ class _HomePageState extends State<HomePage> {
 }
 
 // Widget to display each friend with a fading image and info
-class FriendListItem extends StatelessWidget {
+  class FriendListItem extends StatelessWidget {
   final String name;
   final String image;
 
@@ -175,27 +201,32 @@ class FriendListItem extends StatelessWidget {
           const SizedBox(width: 16),
           // Name and additional info
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: "Lobster",
+            child: GestureDetector(
+              onTap:(){
+                Navigator.pushNamed(context, '/FriendsPage');
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: "Lobster",
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  "No Upcoming Events", // Example status
-                  style: TextStyle(
-                    fontSize: 19,
-                    color: Colors.grey,
-                    fontFamily: "Lobster",
+                  const SizedBox(height: 4),
+                  const Text(
+                    "No Upcoming Events", // Example status
+                    style: TextStyle(
+                      fontSize: 19,
+                      color: Colors.grey,
+                      fontFamily: "Lobster",
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
