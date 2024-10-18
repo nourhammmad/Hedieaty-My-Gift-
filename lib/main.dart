@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
           scaffoldBackgroundColor:Colors.indigo.shade50
       ),
-      initialRoute:'/FriendsPage',
+      initialRoute:'/',
       routes:{
         '/':(context)=>HomePage(),
         '/FriendsPage':(context)=>FriendsPage(),
