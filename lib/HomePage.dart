@@ -9,11 +9,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   bool _isPressed = false; // Track the button state
+  bool _isSearching = false; // Track the state of the search bar
 
-  // List of friends (will be replaced by db)
-  //Use final if the list itself should not be replaced,
-  // but you still need to modify its contents
-  // (add, remove, or update elements).
   final List<Map<String, String>> friends = [
     {"name": "Nour", "image": "asset/pp1.jpg"},
     {"name": "Liam", "image": "asset/pp2.jpg"},
@@ -30,9 +27,48 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.indigo.shade50,
-        title: Row(
+        title: _isSearching
+            ? AnimatedContainer(
+          key: ValueKey('searchBar'),
+          duration: const Duration(milliseconds: 600),
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.search, color: Colors.indigo.shade300),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  decoration: const InputDecoration(
+                    hintText: 'Search Friends...',
+                    border: InputBorder.none,
+                  ),
+                  style: TextStyle(
+                    fontFamily: 'Lobster',
+                    fontSize: 18,
+                    color: Colors.indigo,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.indigo),
+                onPressed: () {
+                  setState(() {
+                    _isSearching = false;
+                  });
+                },
+              ),
+            ],
+          ),
+        )
+            : const Row(
+          key: ValueKey('appName'),
           children: [
-            const Text(
+            Text(
               "Hedieaty",
               style: TextStyle(
                 fontSize: 45,
@@ -41,25 +77,35 @@ class _HomePageState extends State<HomePage> {
                 color: Colors.indigo,
               ),
             ),
-            const Icon(Icons.card_giftcard,color: Colors.indigo,size: 25,),
+            SizedBox(width: 8),
+            Icon(
+              Icons.card_giftcard,
+              color: Colors.indigo,
+              size: 25,
+            ),
           ],
         ),
-
-        titleSpacing: 69.0,
+        titleSpacing: 25.0,
         toolbarHeight: 70,
-        //AppBar menu icon
-        //i used leading here top get the menu icon
-        //to the left if i put it inside actions it'd have been to the
-        //right next to account icon
-        //The actions property aligns its children to the right of the AppBar.
         leading: IconButton(
           onPressed: () {},
           alignment: Alignment.topLeft,
-          icon: const Icon(Icons.menu, size: 35,color: Colors.indigo,),
+          icon: const Icon(Icons.menu, size: 35, color: Colors.indigo),
         ),
         actions: [
+          if (!_isSearching)
+            IconButton(
+              icon: const Icon(Icons.search, size: 30, color: Colors.indigo),
+              onPressed: () {
+                setState(() {
+                  _isSearching = true;
+                });
+              },
+            ),
           IconButton(
-            onPressed: () {Navigator.pushNamed(context, '/MyProfile');},
+            onPressed: () {
+              Navigator.pushNamed(context, '/MyProfile');
+            },
             alignment: Alignment.topRight,
             icon: const Icon(
               Icons.account_circle_outlined,
@@ -69,21 +115,10 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      ///////////////////END OF APPBAR///////////////////
-      // If you used only a Column, the button would be pushed to the bottom
-      // of the layout and would scroll with the content. But using a Stack
-      // ensures the button stays in place while the list can scroll
-      // independently.
       body: Stack(
         children: [
           Column(
             children: [
-              // Button at the top
-              //A GestureDetector in Flutter is used to detect and respond to different
-              // types of user interactions or gestures, such as taps, swipes, long presses
-              // , and drags. It acts as an invisible layer that wraps around
-              // widgets and enables them to handle touch events.
-              //like onTapDown w kda
               GestureDetector(
                 onTapDown: (_) {
                   setState(() {
@@ -108,7 +143,6 @@ class _HomePageState extends State<HomePage> {
                     color: Colors.indigo.shade100,
                     borderRadius: BorderRadius.circular(30),
                   ),
-                  //wrapped with center
                   child: Center(
                     child: Text(
                       'Create Your Own Event/List',
@@ -124,9 +158,6 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
-              // Friend list embedded below the button
-              //Column aligns its children vertically, and the friend list
-              // (ListView.builder) should take up the remaining space.
               Expanded(
                 child: ListView.builder(
                   itemCount: friends.length,
@@ -140,12 +171,16 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           ),
-          // Floating circular button at the bottom right
           Positioned(
             bottom: 20,
             right: 20,
             child: FloatingActionButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AddFriendPage()),
+                );
+              },
               backgroundColor: Colors.indigo.shade100,
               child: Icon(
                 Icons.person_add,
@@ -160,8 +195,51 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
+// Widget for the Add Friend Page
+class AddFriendPage extends StatelessWidget {
+  const AddFriendPage({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Add Friend"),
+        backgroundColor: Colors.indigo.shade50,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            TextField(
+              decoration: const InputDecoration(
+                hintText: 'Friend Name',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              decoration: const InputDecoration(
+                hintText: 'Friend Phone Number',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                // Add logic to save the friend information
+                Navigator.pop(context); // Close the page after adding
+              },
+              child: const Text("Add Friend"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // Widget to display each friend with a fading image and info
-  class FriendListItem extends StatelessWidget {
+class FriendListItem extends StatelessWidget {
   final String name;
   final String image;
 
@@ -173,7 +251,6 @@ class _HomePageState extends State<HomePage> {
       padding: const EdgeInsets.symmetric(vertical: 1.0, horizontal: 10.0),
       child: Row(
         children: [
-          // Fading image on the left
           Container(
             width: 100,
             height: 100,
@@ -199,10 +276,9 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           const SizedBox(width: 16),
-          // Name and additional info
           Expanded(
             child: GestureDetector(
-              onTap:(){
+              onTap: () {
                 Navigator.pushNamed(context, '/FriendsPage');
               },
               child: Column(
