@@ -16,6 +16,16 @@ class _MyProfileState extends State<MyProfile> {
   String firstName = 'Nour';
   String lastName = 'Hammad';
 
+  // Sample list of gifts (can be fetched from a database in real use case)
+  final List<Map<String, String>> gifts = [
+    {'image': 'asset/pp1.jpg', 'title': 'Gift 1', 'event': 'A beautiful gift for special occasions'},
+    {'image': 'asset/pp2.jpg', 'title': 'Gift 2', 'event': 'A wonderful surprise for loved ones'},
+    {'image': 'asset/pp3.jpg', 'title': 'Gift 3', 'event': 'An unforgettable present for birthdays'},
+    {'image': 'asset/pp1.jpg', 'title': 'Gift 1', 'event': 'A beautiful gift for special occasions'},
+    {'image': 'asset/pp2.jpg', 'title': 'Gift 2', 'event': 'A wonderful surprise for loved ones'},
+    {'image': 'asset/pp3.jpg', 'title': 'Gift 3', 'event': 'An unforgettable present for birthdays'},
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -38,6 +48,15 @@ class _MyProfileState extends State<MyProfile> {
         ),
         titleSpacing: 69.0,
         toolbarHeight: 70,
+        actions: [
+          IconButton(
+
+            icon: const Icon(Icons.star, color: Colors.indigo), // Replace with your desired icon
+              onPressed: () {
+                Navigator.pushNamed(context, '/MyPledgedGiftsPage');
+              },
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -70,7 +89,9 @@ class _MyProfileState extends State<MyProfile> {
                         color: Colors.white, // Icon color
                         size: 28, // Size of the icon
                       ),
-                      onPressed: () {},
+                      onPressed: () {
+                        print(gifts);
+                      },
                     ),
                   ),
                 ],
@@ -83,10 +104,13 @@ class _MyProfileState extends State<MyProfile> {
               children: [
                 Expanded(
                   child: TextField(
+                    style: const TextStyle(fontFamily: "Lobster", fontSize: 25),
                     enabled: isFirstNameEditable,
                     controller: TextEditingController(text: firstName),
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30.0), // Adjust the value for desired curve
+                      ),
                       hintText: 'First Name',
                     ),
                     onChanged: (value) {
@@ -111,10 +135,13 @@ class _MyProfileState extends State<MyProfile> {
               children: [
                 Expanded(
                   child: TextField(
+                    style: const TextStyle(fontFamily: "Lobster", fontSize: 25),
                     enabled: isLastNameEditable,
                     controller: TextEditingController(text: lastName),
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30.0), // Adjust the value for desired curve
+                      ),
                       hintText: 'Last Name',
                     ),
                     onChanged: (value) {
@@ -132,8 +159,68 @@ class _MyProfileState extends State<MyProfile> {
                 ),
               ],
             ),
+            const SizedBox(height: 20), // Space between text fields and gift list
+
+            // Gift List
+            Expanded(
+              child: ListView.builder(
+                itemCount: gifts.length,
+                itemBuilder: (context, index) {
+                  final gift = gifts[index];
+                  return Card(
+                    elevation: 4.0,
+                    margin: const EdgeInsets.symmetric(vertical: 10.0),
+                    child: ListTile(
+                      leading: ClipOval(
+                        child: Container(
+                          width: 70,
+                          height: 70,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            image: DecorationImage(
+                              image: AssetImage(
+                                  gift['image'] ?? 'assets/default_image.png',
+                              ),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+
+                        ),
+                      ),
+                      title: Text(
+                        gift['title'] ?? 'Gift Name',
+                        style: const TextStyle(
+                          fontSize: 30,
+                          fontFamily: "Lobster",
+                        ),
+                      ),
+                      subtitle: Text(
+                        gift['event'] ?? 'Gift Description',
+                        style: const TextStyle(fontSize: 20),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// Dummy Pledged Gifts Page
+class PledgedGiftsPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Pledged Gifts"),
+        backgroundColor: Colors.indigo,
+      ),
+      body: Center(
+        child: const Text("This is the Pledged Gifts Page."),
       ),
     );
   }

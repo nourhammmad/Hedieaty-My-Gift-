@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'HomePage.dart';
 import 'FriendsPage.dart';
 import 'MyProfile.dart';
+import 'MyPledgedGiftsPage.dart';
 
 void main() {
   runApp(const MyApp());
@@ -24,6 +25,7 @@ class MyApp extends StatelessWidget {
         '/':(context)=>HomePage(),
         '/FriendsPage':(context)=>FriendsPage(),
         '/MyProfile':(context)=>MyProfile(),
+        '/MyPledgedGiftsPage':(context)=>MyPledgedGiftsPage(),
 
       }
     );
