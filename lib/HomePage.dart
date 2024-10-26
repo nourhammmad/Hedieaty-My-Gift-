@@ -330,7 +330,7 @@ class FriendListItem extends StatelessWidget {
           Expanded(
             child: GestureDetector(
               onTap: () {
-                Navigator.pushNamed(context, '/FriendsPage');
+                Navigator.pushNamed(context, '/FriendsGiftList');
               },
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

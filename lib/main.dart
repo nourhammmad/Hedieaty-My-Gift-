@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:projecttrial/AddGift.dart';
 import 'HomePage.dart';
-import 'FriendsPage.dart';
+import 'FriendsGiftList.dart';
 import 'MyProfile.dart';
 import 'MyPledgedGiftsPage.dart';
 import 'EventsListPage.dart';
@@ -9,6 +10,8 @@ import 'GiftDetailsPage.dart';
 import 'EventDetailsPage.dart';
 import 'AddEvent.dart';
 import 'GiftOrEvent.dart';
+import 'AddGift.dart';
+
 
 void main() {
   runApp(const MyApp());
@@ -29,7 +32,6 @@ class MyApp extends StatelessWidget {
       initialRoute:'/',
       routes:{
         '/':(context)=>HomePage(),
-        '/FriendsPage':(context)=>FriendsPage(),
         '/MyProfile':(context)=>MyProfile(),
         '/MyPledgedGiftsPage':(context)=>MyPledgedGiftsPage(),
         '/EventsListPage':(context)=>EventsListPage(),
@@ -38,6 +40,10 @@ class MyApp extends StatelessWidget {
         '/EventDetailsPage':(context)=>EventDetailsPage(),
         '/AddEvent':(context)=>AddEvent(),
         '/GiftOrEvent':(context)=>GiftOrEvent(),
+        '/AddGift':(context)=>AddGift(),
+        '/FriendsGiftList':(context)=>FriendsGiftList(),
+
+
 
       }
     );

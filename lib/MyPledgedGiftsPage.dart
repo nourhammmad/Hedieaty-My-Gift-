@@ -39,6 +39,7 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
       'status': 'Pending',
       'image': 'asset/gift4.jpg',
     },
+    // Duplicate entries for demonstration
     {
       'friendName': 'Alice',
       'giftTitle': 'Birthday Surprise',
@@ -67,11 +68,9 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
       'status': 'Pending',
       'image': 'asset/gift4.jpg',
     },
-
   ];
 
   void _unpledgeGift(int index) {
-    // Remove the gift from the list and update the UI
     setState(() {
       pledgedGifts.removeAt(index);
     });
@@ -82,8 +81,8 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Unpledge Gift', style: TextStyle(color: Colors.red,fontSize: 28)),
-          content: const Text('Are you sure you want to unpledge this gift?' ,style: TextStyle(fontSize: 25)),
+          title: const Text('Unpledge Gift', style: TextStyle(color: Colors.red, fontSize: 28)),
+          content: const Text('Are you sure you want to unpledge this gift?', style: TextStyle(fontSize: 25)),
           actions: [
             TextButton(
               onPressed: () {
@@ -98,8 +97,7 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
               },
               child: const Text(
                 'Unpledge',
-                style: TextStyle(color: Colors.red,fontSize: 25),
-
+                style: TextStyle(color: Colors.red, fontSize: 25),
               ),
             ),
           ],
@@ -159,8 +157,19 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
                 itemCount: pledgedGifts.length,
                 itemBuilder: (context, index) {
                   final gift = pledgedGifts[index];
-                  return Card(
-                    elevation: 4.0,
+                  return Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(30), bottom: Radius.circular(20)), // Curved top and bottom
+                      color: Colors.white, // Card background color
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.5),
+                          spreadRadius: 2,
+                          blurRadius: 5,
+                          offset: const Offset(0, 3), // Position of the shadow
+                        ),
+                      ],
+                    ),
                     child: Stack(
                       children: [
                         InkWell(
@@ -171,9 +180,12 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               Expanded(
-                                child: Image.asset(
-                                  gift['image'],
-                                  fit: BoxFit.cover,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.vertical(top: Radius.circular(30)), // Round the top corners
+                                  child: Image.asset(
+                                    gift['image'],
+                                    fit: BoxFit.cover,
+                                  ),
                                 ),
                               ),
                               Padding(

@@ -1,42 +1,44 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-class EventDetailsPage extends StatefulWidget {
-  const EventDetailsPage({super.key});
+class AddGift extends StatefulWidget {
+  const AddGift({super.key});
 
   @override
-  State<EventDetailsPage> createState() => _EventDetailsPageState();
+  State<AddGift> createState() => _AddGiftState();
 }
 
-class _EventDetailsPageState extends State<EventDetailsPage> {
+class _AddGiftState extends State<AddGift> {
+  final TextEditingController titleController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController statusController = TextEditingController();
-  final TextEditingController titleController = TextEditingController();
 
   bool isPledged = false; // Track whether the gift is pledged
+  bool imageExists = false; // Track if the image exists (set to false if no image is found)
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-      iconTheme: const IconThemeData(color: Colors.indigo),
-      backgroundColor: Colors.indigo.shade50,
-      title: const Row(
-        children: [
-          Text(
-            "Hedieaty",
-            style: TextStyle(
-              fontSize: 40,
-              fontFamily: "Lobster",
-              fontWeight: FontWeight.bold,
-              color: Colors.indigo,
+        iconTheme: const IconThemeData(color: Colors.indigo),
+        backgroundColor: Colors.indigo.shade50,
+        title: const Row(
+          children: [
+            Text(
+              "Hedieaty",
+              style: TextStyle(
+                fontSize: 40,
+                fontFamily: "Lobster",
+                fontWeight: FontWeight.bold,
+                color: Colors.indigo,
+              ),
             ),
-          ),
-          Icon(Icons.card_giftcard, color: Colors.indigo, size: 25),
-        ],
+            Icon(Icons.card_giftcard, color: Colors.indigo, size: 25),
+          ],
+        ),
+        titleSpacing: 69.0,
+        toolbarHeight: 70,
       ),
-      titleSpacing: 69.0,
-      toolbarHeight: 70,
-    ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -47,11 +49,20 @@ class _EventDetailsPageState extends State<EventDetailsPage> {
                 alignment: Alignment.bottomRight,
                 children: [
                   ClipOval(
-                    child: Image.asset(
-                      'asset/BD.jpg', // Placeholder image
+                    child: imageExists
+                        ? Image.asset(
+                      'asset/BDa.jpg', // Placeholder image
                       width: 220,
                       height: 220,
                       fit: BoxFit.cover,
+                    )
+                        : Container(
+                      width: 220,
+                      height: 220,
+                      color: Colors.grey[200], // Background color for no image
+                      child: const Center(
+                          child:Icon(Icons.image_sharp,size:100)
+                      ),
                     ),
                   ),
                   Container(
@@ -63,7 +74,8 @@ class _EventDetailsPageState extends State<EventDetailsPage> {
                     child: IconButton(
                       icon: const Icon(
                         Icons.add,
-                        color: Colors.white, size: 50,
+                        color: Colors.white,
+                        size: 28,
                       ),
                       onPressed: () {
                         // Add functionality for the button if needed
@@ -75,13 +87,10 @@ class _EventDetailsPageState extends State<EventDetailsPage> {
             ),
             const SizedBox(height: 20),
 
-
-            const SizedBox(height: 20),
-
             // Gift Name Field
             _buildTextField(
               controller: titleController,
-              label: 'Event Name',
+              label: 'Gift Name',
             ),
             const SizedBox(height: 10),
 
@@ -101,7 +110,6 @@ class _EventDetailsPageState extends State<EventDetailsPage> {
 
             const SizedBox(height: 10),
 
-
             // Submit Button
             Container(
               child: ElevatedButton(
@@ -111,11 +119,10 @@ class _EventDetailsPageState extends State<EventDetailsPage> {
                   String description = descriptionController.text;
                   String status = statusController.text;
 
-
                   // Implement your save logic here
                 },
                 child: const Text(
-                  'Save Event Details',
+                  'Add Gift ',
                   style: TextStyle(fontSize: 30, fontFamily: "Lobster", color: Colors.indigo),
                 ),
               ),

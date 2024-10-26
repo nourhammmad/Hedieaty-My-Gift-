@@ -17,11 +17,26 @@ class _MyProfileState extends State<MyProfile> {
   String firstName = 'Nour';
   String lastName = 'Hammad';
 
-  // Sample list of gifts (can be fetched from a database in real use case)
-  final List<Map<String, String>> gifts = [
-    {'image': 'asset/pp1.jpg', 'title': 'Gift 1', 'event': 'A beautiful gift for special occasions'},
-    {'image': 'asset/pp2.jpg', 'title': 'Gift 2', 'event': 'A wonderful surprise for loved ones'},
-    {'image': 'asset/pp3.jpg', 'title': 'Gift 3', 'event': 'An unforgettable present for birthdays'},
+  // Sample list of events with associated gifts (can be fetched from a database in real use case)
+  final List<Map<String, String>> events = [
+    {
+      'imageLeft': 'asset/BD.jpg',
+      'imageRight': 'asset/elect.jpg',
+      'eventTitle': 'Birthday Party',
+      'giftTitle': 'iPhone',
+    },
+    {
+      'imageLeft': 'asset/WA.jpg',
+      'imageRight': 'asset/teddy.jpg',
+      'eventTitle': 'Anniversary Celebration',
+      'giftTitle': 'Books',
+    },
+    {
+      'imageLeft': 'asset/GA.jpg',
+      'imageRight': 'asset/gift3.jpg',
+      'eventTitle': 'Graduation Ceremony',
+      'giftTitle': 'Teddy Bear',
+    },
   ];
 
   @override
@@ -85,7 +100,7 @@ class _MyProfileState extends State<MyProfile> {
                         size: 28,
                       ),
                       onPressed: () {
-                        print(gifts);
+                        print(events);
                       },
                     ),
                   ),
@@ -175,41 +190,71 @@ class _MyProfileState extends State<MyProfile> {
             ),
             const SizedBox(height: 20),
 
-            // Gift List
+            // Event and Gift List
             Expanded(
               child: ListView.builder(
-                itemCount: gifts.length,
+                itemCount: events.length,
                 itemBuilder: (context, index) {
-                  final gift = gifts[index];
+                  final event = events[index];
                   return Card(
                     elevation: 4.0,
                     margin: const EdgeInsets.symmetric(vertical: 10.0),
-                    child: ListTile(
-                      leading: ClipOval(
-                        child: Container(
-                          width: 70,
-                          height: 70,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            image: DecorationImage(
-                              image: AssetImage(
-                                gift['image'] ?? 'assets/default_image.png',
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          ClipOval(
+                            child: Container(
+                              width: 70,
+                              height: 70,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                image: DecorationImage(
+                                  image: AssetImage(
+                                    event['imageLeft'] ?? 'assets/default_image.png',
+                                  ),
+                                  fit: BoxFit.cover,
+                                ),
                               ),
-                              fit: BoxFit.cover,
                             ),
                           ),
-                        ),
-                      ),
-                      title: Text(
-                        gift['title'] ?? 'Gift Name',
-                        style: const TextStyle(
-                          fontSize: 30,
-                          fontFamily: "Lobster",
-                        ),
-                      ),
-                      subtitle: Text(
-                        gift['event'] ?? 'Gift Description',
-                        style: const TextStyle(fontSize: 20),
+                          Expanded(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  event['eventTitle'] ?? 'Event Title',
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontFamily: "Lobster",
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                Text(
+                                  event['giftTitle'] ?? 'Gift Title',
+                                  style: const TextStyle(fontSize: 16),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                          ClipOval(
+                            child: Container(
+                              width: 70,
+                              height: 70,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                image: DecorationImage(
+                                  image: AssetImage(
+                                    event['imageRight'] ?? 'assets/default_image.png',
+                                  ),
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   );
