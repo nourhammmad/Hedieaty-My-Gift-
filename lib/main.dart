@@ -3,6 +3,9 @@ import 'HomePage.dart';
 import 'FriendsPage.dart';
 import 'MyProfile.dart';
 import 'MyPledgedGiftsPage.dart';
+import 'EventsListPage.dart';
+import 'GiftListPage.dart';
+import 'GiftDetailsPage.dart';
 
 void main() {
   runApp(const MyApp());
@@ -26,6 +29,9 @@ class MyApp extends StatelessWidget {
         '/FriendsPage':(context)=>FriendsPage(),
         '/MyProfile':(context)=>MyProfile(),
         '/MyPledgedGiftsPage':(context)=>MyPledgedGiftsPage(),
+        '/EventsListPage':(context)=>EventsListPage(),
+        '/GiftListPage':(context)=>GiftListPage(),
+        '/GiftDetailsPage':(context)=>GiftDetailsPage(),
 
       }
     );

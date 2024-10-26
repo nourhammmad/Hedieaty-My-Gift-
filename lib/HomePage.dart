@@ -87,10 +87,14 @@ class _HomePageState extends State<HomePage> {
         ),
         titleSpacing: 25.0,
         toolbarHeight: 70,
-        leading: IconButton(
-          onPressed: () {},
-          alignment: Alignment.topLeft,
-          icon: const Icon(Icons.menu, size: 35, color: Colors.indigo),
+        leading: Builder(
+          builder: (context) => IconButton(
+            onPressed: () {
+              Scaffold.of(context).openDrawer(); // Open the drawer
+            },
+            alignment: Alignment.topLeft,
+            icon: const Icon(Icons.menu, size: 35, color: Colors.indigo),
+          ),
         ),
         actions: [
           if (!_isSearching)
@@ -114,6 +118,42 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ],
+      ),
+      drawer: Drawer(
+        backgroundColor: Colors.indigo.shade50,
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            Container(
+
+              decoration:  BoxDecoration(
+                color: Colors.indigo.shade50,
+              ),
+              child:  Icon(Icons.card_giftcard_outlined,size:500,color: Colors.indigo.shade100,),
+              height: 220,
+
+            ),
+            ListTile(
+              leading: Icon(Icons.event, color: Colors.indigo,size: 45,),
+              title: const Text('My Events',style: TextStyle(fontSize: 50,fontFamily: "Lobster",fontWeight: FontWeight.bold,color: Colors.indigo),),
+              onTap: () {
+                Navigator.pop(context); // Close the drawer
+                Navigator.pushNamed(context, '/EventsListPage');
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.wallet_giftcard, color: Colors.indigo,size: 45,),
+              title: const Text('My Gifts',style: TextStyle(fontSize: 50,fontFamily: "Lobster",fontWeight: FontWeight.bold,color: Colors.indigo),),
+              onTap: () {
+                Navigator.pop(context); // Close the drawer
+                Navigator.pushNamed(context, '/GiftListPage');
+              },
+            ),
+
+
+            // Add more ListTiles for additional pages
+          ],
+        ),
       ),
       body: Stack(
         children: [
@@ -211,7 +251,7 @@ class AddFriendPage extends StatelessWidget {
         child: Column(
           children: [
             const TextField(
-              decoration:  InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'Friend Name',
                 border: OutlineInputBorder(),
               ),
