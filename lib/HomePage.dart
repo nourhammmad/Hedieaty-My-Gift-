@@ -22,6 +22,52 @@ class _HomePageState extends State<HomePage> {
     {"name": "Oliver", "image": "asset/pp4.jpg"},
   ];
 
+  void _showAddFriendDialog() {
+    final TextEditingController phoneController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Add Friend",style: TextStyle(fontSize: 28,color: Colors.red),),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text("Enter phone number:",style: TextStyle(fontSize: 28),),
+              TextField(
+                controller: phoneController,
+                decoration: const InputDecoration(hintText: 'Phone Number'),
+              ),
+              const SizedBox(height: 30),
+              ElevatedButton(
+                onPressed: () {
+                  // Here you can add logic to select from contacts
+                  // For example, you can integrate the contacts package.
+                  // For now, just simulate adding a friend
+                  String phoneNumber = phoneController.text;
+                  if (phoneNumber.isNotEmpty) {
+                    setState(() {
+                      friends.add({"name": "Friend $phoneNumber", "image": "asset/default.jpg"});
+                    });
+                    Navigator.of(context).pop(); // Close the dialog
+                  }
+                },
+
+                child: const Text("Add Friend",style: TextStyle(fontSize: 28),),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("Cancel"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -125,33 +171,43 @@ class _HomePageState extends State<HomePage> {
           padding: EdgeInsets.zero,
           children: [
             Container(
-
-              decoration:  BoxDecoration(
+              decoration: BoxDecoration(
                 color: Colors.indigo.shade50,
               ),
-              child:  Icon(Icons.card_giftcard_outlined,size:500,color: Colors.indigo.shade100,),
+              child: Icon(Icons.card_giftcard_outlined,
+                  size: 500, color: Colors.indigo.shade100),
               height: 220,
-
             ),
             ListTile(
-              leading: Icon(Icons.event, color: Colors.indigo,size: 45,),
-              title: const Text('My Events',style: TextStyle(fontSize: 50,fontFamily: "Lobster",fontWeight: FontWeight.bold,color: Colors.indigo),),
+              leading: Icon(Icons.event, color: Colors.indigo, size: 45),
+              title: const Text(
+                'My Events',
+                style: TextStyle(
+                    fontSize: 50,
+                    fontFamily: "Lobster",
+                    fontWeight: FontWeight.bold,
+                    color: Colors.indigo),
+              ),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
                 Navigator.pushNamed(context, '/EventsListPage');
               },
             ),
             ListTile(
-              leading: Icon(Icons.wallet_giftcard, color: Colors.indigo,size: 45,),
-              title: const Text('My Gifts',style: TextStyle(fontSize: 50,fontFamily: "Lobster",fontWeight: FontWeight.bold,color: Colors.indigo),),
+              leading: Icon(Icons.wallet_giftcard, color: Colors.indigo, size: 45),
+              title: const Text(
+                'My Gifts',
+                style: TextStyle(
+                    fontSize: 50,
+                    fontFamily: "Lobster",
+                    fontWeight: FontWeight.bold,
+                    color: Colors.indigo),
+              ),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
                 Navigator.pushNamed(context, '/GiftListPage');
               },
             ),
-
-
-            // Add more ListTiles for additional pages
           ],
         ),
       ),
@@ -163,6 +219,8 @@ class _HomePageState extends State<HomePage> {
                 onTapDown: (_) {
                   setState(() {
                     _isPressed = true;
+                      Navigator.pushNamed(context,'/GiftOrEvent');
+
                   });
                 },
                 onTapUp: (_) {
@@ -184,6 +242,7 @@ class _HomePageState extends State<HomePage> {
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: Center(
+
                     child: Text(
                       'Create Your Own Event/List',
                       style: TextStyle(
@@ -215,12 +274,7 @@ class _HomePageState extends State<HomePage> {
             bottom: 20,
             right: 20,
             child: FloatingActionButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AddFriendPage()),
-                );
-              },
+              onPressed: _showAddFriendDialog, // Open the dialog
               backgroundColor: Colors.indigo.shade100,
               child: Icon(
                 Icons.person_add,
@@ -230,49 +284,6 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// Widget for the Add Friend Page
-class AddFriendPage extends StatelessWidget {
-  const AddFriendPage({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Add Friend"),
-        backgroundColor: Colors.indigo.shade50,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            const TextField(
-              decoration: InputDecoration(
-                hintText: 'Friend Name',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const TextField(
-              decoration: InputDecoration(
-                hintText: 'Friend Phone Number',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                // Add logic to save the friend information
-                Navigator.pop(context); // Close the page after adding
-              },
-              child: const Text("Add Friend"),
-            ),
-          ],
-        ),
       ),
     );
   }

@@ -6,6 +6,9 @@ import 'MyPledgedGiftsPage.dart';
 import 'EventsListPage.dart';
 import 'GiftListPage.dart';
 import 'GiftDetailsPage.dart';
+import 'EventDetailsPage.dart';
+import 'AddEvent.dart';
+import 'GiftOrEvent.dart';
 
 void main() {
   runApp(const MyApp());
@@ -32,6 +35,9 @@ class MyApp extends StatelessWidget {
         '/EventsListPage':(context)=>EventsListPage(),
         '/GiftListPage':(context)=>GiftListPage(),
         '/GiftDetailsPage':(context)=>GiftDetailsPage(),
+        '/EventDetailsPage':(context)=>EventDetailsPage(),
+        '/AddEvent':(context)=>AddEvent(),
+        '/GiftOrEvent':(context)=>GiftOrEvent(),
 
       }
     );

@@ -38,31 +38,7 @@ class _EventsListPageState extends State<EventsListPage> {
   String sortCriteria = 'Name'; // Default sorting criteria
 
   // Function to show the dialog for adding a new event
-  void _addEvent() {
-    String name = '';
-    String category = '';
-    String status = 'Upcoming'; // Default status
-    String imagePath = ''; // For image path input
 
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Add Event'),
-          content: _eventDialogContent(name, category, status, imagePath, (newName, newCategory, newStatus, newImagePath) {
-            setState(() {
-              events.add({
-                'name': newName,
-                'category': newCategory,
-                'status': newStatus,
-                'image': newImagePath,
-              });
-            });
-          }),
-        );
-      },
-    );
-  }
 
   // Function to show the dialog for editing an event
   void _editEvent(int index) {
@@ -189,7 +165,9 @@ class _EventsListPageState extends State<EventsListPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: _addEvent,
+            onPressed: (){
+              Navigator.pushNamed(context, '/AddEvent');
+          },
           ),
         ],
       ),
@@ -287,7 +265,10 @@ class _EventsListPageState extends State<EventsListPage> {
                           children: [
                             IconButton(
                               icon: const Icon(Icons.edit, color: Colors.indigo, size: 40),
-                              onPressed: () => _editEvent(index),
+                              onPressed: () {
+
+                                Navigator.pushNamed(context, '/EventDetailsPage');}
+                              ,
                             ),
                             IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red, size: 40),
