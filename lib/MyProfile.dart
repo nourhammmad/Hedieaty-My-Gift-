@@ -11,6 +11,7 @@ class MyProfile extends StatefulWidget {
 class _MyProfileState extends State<MyProfile> {
   bool isFirstNameEditable = false;
   bool isLastNameEditable = false;
+  bool notificationsEnabled = false; // State variable for the toggle button
 
   // Sample values fetched from a database or user object
   String firstName = 'Nour';
@@ -18,9 +19,6 @@ class _MyProfileState extends State<MyProfile> {
 
   // Sample list of gifts (can be fetched from a database in real use case)
   final List<Map<String, String>> gifts = [
-    {'image': 'asset/pp1.jpg', 'title': 'Gift 1', 'event': 'A beautiful gift for special occasions'},
-    {'image': 'asset/pp2.jpg', 'title': 'Gift 2', 'event': 'A wonderful surprise for loved ones'},
-    {'image': 'asset/pp3.jpg', 'title': 'Gift 3', 'event': 'An unforgettable present for birthdays'},
     {'image': 'asset/pp1.jpg', 'title': 'Gift 1', 'event': 'A beautiful gift for special occasions'},
     {'image': 'asset/pp2.jpg', 'title': 'Gift 2', 'event': 'A wonderful surprise for loved ones'},
     {'image': 'asset/pp3.jpg', 'title': 'Gift 3', 'event': 'An unforgettable present for birthdays'},
@@ -50,11 +48,10 @@ class _MyProfileState extends State<MyProfile> {
         toolbarHeight: 70,
         actions: [
           IconButton(
-
-            icon: const Icon(Icons.star, color: Colors.indigo), // Replace with your desired icon
-              onPressed: () {
-                Navigator.pushNamed(context, '/MyPledgedGiftsPage');
-              },
+            icon: const Icon(Icons.star, color: Colors.indigo),
+            onPressed: () {
+              Navigator.pushNamed(context, '/MyPledgedGiftsPage');
+            },
           ),
         ],
       ),
@@ -65,29 +62,27 @@ class _MyProfileState extends State<MyProfile> {
             // Stack for profile image and plus icon
             Center(
               child: Stack(
-                alignment: Alignment.bottomRight, // Align the icon to the bottom right
+                alignment: Alignment.bottomRight,
                 children: [
-                  // Circular image
                   ClipOval(
                     child: Image.asset(
                       'asset/pp1.jpg',
-                      width: 220, // Set the desired width
-                      height: 220, // Set the desired height
-                      fit: BoxFit.cover, // Ensure the image covers the area
+                      width: 220,
+                      height: 220,
+                      fit: BoxFit.cover,
                     ),
                   ),
-                  // Plus icon at the bottom right of the image
                   Container(
-                    margin: const EdgeInsets.all(8), // Add margin around the icon
+                    margin: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.indigo, // Background color for the icon
+                      color: Colors.indigo,
                     ),
                     child: IconButton(
                       icon: const Icon(
-                        Icons.add, // Plus icon
-                        color: Colors.white, // Icon color
-                        size: 28, // Size of the icon
+                        Icons.add,
+                        color: Colors.white,
+                        size: 28,
                       ),
                       onPressed: () {
                         print(gifts);
@@ -97,7 +92,7 @@ class _MyProfileState extends State<MyProfile> {
                 ],
               ),
             ),
-            const SizedBox(height: 20), // Space between image and other content
+            const SizedBox(height: 20),
 
             // First Name Field
             Row(
@@ -109,7 +104,7 @@ class _MyProfileState extends State<MyProfile> {
                     controller: TextEditingController(text: firstName),
                     decoration: InputDecoration(
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30.0), // Adjust the value for desired curve
+                        borderRadius: BorderRadius.circular(30.0),
                       ),
                       hintText: 'First Name',
                     ),
@@ -128,7 +123,7 @@ class _MyProfileState extends State<MyProfile> {
                 ),
               ],
             ),
-            const SizedBox(height: 20), // Space between fields
+            const SizedBox(height: 20),
 
             // Last Name Field
             Row(
@@ -140,7 +135,7 @@ class _MyProfileState extends State<MyProfile> {
                     controller: TextEditingController(text: lastName),
                     decoration: InputDecoration(
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30.0), // Adjust the value for desired curve
+                        borderRadius: BorderRadius.circular(30.0),
                       ),
                       hintText: 'Last Name',
                     ),
@@ -159,7 +154,26 @@ class _MyProfileState extends State<MyProfile> {
                 ),
               ],
             ),
-            const SizedBox(height: 20), // Space between text fields and gift list
+            const SizedBox(height: 20),
+
+            // Notification Toggle
+            SwitchListTile(
+              title: const Text(
+                "Enable Notifications",
+                style: TextStyle(
+                  fontSize: 30,
+                  fontFamily: "Lobster",
+                ),
+              ),
+              value: notificationsEnabled,
+              onChanged: (bool value) {
+                setState(() {
+                  notificationsEnabled = value;
+                });
+              },
+              activeColor: Colors.indigo,
+            ),
+            const SizedBox(height: 20),
 
             // Gift List
             Expanded(
@@ -179,12 +193,11 @@ class _MyProfileState extends State<MyProfile> {
                             shape: BoxShape.circle,
                             image: DecorationImage(
                               image: AssetImage(
-                                  gift['image'] ?? 'assets/default_image.png',
+                                gift['image'] ?? 'assets/default_image.png',
                               ),
                               fit: BoxFit.cover,
                             ),
                           ),
-
                         ),
                       ),
                       title: Text(
@@ -205,22 +218,6 @@ class _MyProfileState extends State<MyProfile> {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-// Dummy Pledged Gifts Page
-class PledgedGiftsPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Pledged Gifts"),
-        backgroundColor: Colors.indigo,
-      ),
-      body: Center(
-        child: const Text("This is the Pledged Gifts Page."),
       ),
     );
   }
