@@ -13,107 +13,55 @@ class _EventsListPageState extends State<EventsListPage> {
       'name': 'Birthday Party',
       'category': 'Celebration',
       'status': 'Upcoming',
-      'image': 'asset/BD.jpg', // Example image path
+      'image': 'asset/BD.jpg',
     },
     {
       'name': 'Wedding Anniversary',
       'category': 'Celebration',
       'status': 'Upcoming',
-      'image': 'asset/WA.jpg', // Example image path
+      'image': 'asset/WA.jpg',
     },
     {
       'name': 'Graduation Party',
       'category': 'Celebration',
       'status': 'Past',
-      'image': 'asset/GA.jpg', // Example image path
+      'image': 'asset/GA.jpg',
     },
     {
       'name': 'New Year’s Eve Celebration',
       'category': 'Celebration',
       'status': 'Upcoming',
-      'image': 'asset/NY.jpg', // Example image path
+      'image': 'asset/NY.jpg',
     },
   ];
 
-  String sortCriteria = 'Name'; // Default sorting criteria
+  String sortCriteria = 'Name';
 
-  // Function to show the dialog for adding a new event
-
-
-  // Function to show the dialog for editing an event
-  void _editEvent(int index) {
-    String name = events[index]['name'] ?? '';
-    String category = events[index]['category'] ?? '';
-    String status = events[index]['status'] ?? '';
-    String imagePath = events[index]['image'] ?? '';
-
+  // Function to show a confirmation dialog before deleting an event
+  void _showDeleteConfirmationDialog(int index) {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Edit Event'),
-          content: _eventDialogContent(name, category, status, imagePath, (newName, newCategory, newStatus, newImagePath) {
-            setState(() {
-              events[index] = {
-                'name': newName,
-                'category': newCategory,
-                'status': newStatus,
-                'image': newImagePath,
-              };
-            });
-          }),
+          title: const Text('Delete Event', style: TextStyle(fontSize: 25,color: Colors.red,)),
+          content: const Text('Are you sure you want to delete this event?', style: TextStyle(fontSize: 28,),),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog without doing anything
+              },
+              child: const Text('Cancel', style: TextStyle(fontSize: 25,),),
+            ),
+            TextButton(
+              onPressed: () {
+                _deleteEvent(index);
+                Navigator.of(context).pop(); // Close the dialog after deletion
+              },
+              child: const Text('Delete', style: TextStyle(color: Colors.red,fontSize: 25),),
+            ),
+          ],
         );
       },
-    );
-  }
-
-  // Function to provide the dialog content for both add and edit
-  Widget _eventDialogContent(String name, String category, String status, String imagePath, Function(String, String, String, String) onSubmit) {
-    String tempName = name;
-    String tempCategory = category;
-    String tempStatus = status;
-    String tempImagePath = imagePath;
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        TextField(
-          decoration: const InputDecoration(labelText: 'Event Name'),
-          onChanged: (value) {
-            tempName = value;
-          },
-          controller: TextEditingController(text: name),
-        ),
-        TextField(
-          decoration: const InputDecoration(labelText: 'Category'),
-          onChanged: (value) {
-            tempCategory = value;
-          },
-          controller: TextEditingController(text: category),
-        ),
-        TextField(
-          decoration: const InputDecoration(labelText: 'Image Path'),
-          onChanged: (value) {
-            tempImagePath = value;
-          },
-          controller: TextEditingController(text: imagePath),
-        ),
-        DropdownButton<String>(
-          value: tempStatus,
-          items: const [
-            DropdownMenuItem(value: 'Upcoming', child: Text('Upcoming')),
-            DropdownMenuItem(value: 'Current', child: Text('Current')),
-            DropdownMenuItem(value: 'Past', child: Text('Past')),
-          ],
-          onChanged: (value) {
-            setState(() {
-              if (value != null) {
-                tempStatus = value;
-              }
-            });
-          },
-        ),
-      ],
     );
   }
 
@@ -124,6 +72,7 @@ class _EventsListPageState extends State<EventsListPage> {
     });
   }
 
+  // Function to sort events
   void _sortEvents() {
     switch (sortCriteria) {
       case 'Name':
@@ -165,9 +114,9 @@ class _EventsListPageState extends State<EventsListPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: (){
+            onPressed: () {
               Navigator.pushNamed(context, '/AddEvent');
-          },
+            },
           ),
         ],
       ),
@@ -178,14 +127,14 @@ class _EventsListPageState extends State<EventsListPage> {
             // Dropdown for sorting criteria
             Row(
               children: [
-                const Icon(Icons.sort, color: Colors.indigo,size: 40,), // Sort icon
-                const SizedBox(width: 8), // Space between icon and dropdown
+                const Icon(Icons.sort, color: Colors.indigo, size: 40),
+                const SizedBox(width: 8),
                 DropdownButton<String>(
                   value: sortCriteria,
                   items: const [
-                    DropdownMenuItem(value: 'Name', child: Text('Sort by Name',style: TextStyle(fontFamily: "Lobster"),)),
-                    DropdownMenuItem(value: 'Category', child: Text('Sort by Category',style: TextStyle(fontFamily: "Lobster"),)),
-                    DropdownMenuItem(value: 'Status', child: Text('Sort by Status',style: TextStyle(fontFamily: "Lobster"),)),
+                    DropdownMenuItem(value: 'Name', child: Text('Sort by Name', style: TextStyle(fontFamily: "Lobster"))),
+                    DropdownMenuItem(value: 'Category', child: Text('Sort by Category', style: TextStyle(fontFamily: "Lobster"))),
+                    DropdownMenuItem(value: 'Status', child: Text('Sort by Status', style: TextStyle(fontFamily: "Lobster"))),
                   ],
                   onChanged: (value) {
                     setState(() {
@@ -197,7 +146,7 @@ class _EventsListPageState extends State<EventsListPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 10), // Space between dropdown and list
+            const SizedBox(height: 10),
             events.isEmpty
                 ? const Center(child: Text('No events created yet.'))
                 : Expanded(
@@ -207,30 +156,29 @@ class _EventsListPageState extends State<EventsListPage> {
                   final event = events[index];
                   return Card(
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15.0), // Make the corners curved
+                      borderRadius: BorderRadius.circular(15.0),
                     ),
                     elevation: 4.0,
                     margin: const EdgeInsets.symmetric(vertical: 10.0),
                     child: Column(
                       children: [
-                        // Image section taking full height
                         Container(
-                          height: 200, // Set a fixed height for the image
+                          height: 200,
                           decoration: BoxDecoration(
-                            borderRadius: const BorderRadius.vertical(top: Radius.circular(15.0)), // Curved top corners
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(15.0)),
                             image: DecorationImage(
                               image: event['image'] != null && event['image']!.isNotEmpty
                                   ? AssetImage(event['image']!)
-                                  : const AssetImage('asset/placeholder.png'), // Placeholder image
+                                  : const AssetImage('asset/placeholder.png'),
                               fit: BoxFit.cover,
                             ),
                           ),
                           child: event['image'] != null && event['image']!.isNotEmpty
-                              ? null // Show the image as background
+                              ? null
                               : const Icon(
                             Icons.image_not_supported,
                             size: 50,
-                            color: Colors.red, // Color for the icon
+                            color: Colors.red,
                           ),
                         ),
                         Padding(
@@ -259,20 +207,18 @@ class _EventsListPageState extends State<EventsListPage> {
                             ],
                           ),
                         ),
-                        // Add action buttons for edit and delete using IconButton
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             IconButton(
                               icon: const Icon(Icons.edit, color: Colors.indigo, size: 40),
                               onPressed: () {
-
-                                Navigator.pushNamed(context, '/EventDetailsPage');}
-                              ,
+                                Navigator.pushNamed(context, '/EventDetailsPage');
+                              },
                             ),
                             IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red, size: 40),
-                              onPressed: () => _deleteEvent(index),
+                              onPressed: () => _showDeleteConfirmationDialog(index),
                             ),
                           ],
                         ),

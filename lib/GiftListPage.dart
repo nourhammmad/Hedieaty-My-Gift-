@@ -77,6 +77,34 @@ class _GiftListPageState extends State<GiftListPage> {
     });
   }
 
+  // Function to show a confirmation dialog before deleting a gift
+  void _showDeleteDialog(int index) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Confirm Deletion",style: TextStyle(fontSize: 28,color: Colors.red),),
+          content: const Text("Are you sure you want to delete this gift?",style: TextStyle(fontSize: 25)),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: const Text("Cancel",style: TextStyle(fontSize: 25)),
+            ),
+            TextButton(
+              onPressed: () {
+                _deleteGift(index); // Delete the gift
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: const Text("Delete", style: TextStyle(fontSize:25,color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     _sortGifts();
@@ -182,7 +210,7 @@ class _GiftListPageState extends State<GiftListPage> {
                             ),
                             IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red, size: 40),
-                              onPressed: () => _deleteGift(index),
+                              onPressed: () => _showDeleteDialog(index), // Show delete confirmation dialog
                             ),
                           ],
                         ),
