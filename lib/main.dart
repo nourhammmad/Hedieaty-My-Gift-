@@ -10,6 +10,8 @@ import 'EventDetailsPage.dart';
 import 'AddEvent.dart';
 import 'GiftOrEvent.dart';
 import 'AddGift.dart';
+import 'LoginPage.dart';
+import 'RegisterationPage.dart';
 
 
 void main() {
@@ -28,7 +30,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
           scaffoldBackgroundColor:Colors.indigo.shade50
       ),
-      initialRoute:'/',
+      initialRoute:'/Login',
       routes:{
         '/':(context)=>HomePage(),
         '/MyProfile':(context)=>MyProfile(),
@@ -41,6 +43,8 @@ class MyApp extends StatelessWidget {
         '/GiftOrEvent':(context)=>GiftOrEvent(),
         '/AddGift':(context)=>AddGift(),
         '/FriendsGiftList':(context)=>FriendsGiftList(),
+        '/Login':(context)=>LoginPage(),
+        '/RegisterationPage':(context)=>RegistrationPage(),
 
 
 

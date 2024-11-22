@@ -208,6 +208,22 @@ class _HomePageState extends State<HomePage> {
                 Navigator.pushNamed(context, '/GiftListPage');
               },
             ),
+            ListTile(
+              leading: Icon(Icons.logout, color: Colors.red, size: 45),
+              title: const Text(
+                'Logout',
+                style: TextStyle(
+                    fontSize: 50,
+                    fontFamily: "Lobster",
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red),
+              ),
+              onTap: () {
+                Navigator.pop(context); // Close the drawer
+                // Navigate to the logout page or handle the logout functionality
+                Navigator.pushNamed(context, '/Login'); // Example navigation
+              },
+            ),
           ],
         ),
       ),
