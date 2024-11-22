@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'Database.dart';
+import 'UserSession.dart';  // Import the UserSession class
+
 class HoverEffectText extends StatefulWidget {
   @override
   _HoverEffectTextState createState() => _HoverEffectTextState();
@@ -55,6 +57,7 @@ class _LoginPageState extends State<LoginPage> {
   void initState() {
     super.initState();
     _dbHelper = Databaseclass();  // Initialize _dbHelper here
+    //_dbHelper.mydeletedatabase();
     _initializeDatabase();
   }
 
@@ -62,7 +65,57 @@ class _LoginPageState extends State<LoginPage> {
     await _dbHelper.initialize();
   }
 
+  Future<void> _login() async {
+    if (_formKey.currentState?.validate() ?? false) {
+      bool isValid = await _dbHelper.validateLogin(
+          emailController.text, passwordController.text);
 
+      if (isValid) {
+        // Query the database to get user info after successful login
+        var result = await _dbHelper.readData(
+          "SELECT * FROM Users WHERE EMAIL = ? AND PASSWORD = ?",
+          [emailController.text, _dbHelper.hashPassword(passwordController.text)],
+        );
+
+        if (result.isNotEmpty) {
+          // Get user data from the result
+          int userId = result[0]['ID'];
+          String userName = result[0]['FIRSTNAME'];
+
+          // Save the logged-in user's session
+          await UserSession.saveUserSession(userId, userName);
+
+          // Navigate to the main screen (or home page)
+          Navigator.pushReplacementNamed(context, '/');
+        } else {
+          // If user data is empty or not found
+          _showErrorDialog('User not found');
+        }
+      } else {
+        _showErrorDialog('Invalid email or password');
+      }
+    }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Login Failed'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -143,36 +196,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: () async {
-                  if (_formKey.currentState?.validate() ?? false) {
-                    bool isValid = await _dbHelper.validateLogin(
-                        emailController.text, passwordController.text);
-
-                    if (isValid) {
-                      // If login is valid, navigate to the next page (e.g., home page)
-                      Navigator.pushReplacementNamed(context, '/');
-                    } else {
-                      // If login is invalid, show a message
-                      showDialog(
-                        context: context,
-                        builder: (context) {
-                          return AlertDialog(
-                            title: const Text('Login Failed'),
-                            content: const Text('Invalid email or password.'),
-                            actions: [
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                },
-                                child: const Text('OK'),
-                              ),
-                            ],
-                          );
-                        },
-                      );
-                    }
-                  }
-                },
+                onPressed: _login,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.indigo,
                   shape: RoundedRectangleBorder(

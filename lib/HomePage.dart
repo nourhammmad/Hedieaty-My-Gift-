@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'UserSession.dart';
+import 'Database.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -10,7 +12,17 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   bool _isPressed = false; // Track the button state
   bool _isSearching = false; // Track the state of the search bar
+  late Databaseclass _dbHelper;
+  @override
+  void initState() {
+    super.initState();
+    _dbHelper = Databaseclass();  // Initialize _dbHelper here
+    _initializeDatabase();
+  }
 
+  Future<void> _initializeDatabase() async {
+    await _dbHelper.initialize();
+  }
   final List<Map<String, String>> friends = [
     {"name": "Nour", "image": "asset/pp1.jpg"},
     {"name": "Liam", "image": "asset/pp2.jpg"},
@@ -22,38 +34,71 @@ class _HomePageState extends State<HomePage> {
     {"name": "Oliver", "image": "asset/pp4.jpg"},
   ];
 
-  void _showAddFriendDialog() {
+  void _showAddFriendDialog(int currentUserId) {
     final TextEditingController phoneController = TextEditingController();
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text("Add Friend",style: TextStyle(fontSize: 28,color: Colors.red),),
+          title: const Text(
+            "Add Friend",
+            style: TextStyle(fontSize: 28, color: Colors.red),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text("Enter phone number:",style: TextStyle(fontSize: 28),),
+              const Text(
+                "Enter phone number:",
+                style: TextStyle(fontSize: 28),
+              ),
               TextField(
                 controller: phoneController,
                 decoration: const InputDecoration(hintText: 'Phone Number'),
               ),
               const SizedBox(height: 30),
               ElevatedButton(
-                onPressed: () {
-                  // Here you can add logic to select from contacts
-                  // For example, you can integrate the contacts package.
-                  // For now, just simulate adding a friend
-                  String phoneNumber = phoneController.text;
+                onPressed: () async {
+                  String phoneNumber = phoneController.text.trim();
+
                   if (phoneNumber.isNotEmpty) {
-                    setState(() {
-                      friends.add({"name": "Friend $phoneNumber", "image": "asset/default.jpg"});
-                    });
-                    Navigator.of(context).pop(); // Close the dialog
+                    try {
+                      // Attempt to add the friend using the database class
+                      await _dbHelper.addFriendByPhoneNumber(
+                          currentUserId, phoneNumber);
+
+                      // Success message
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Friend added successfully!'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+
+                      Navigator.of(context).pop(); // Close the dialog
+                    } catch (e) {
+                      // Handle errors (e.g., friend not found or already added)
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(e.toString()),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  } else {
+                    // Show error if phone number is empty
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Please enter a valid phone number'),
+                        backgroundColor: Colors.orange,
+                      ),
+                    );
                   }
                 },
-
-                child: const Text("Add Friend",style: TextStyle(fontSize: 28),),
+                child: const Text(
+                  "Add Friend",
+                  style: TextStyle(fontSize: 28),
+                ),
               ),
             ],
           ),
@@ -67,6 +112,7 @@ class _HomePageState extends State<HomePage> {
       },
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -218,9 +264,10 @@ class _HomePageState extends State<HomePage> {
                     fontWeight: FontWeight.bold,
                     color: Colors.red),
               ),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context); // Close the drawer
                 // Navigate to the logout page or handle the logout functionality
+                await UserSession.clearUserSession();
                 Navigator.pushNamed(context, '/Login'); // Example navigation
               },
             ),
@@ -290,7 +337,15 @@ class _HomePageState extends State<HomePage> {
             bottom: 20,
             right: 20,
             child: FloatingActionButton(
-              onPressed: _showAddFriendDialog, // Open the dialog
+              onPressed: () async {
+              int? currentUserId = await UserSession.getUserId();
+              if (currentUserId != null) {
+              _showAddFriendDialog(currentUserId); // Pass the user ID to the dialog
+              } else {
+              // Handle the case where the user is not logged in
+              print("No user session found. Please log in.");
+              }
+              }, // Open the dialog
               backgroundColor: Colors.indigo.shade100,
               child: Icon(
                 Icons.person_add,

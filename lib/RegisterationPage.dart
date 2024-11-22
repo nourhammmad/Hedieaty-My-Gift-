@@ -11,9 +11,11 @@ class RegistrationPage extends StatefulWidget {
 class _RegistrationPageState extends State<RegistrationPage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  final TextEditingController nameController = TextEditingController();
+  final TextEditingController firstnameController = TextEditingController();
+  final TextEditingController lastnameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController(); // Added phone controller
 
   late Databaseclass _dbHelper;
 
@@ -27,8 +29,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
   Future<void> _initializeDatabase() async {
     await _dbHelper.initialize();
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -72,11 +72,11 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 ),
               ),
               const SizedBox(height: 20),
-              // Name Field with Validator
+              // Name Fields
               TextFormField(
-                controller: nameController,
+                controller: firstnameController,
                 decoration: InputDecoration(
-                  labelText: 'Name',
+                  labelText: 'First Name',
                   prefixIcon: Icon(Icons.person, color: Colors.indigo.shade200),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(30.0),
@@ -85,13 +85,31 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 keyboardType: TextInputType.name,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Name is required';
+                    return 'First name is required';
                   }
-                  return null; // Validation passed
+                  return null;
                 },
               ),
               const SizedBox(height: 16),
-              // Email Field with Validator
+              TextFormField(
+                controller: lastnameController,
+                decoration: InputDecoration(
+                  labelText: 'Last Name',
+                  prefixIcon: Icon(Icons.person, color: Colors.indigo.shade200),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30.0),
+                  ),
+                ),
+                keyboardType: TextInputType.name,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Last name is required';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              // Email Field
               TextFormField(
                 controller: emailController,
                 decoration: InputDecoration(
@@ -106,11 +124,11 @@ class _RegistrationPageState extends State<RegistrationPage> {
                   if (value == null || value.isEmpty) {
                     return 'Email is required';
                   }
-                  return null; // Validation passed
+                  return null;
                 },
               ),
               const SizedBox(height: 16),
-              // Password Field with Validator
+              // Password Field
               TextFormField(
                 controller: passwordController,
                 decoration: InputDecoration(
@@ -125,26 +143,43 @@ class _RegistrationPageState extends State<RegistrationPage> {
                   if (value == null || value.isEmpty) {
                     return 'Password is required';
                   }
-                  return null; // Validation passed
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              // Phone Field (new)
+              TextFormField(
+                controller: phoneController,
+                decoration: InputDecoration(
+                  labelText: 'Phone Number',
+                  prefixIcon: Icon(Icons.phone, color: Colors.indigo.shade200),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30.0),
+                  ),
+                ),
+                keyboardType: TextInputType.phone,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Phone number is required';
+                  }
+                  return null;
                 },
               ),
               const SizedBox(height: 20),
               // Register Button
               ElevatedButton(
                 onPressed: () async {
-                  print('Register button pressed');  // Add this line for debugging
-
                   if (_formKey.currentState?.validate() ?? false) {
-                    // Proceed with registration functionality
-                    String name = nameController.text;
+                    String firstname = firstnameController.text;
+                    String lastname = lastnameController.text;
                     String email = emailController.text;
                     String password = passwordController.text;
+                    String phone = phoneController.text;
 
                     try {
-                      // Insert the user into the database
-                      int response = await _dbHelper.insertUser(name, email, password);
+                      int response = await _dbHelper.insertUser(
+                          firstname, lastname, email, password, phone);
                       if (response > 0) {
-                        // Success, show a success message
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text('User registered successfully'),
@@ -153,14 +188,14 @@ class _RegistrationPageState extends State<RegistrationPage> {
                         );
 
                         // Clear the form fields
-                        nameController.clear();
+                        firstnameController.clear();
+                        lastnameController.clear();
                         emailController.clear();
                         passwordController.clear();
+                        phoneController.clear();
 
-                        // Navigate to login page after registration
                         Navigator.pushNamed(context, '/Login');
                       } else {
-                        // Handle failure case
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text('Registration failed'),
@@ -169,8 +204,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
                         );
                       }
                     } catch (e) {
-                      // Handle any exception from database insert
-                      print("Error during registration: $e");
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('An error occurred: $e'),
@@ -197,10 +230,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              // Login Link
               GestureDetector(
                 onTap: () {
-                  // Navigate to Login Page
                   Navigator.pushNamed(context, '/Login');
                 },
                 child: Text(

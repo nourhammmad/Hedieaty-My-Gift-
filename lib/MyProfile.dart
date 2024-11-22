@@ -1,5 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'Database.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MyProfile extends StatefulWidget {
   const MyProfile({super.key});
@@ -13,9 +15,44 @@ class _MyProfileState extends State<MyProfile> {
   bool isLastNameEditable = false;
   bool notificationsEnabled = false; // State variable for the toggle button
 
-  // Sample values fetched from a database or user object
-  String firstName = 'Nour';
-  String lastName = 'Hammad';
+  String firstName = '';
+  String lastName = '';
+  late Databaseclass _dbHelper;
+
+  @override
+  void initState() {
+    super.initState();
+    _dbHelper = Databaseclass();  // Initialize _dbHelper here
+    _initializeDatabase();
+    _fetchUserDetails(); // Fetch user details when the profile screen loads
+  }
+
+  Future<void> _initializeDatabase() async {
+    await _dbHelper.initialize();
+  }
+
+  // Fetch user details based on the logged-in user
+  Future<void> _fetchUserDetails() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    int? userId = prefs.getInt('userId'); // Assuming you store the userId with this key
+
+    if (userId != null) {
+      // Query the database to fetch user details by userId
+      var result = await _dbHelper.readData(
+        'SELECT * FROM Users WHERE ID = ?',
+        [userId],
+      );
+
+      if (result.isNotEmpty) {
+        setState(() {
+          firstName = result[0]['FIRSTNAME'] as String; // Ensure the type is correct
+          lastName = result[0]['LASTNAME'] as String;   // Ensure the type is correct
+        });
+      } else {
+        print("User details not found");
+      }
+    }
+  }
 
   // Sample list of events with associated gifts (can be fetched from a database in real use case)
   final List<Map<String, String>> events = [
@@ -212,7 +249,8 @@ class _MyProfileState extends State<MyProfile> {
                                 shape: BoxShape.circle,
                                 image: DecorationImage(
                                   image: AssetImage(
-                                    event['imageLeft'] ?? 'assets/default_image.png',
+                                    event['imageLeft'] ??
+                                        'assets/default_image.png',
                                   ),
                                   fit: BoxFit.cover,
                                 ),
@@ -247,7 +285,8 @@ class _MyProfileState extends State<MyProfile> {
                                 shape: BoxShape.circle,
                                 image: DecorationImage(
                                   image: AssetImage(
-                                    event['imageRight'] ?? 'assets/default_image.png',
+                                    event['imageRight'] ??
+                                        'assets/default_image.png',
                                   ),
                                   fit: BoxFit.cover,
                                 ),
