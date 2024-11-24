@@ -1,20 +1,20 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 class UserSession {
-  static const String _userIdKey = 'userId'; // Store user ID or email
+  static const String _userIdKey = 'userId'; // Store user ID (String for Firebase UID)
   static const String _userNameKey = 'userName';
 
   // Save user info in shared preferences
-  static Future<void> saveUserSession(int userId, String userName) async {
+  static Future<void> saveUserSession(String userId, String userName) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setInt(_userIdKey, userId);
+    prefs.setString(_userIdKey, userId); // Store userId as String
     prefs.setString(_userNameKey, userName);
   }
 
   // Retrieve user ID from shared preferences
-  static Future<int?> getUserId() async {
+  static Future<String?> getUserId() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getInt(_userIdKey);
+    return prefs.getString(_userIdKey); // Retrieve as String
   }
 
   // Retrieve user name from shared preferences
