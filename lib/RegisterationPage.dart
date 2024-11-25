@@ -12,8 +12,7 @@ class RegistrationPage extends StatefulWidget {
 class _RegistrationPageState extends State<RegistrationPage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  final TextEditingController firstnameController = TextEditingController();
-  final TextEditingController lastnameController = TextEditingController();
+  final TextEditingController displayNameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
@@ -70,20 +69,11 @@ class _RegistrationPageState extends State<RegistrationPage> {
               const SizedBox(height: 20),
               // Form Fields
               _buildTextField(
-                controller: firstnameController,
+                controller: displayNameController,
                 label: 'First Name',
                 icon: Icons.person,
                 validator: (value) => value == null || value.isEmpty
                     ? 'First name is required'
-                    : null,
-              ),
-              const SizedBox(height: 16),
-              _buildTextField(
-                controller: lastnameController,
-                label: 'Last Name',
-                icon: Icons.person,
-                validator: (value) => value == null || value.isEmpty
-                    ? 'Last name is required'
                     : null,
               ),
               const SizedBox(height: 16),
@@ -183,14 +173,13 @@ class _RegistrationPageState extends State<RegistrationPage> {
 
   Future<void> _registerUser() async {
     if (_formKey.currentState?.validate() ?? false) {
-      String firstname = firstnameController.text;
-      String lastname = lastnameController.text;
+      String displayName = displayNameController.text;
       String email = emailController.text;
       String password = passwordController.text;
       String phone = phoneController.text;
 
       try {
-        User? user = await _firebaseDb.registerUser(firstname, lastname, email, password, phone);
+        User? user = await _firebaseDb.registerUser(displayName, email, password, phone);
         //print("======================================da el user id mn 3and el registeration $user");
 
         if (user != null) {

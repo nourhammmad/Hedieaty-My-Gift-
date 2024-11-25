@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'FirebaseDatabaseClass.dart';
 import 'UserSession.dart';
 import 'Database.dart';
 
@@ -13,10 +14,13 @@ class _HomePageState extends State<HomePage> {
   bool _isPressed = false; // Track the button state
   bool _isSearching = false; // Track the state of the search bar
   late Databaseclass _dbHelper;
+  //late FirebaseDatabaseClass _firebaseDb; // Use FirebaseDatabaseClass
+
   @override
   void initState() {
     super.initState();
     _dbHelper = Databaseclass();  // Initialize _dbHelper here
+    //_firebaseDb = FirebaseDatabaseClass();
     _initializeDatabase();
   }
 
@@ -267,7 +271,7 @@ class _HomePageState extends State<HomePage> {
               onTap: () async {
                 Navigator.pop(context); // Close the drawer
                 // Navigate to the logout page or handle the logout functionality
-                await UserSession.clearUserSession();
+                //await _firebaseDb.logout();
                 Navigator.pushNamed(context, '/Login'); // Example navigation
               },
             ),

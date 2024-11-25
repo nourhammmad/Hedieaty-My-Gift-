@@ -18,8 +18,7 @@ class FirebaseDatabaseClass {
 
   // Register a user
   Future<User?> registerUser(
-      String firstname,
-      String lastname,
+      String displayName,
       String email,
       String password,
       String phoneNumber,
@@ -40,8 +39,7 @@ class FirebaseDatabaseClass {
       if (user != null) {
         // Save user data to Firestore
         await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-          'firstname': firstname,
-          'lastname': lastname,
+          'displayName': displayName,
           'email': email,
           'phoneNumber': phoneNumber,
           'photoURL': null,
@@ -78,10 +76,10 @@ class FirebaseDatabaseClass {
 
       if (result.docs.isNotEmpty) {
         // Assuming user data is stored in Firestore correctly, extract necessary details
-        String userName = result.docs.first['firstname'];
+        String userName = result.docs.first['displayName'];
 
         // Save user session data (if applicable)
-        await UserSession.saveUserSession(result.docs.first.id, userName);
+        //await UserSession.saveUserSession(result.docs.first.id, userName);
         return true;
       }
     } catch (e) {
@@ -143,7 +141,14 @@ class FirebaseDatabaseClass {
       return [];
     }
   }
-
+  Future<void> logout() async {
+    try {
+      await FirebaseAuth.instance.signOut();
+      print("User logged out successfully.");
+    } catch (e) {
+      print("Error during logout: $e");
+    }
+  }
   // Remove a friend
   Future<void> removeFriend(String userId, String friendId) async {
     try {
@@ -160,4 +165,5 @@ class FirebaseDatabaseClass {
       print('Error removing friend: $e');
     }
   }
+
 }

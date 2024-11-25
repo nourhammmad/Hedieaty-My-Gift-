@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'Database.dart';
 import 'UserSession.dart';  // Import the UserSession class
@@ -67,32 +68,64 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _login() async {
     if (_formKey.currentState?.validate() ?? false) {
-      bool isValid = await _dbHelper.validateLogin(
-          emailController.text, passwordController.text);
+      // Step 1: Check the local database for the user
 
-      if (isValid) {
-        // Query the database to get user info after successful login
+      bool isLocalValid = await _dbHelper.validateLogin(
+        emailController.text,
+        passwordController.text,
+      );
+      //print("================================isLocalValid:$isLocalValid ");
+
+      if (isLocalValid) {
+        // Fetch user details from the local database
         var result = await _dbHelper.readData(
           "SELECT * FROM Users WHERE EMAIL = ? AND PASSWORD = ?",
-          [emailController.text, _dbHelper.hashPassword(passwordController.text)],
+          [emailController.text, passwordController.text],
         );
 
         if (result.isNotEmpty) {
-          // Get user data from the result
-          int userId = result[0]['ID'];
-          String userName = result[0]['FIRSTNAME'];
+          // Local user found
+          print("========================================found");
 
-          // Save the logged-in user's session
-          await UserSession.saveUserSession(userId, userName);
-
-          // Navigate to the main screen (or home page)
+          //await UserSession.saveUserSession(userId, userName);
+          final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+            email: emailController.text,
+            password: passwordController.text,
+          );
+          // Navigate to home page
           Navigator.pushReplacementNamed(context, '/');
-        } else {
-          // If user data is empty or not found
-          _showErrorDialog('User not found');
+          return; // Stop further processing
         }
-      } else {
-        _showErrorDialog('Invalid email or password');
+      }
+
+      // Step 2: If not found in the local database, validate with Firebase
+      try {
+        // Attempt Firebase authentication
+        final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: emailController.text,
+          password: passwordController.text,
+        );
+
+        User? firebaseUser = userCredential.user;
+
+        if (firebaseUser != null) {
+          // Firebase user found, sync with local database
+          await _dbHelper.insertOrUpdateUser({
+            'FIREBASE_ID': firebaseUser.uid, // Firebase UID as TEXT
+            'EMAIL': firebaseUser.email,
+            'displayName': firebaseUser.displayName,
+            'PASSWORD': passwordController.text,
+          });
+
+
+          //await UserSession.saveUserSession(firebaseUser.uid, firebaseUser.displayName);
+
+          // Navigate to home page
+          Navigator.pushReplacementNamed(context, '/');
+        }
+      } catch (e) {
+        // Handle Firebase errors (e.g., wrong credentials, user not found)
+        _showErrorDialog('Firebase Authentication Failed: $e');
       }
     }
   }
