@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -16,9 +17,21 @@ import 'LoginPage.dart';
 import 'RegisterationPage.dart';
 
 
-void main() async{
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+
+  // try {
+  //   // Test Firebase Auth
+  //   final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+  //     email: 'testuser@example.com',
+  //     password: 'password123',
+  //   );
+  //   print("User registered successfully with UID: ${credential.user?.uid}");
+  // } catch (e) {
+  //   print("Error during Firebase Authentication: $e");
+  // }
+
   runApp(const MyApp());
 }
 

@@ -1,5 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'Database.dart'; // Import your database class
+import 'FirebaseDatabaseClass.dart'; // Import your FirebaseDatabaseClass
 
 class RegistrationPage extends StatefulWidget {
   RegistrationPage({super.key});
@@ -15,19 +16,14 @@ class _RegistrationPageState extends State<RegistrationPage> {
   final TextEditingController lastnameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final TextEditingController phoneController = TextEditingController(); // Added phone controller
+  final TextEditingController phoneController = TextEditingController();
 
-  late Databaseclass _dbHelper;
+  late FirebaseDatabaseClass _firebaseDb; // Use FirebaseDatabaseClass
 
   @override
   void initState() {
     super.initState();
-    _dbHelper = Databaseclass();  // Initialize _dbHelper here
-    _initializeDatabase();
-  }
-
-  Future<void> _initializeDatabase() async {
-    await _dbHelper.initialize();
+    _firebaseDb = FirebaseDatabaseClass(); // Initialize FirebaseDatabaseClass
   }
 
   @override
@@ -72,147 +68,58 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 ),
               ),
               const SizedBox(height: 20),
-              // Name Fields
-              TextFormField(
+              // Form Fields
+              _buildTextField(
                 controller: firstnameController,
-                decoration: InputDecoration(
-                  labelText: 'First Name',
-                  prefixIcon: Icon(Icons.person, color: Colors.indigo.shade200),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30.0),
-                  ),
-                ),
-                keyboardType: TextInputType.name,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'First name is required';
-                  }
-                  return null;
-                },
+                label: 'First Name',
+                icon: Icons.person,
+                validator: (value) => value == null || value.isEmpty
+                    ? 'First name is required'
+                    : null,
               ),
               const SizedBox(height: 16),
-              TextFormField(
+              _buildTextField(
                 controller: lastnameController,
-                decoration: InputDecoration(
-                  labelText: 'Last Name',
-                  prefixIcon: Icon(Icons.person, color: Colors.indigo.shade200),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30.0),
-                  ),
-                ),
-                keyboardType: TextInputType.name,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Last name is required';
-                  }
-                  return null;
-                },
+                label: 'Last Name',
+                icon: Icons.person,
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Last name is required'
+                    : null,
               ),
               const SizedBox(height: 16),
-              // Email Field
-              TextFormField(
+              _buildTextField(
                 controller: emailController,
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email, color: Colors.indigo.shade200),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30.0),
-                  ),
-                ),
+                label: 'Email',
+                icon: Icons.email,
                 keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Email is required';
-                  }
-                  return null;
-                },
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Email is required'
+                    : null,
               ),
               const SizedBox(height: 16),
-              // Password Field
-              TextFormField(
+              _buildTextField(
                 controller: passwordController,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  prefixIcon: Icon(Icons.lock, color: Colors.indigo.shade200),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30.0),
-                  ),
-                ),
+                label: 'Password',
+                icon: Icons.lock,
                 obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Password is required';
-                  }
-                  return null;
-                },
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Password is required'
+                    : null,
               ),
               const SizedBox(height: 16),
-              // Phone Field (new)
-              TextFormField(
+              _buildTextField(
                 controller: phoneController,
-                decoration: InputDecoration(
-                  labelText: 'Phone Number',
-                  prefixIcon: Icon(Icons.phone, color: Colors.indigo.shade200),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30.0),
-                  ),
-                ),
+                label: 'Phone Number',
+                icon: Icons.phone,
                 keyboardType: TextInputType.phone,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Phone number is required';
-                  }
-                  return null;
-                },
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Phone number is required'
+                    : null,
               ),
               const SizedBox(height: 20),
               // Register Button
               ElevatedButton(
-                onPressed: () async {
-                  if (_formKey.currentState?.validate() ?? false) {
-                    String firstname = firstnameController.text;
-                    String lastname = lastnameController.text;
-                    String email = emailController.text;
-                    String password = passwordController.text;
-                    String phone = phoneController.text;
-
-                    try {
-                      int response = await _dbHelper.insertUser(
-                          firstname, lastname, email, password, phone);
-                      if (response > 0) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('User registered successfully'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-
-                        // Clear the form fields
-                        firstnameController.clear();
-                        lastnameController.clear();
-                        emailController.clear();
-                        passwordController.clear();
-                        phoneController.clear();
-
-                        Navigator.pushNamed(context, '/Login');
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Registration failed'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('An error occurred: $e'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  }
-                },
+                onPressed: _registerUser,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.indigo,
                   shape: RoundedRectangleBorder(
@@ -250,4 +157,67 @@ class _RegistrationPageState extends State<RegistrationPage> {
       ),
     );
   }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool obscureText = false,
+    TextInputType keyboardType = TextInputType.text,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, color: Colors.indigo.shade200),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30.0),
+        ),
+      ),
+      keyboardType: keyboardType,
+      obscureText: obscureText,
+      validator: validator,
+    );
+  }
+
+  Future<void> _registerUser() async {
+    if (_formKey.currentState?.validate() ?? false) {
+      String firstname = firstnameController.text;
+      String lastname = lastnameController.text;
+      String email = emailController.text;
+      String password = passwordController.text;
+      String phone = phoneController.text;
+
+      try {
+        User? user = await _firebaseDb.registerUser(firstname, lastname, email, password, phone);
+        //print("======================================da el user id mn 3and el registeration $user");
+
+        if (user != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('User registered successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pushNamed(context, '/Login');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Registration failed: User object is null'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('An error occurred: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
 }

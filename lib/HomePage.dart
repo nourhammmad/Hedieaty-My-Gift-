@@ -338,13 +338,13 @@ class _HomePageState extends State<HomePage> {
             right: 20,
             child: FloatingActionButton(
               onPressed: () async {
-              int? currentUserId = await UserSession.getUserId();
-              if (currentUserId != null) {
-              _showAddFriendDialog(currentUserId); // Pass the user ID to the dialog
-              } else {
-              // Handle the case where the user is not logged in
-              print("No user session found. Please log in.");
-              }
+                String? currentUserId = await UserSession.getUserId();
+                if (currentUserId != null) {
+                  _showAddFriendDialog(int.parse(currentUserId)); // Convert to int only when necessary
+                } else {
+                  print("No user session found. Please log in.");
+                }
+
               }, // Open the dialog
               backgroundColor: Colors.indigo.shade100,
               child: Icon(
