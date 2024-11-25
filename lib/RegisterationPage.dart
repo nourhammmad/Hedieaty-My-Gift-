@@ -70,7 +70,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
               // Form Fields
               _buildTextField(
                 controller: displayNameController,
-                label: 'First Name',
+                label: 'Name',
                 icon: Icons.person,
                 validator: (value) => value == null || value.isEmpty
                     ? 'First name is required'

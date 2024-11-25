@@ -16,7 +16,6 @@ class FirebaseDatabaseClass {
     return hashed.toString(); // Return the hash as a string
   }
 
-  // Register a user
   Future<User?> registerUser(
       String displayName,
       String email,
@@ -37,6 +36,13 @@ class FirebaseDatabaseClass {
       User? user = credential.user;
 
       if (user != null) {
+        // Update the user's displayName in Firebase Authentication
+        await user.updateProfile(displayName: displayName).then((_) {
+          print("User's displayName updated in Firebase Authentication.");
+        }).catchError((e) {
+          print("Error updating displayName: $e");
+        });
+
         // Save user data to Firestore
         await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
           'displayName': displayName,
@@ -61,32 +67,6 @@ class FirebaseDatabaseClass {
     return null; // Return null if registration fails
   }
 
-  // Login the user
-  Future<bool> validateLogin(String email, String password) async {
-    try {
-      // Hash the entered password
-      String hashedPassword = hashPassword(password);
-
-      // Query Firestore to find the user with matching email and password hash
-      var result = await _firestore
-          .collection('users')  // Ensure the correct collection name is used here ('users')
-          .where('email', isEqualTo: email)  // Match email
-          .where('password', isEqualTo: hashedPassword)  // Match hashed password
-          .get();
-
-      if (result.docs.isNotEmpty) {
-        // Assuming user data is stored in Firestore correctly, extract necessary details
-        String userName = result.docs.first['displayName'];
-
-        // Save user session data (if applicable)
-        //await UserSession.saveUserSession(result.docs.first.id, userName);
-        return true;
-      }
-    } catch (e) {
-      print('Login error: $e');
-    }
-    return false;
-  }
 
   // Add a friend by phone number
   Future<void> addFriendByPhoneNumber(String userId, String friendPhoneNumber) async {
@@ -163,6 +143,19 @@ class FirebaseDatabaseClass {
       }
     } catch (e) {
       print('Error removing friend: $e');
+    }
+  }
+  Future<String?> getFirebaseDisplayName() async {
+    // Get the current user from FirebaseAuth
+    User? user = FirebaseAuth.instance.currentUser;
+
+    if (user != null) {
+      // If a user is logged in, return the displayName
+      print("$user.displayName");
+      return user.displayName;
+    } else {
+      // If no user is logged in, return null
+      return null;
     }
   }
 
