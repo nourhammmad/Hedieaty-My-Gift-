@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class EventsListPage extends StatefulWidget {
@@ -8,34 +10,42 @@ class EventsListPage extends StatefulWidget {
 }
 
 class _EventsListPageState extends State<EventsListPage> {
-  List<Map<String, String?>> events = [
-    {
-      'name': 'Birthday Party',
-      'category': 'Celebration',
-      'status': 'Upcoming',
-      'image': 'asset/BD.jpg',
-    },
-    {
-      'name': 'Wedding Anniversary',
-      'category': 'Celebration',
-      'status': 'Upcoming',
-      'image': 'asset/WA.jpg',
-    },
-    {
-      'name': 'Graduation Party',
-      'category': 'Celebration',
-      'status': 'Past',
-      'image': 'asset/GA.jpg',
-    },
-    {
-      'name': 'New Year’s Eve Celebration',
-      'category': 'Celebration',
-      'status': 'Upcoming',
-      'image': 'asset/NY.jpg',
-    },
-  ];
+  // List to store events fetched from Firestore
+  List<Map<String, dynamic>> events = [];
 
+  // Sorting criteria
   String sortCriteria = 'Name';
+
+  // Function to fetch events from Firestore
+  Future<void> _loadEvents() async {
+    try {
+      final FirebaseAuth _auth = FirebaseAuth.instance;  // Initialize Firebase Auth
+      final FirebaseFirestore _firestore = FirebaseFirestore.instance;  // Initialize Firestore
+
+      User? user = _auth.currentUser;
+      if (user != null) {
+        String userId = user.uid;
+        // Reference to the user's events collection
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
+
+        if (userDoc.exists) {
+          // Fetch the events list
+          List<dynamic> eventsList = userDoc['events_list'] ?? [];
+          setState(() {
+            events = eventsList.map((event) => {
+              'name': event['title'],
+              'category': event['type'], // Corresponding to the 'type' field
+              'status': event['status'],
+              'eventId': event['eventId'],
+              'image': event['image'] ?? '', // Default image if not provided
+            }).toList();
+          });
+        }
+      }
+    } catch (e) {
+      print("Error loading events: $e");
+    }
+  }
 
   // Function to show a confirmation dialog before deleting an event
   void _showDeleteConfirmationDialog(int index) {
@@ -66,11 +76,55 @@ class _EventsListPageState extends State<EventsListPage> {
   }
 
   // Function to delete an event
-  void _deleteEvent(int index) {
-    setState(() {
-      events.removeAt(index);
-    });
+  void _deleteEvent(int index) async {
+    final FirebaseAuth _auth = FirebaseAuth.instance;
+    final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+    User? user = _auth.currentUser;
+    if (user != null) {
+      try {
+        String userId = user.uid;
+
+        // Get the event data
+        final event = events[index];
+        String eventId = event['eventId']; // The unique eventId
+
+        // Reference to the user's document in Firestore
+        DocumentReference userDocRef = _firestore.collection('users').doc(userId);
+
+        // Debugging: Print out event and userId to confirm
+        print("Attempting to delete event with ID: $eventId");
+
+        // Delete the event from the events_list in Firestore
+        await userDocRef.update({
+          'events_list': FieldValue.arrayRemove([
+            {
+              'description': event['description'],
+              'eventId': eventId,
+              'status': event['status'],
+              'title': event['name'],
+              'type': event['category'],
+            }
+          ]),
+        }).then((_) {
+          print("Event deleted successfully from Firestore.");
+        }).catchError((error) {
+          print("Error deleting event from Firestore: $error");
+        });
+
+        // Remove the event from the UI (locally)
+        setState(() {
+          events.removeAt(index); // Update the UI to reflect the deletion
+        });
+
+      } catch (e) {
+        print("Error deleting event: $e");
+      }
+    } else {
+      print("No user is currently logged in.");
+    }
   }
+
 
   // Function to sort events
   void _sortEvents() {
@@ -85,6 +139,12 @@ class _EventsListPageState extends State<EventsListPage> {
         events.sort((a, b) => (a['status'] ?? '').compareTo(b['status'] ?? ''));
         break;
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEvents(); // Load events when the page is first initialized
   }
 
   @override
@@ -167,9 +227,7 @@ class _EventsListPageState extends State<EventsListPage> {
                           decoration: BoxDecoration(
                             borderRadius: const BorderRadius.vertical(top: Radius.circular(15.0)),
                             image: DecorationImage(
-                              image: event['image'] != null && event['image']!.isNotEmpty
-                                  ? AssetImage(event['image']!)
-                                  : const AssetImage('asset/placeholder.png'),
+                              image: AssetImage(event['image']!),
                               fit: BoxFit.cover,
                             ),
                           ),

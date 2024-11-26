@@ -237,6 +237,9 @@ class _HomePageState extends State<HomePage> {
         }
 
         print("Friend added successfully!");
+
+        // After adding the friend, reload the friends list
+        _loadFriendsList();  // Call _loadFriendsList() to refresh the UI
       } else {
         print("No user found with this phone number.");
         ScaffoldMessenger.of(context).showSnackBar(
@@ -512,6 +515,7 @@ class _HomePageState extends State<HomePage> {
             right: 20,
             child: FloatingActionButton(
               onPressed: () async {
+
                 User? currentUser = FirebaseAuth.instance.currentUser;
                 if (currentUser != null) {
                   String currentUserId = currentUser.uid;

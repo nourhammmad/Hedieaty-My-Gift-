@@ -25,44 +25,43 @@ class _AddEventState extends State<AddEvent> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // Function to add an event to Firestore
-  void _addEvent() async {
-    // Get the current user ID
-    User? user = _auth.currentUser;
-    if (user != null) {
-      String userId = user.uid;
+    void _addEvent() async {
+      User? user = _auth.currentUser;
+      if (user != null) {
+        String userId = user.uid;
+        String title = titleController.text;
+        String description = descriptionController.text;
 
-      // Collect data from the text controllers and dropdowns
-      String title = titleController.text;
-      String description = descriptionController.text;
+        // Generate a unique event ID using Firestore document ID
+        String eventId = _firestore.collection('users').doc().id;
 
-      // Prepare event data
-      Map<String, dynamic> eventData = {
-        'title': title,
-        'description': description,
-        'status': eventStatus,
-        'type': eventType,
-        'createdAt': Timestamp.now(), // Add a timestamp
-      };
+        // Prepare event data
+        Map<String, dynamic> eventData = {
+          'eventId': eventId, // Unique ID for event
+          'title': title,
+          'description': description,
+          'status': eventStatus,
+          'type': eventType,
+        };
 
-      try {
-        // Reference to the user's events collection (document is the userId)
-        CollectionReference eventsRef = _firestore.collection('users');
+        try {
+          // Reference to the user's events collection (document is the userId)
+          CollectionReference eventsRef = _firestore.collection('users');
 
-        // Update the events array field in the user's document
-        await eventsRef.doc(userId).update({
-          'events_list': FieldValue.arrayUnion([eventData]), // Add the event to the events array
-        });
+          // Update the events array field in the user's document
+          await eventsRef.doc(userId).update({
+            'events_list': FieldValue.arrayUnion([eventData]), // Add event to the list
+          });
 
-        // Optionally, show a success message
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Event added successfully!')));
-      } catch (e) {
-        // Handle errors
-        print("Error adding event: $e");
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('An error occurred while adding the event.')));
+          // Show success message
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Event added successfully!')));
+        } catch (e) {
+          // Handle errors
+          print("Error adding event: $e");
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('An error occurred while adding the event.')));
+        }
       }
     }
-  }
-
 
   @override
   Widget build(BuildContext context) {

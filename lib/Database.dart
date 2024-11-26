@@ -51,6 +51,19 @@ class Databaseclass {
     FOREIGN KEY (FRIEND_FIREBASE_ID) REFERENCES Users(FIREBASE_ID)
   )
       ''');
+      await db.execute('''
+  CREATE TABLE Events (
+    ID INTEGER PRIMARY KEY AUTOINCREMENT,          -- Unique event identifier
+    USER_FIREBASE_ID TEXT NOT NULL,                -- Reference to the user's Firebase ID who created the event
+    TITLE TEXT NOT NULL,                           -- Event title
+    DESCRIPTION TEXT,                              -- Event description
+    STATUS TEXT NOT NULL,                          -- Event status (e.g., 'active', 'completed', etc.)
+    TYPE TEXT NOT NULL,                            -- Event type (e.g., 'meeting', 'celebration', etc.)
+    CREATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Event creation timestamp (defaults to current time)
+    UPDATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Event last update timestamp
+    FOREIGN KEY (USER_FIREBASE_ID) REFERENCES Users(FIREBASE_ID) -- Foreign key to Users table
+  )
+''');
     });
     return mydb;
   }
