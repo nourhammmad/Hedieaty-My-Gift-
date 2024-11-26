@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -11,10 +13,56 @@ class AddEvent extends StatefulWidget {
 class _AddEventState extends State<AddEvent> {
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
-  final TextEditingController statusController = TextEditingController();
 
-  bool isPledged = false; // Track whether the gift is pledged
-  bool imageExists = false; // Track if the image exists (set to false if no image is found)
+  bool isPledged = false;
+  bool imageExists = false;
+
+  String eventStatus = 'Upcoming';
+  String eventType = 'Birthday';
+
+  // Add the Firestore instance
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  // Function to add an event to Firestore
+  void _addEvent() async {
+    // Get the current user ID
+    User? user = _auth.currentUser;
+    if (user != null) {
+      String userId = user.uid;
+
+      // Collect data from the text controllers and dropdowns
+      String title = titleController.text;
+      String description = descriptionController.text;
+
+      // Prepare event data
+      Map<String, dynamic> eventData = {
+        'title': title,
+        'description': description,
+        'status': eventStatus,
+        'type': eventType,
+        'createdAt': Timestamp.now(), // Add a timestamp
+      };
+
+      try {
+        // Reference to the user's events collection (document is the userId)
+        CollectionReference eventsRef = _firestore.collection('users');
+
+        // Update the events array field in the user's document
+        await eventsRef.doc(userId).update({
+          'events_list': FieldValue.arrayUnion([eventData]), // Add the event to the events array
+        });
+
+        // Optionally, show a success message
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Event added successfully!')));
+      } catch (e) {
+        // Handle errors
+        print("Error adding event: $e");
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('An error occurred while adding the event.')));
+      }
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +91,7 @@ class _AddEventState extends State<AddEvent> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Stack for profile image and plus icon
+            // Profile image and plus icon
             Center(
               child: Stack(
                 alignment: Alignment.bottomRight,
@@ -51,7 +99,7 @@ class _AddEventState extends State<AddEvent> {
                   ClipOval(
                     child: imageExists
                         ? Image.asset(
-                      'asset/BDa.jpg', // Placeholder image
+                      '', // Placeholder image
                       width: 220,
                       height: 220,
                       fit: BoxFit.cover,
@@ -59,10 +107,9 @@ class _AddEventState extends State<AddEvent> {
                         : Container(
                       width: 220,
                       height: 220,
-                      color: Colors.grey[200], // Background color for no image
+                      color: Colors.grey[200], // Background for no image
                       child: const Center(
-                        child:Icon(Icons.image_sharp,size:100)
-                      ),
+                          child: Icon(Icons.person, size: 100, color: Colors.white)),
                     ),
                   ),
                   Container(
@@ -78,7 +125,7 @@ class _AddEventState extends State<AddEvent> {
                         size: 28,
                       ),
                       onPressed: () {
-                        // Add functionality for the button if needed
+                        // Add image upload logic if needed
                       },
                     ),
                   ),
@@ -87,7 +134,7 @@ class _AddEventState extends State<AddEvent> {
             ),
             const SizedBox(height: 20),
 
-            // Gift Name Field
+            // Event Name Field
             _buildTextField(
               controller: titleController,
               label: 'Event Name',
@@ -102,29 +149,48 @@ class _AddEventState extends State<AddEvent> {
             ),
             const SizedBox(height: 10),
 
-            _buildTextField(
-              controller: statusController,
-              label: 'Status',
-              maxLines: 3,
+            // Event Status Dropdown
+            DropdownButton<String>(
+              value: eventStatus,
+              onChanged: (String? newValue) {
+                setState(() {
+                  eventStatus = newValue!;
+                });
+              },
+              items: <String>['Past', 'Upcoming']
+                  .map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(value: value, child: Text(value));
+              }).toList(),
+              hint: Text('Select Status'),
             ),
+            const SizedBox(height: 10),
 
+            // Event Type Dropdown
+            DropdownButton<String>(
+              value: eventType,
+              onChanged: (String? newValue) {
+                setState(() {
+                  eventType = newValue!;
+                });
+              },
+              items: <String>['Birthday', 'Wedding Anniversary', 'Graduation']
+                  .map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(value: value, child: Text(value));
+              }).toList(),
+              hint: Text('Select Event Type'),
+            ),
             const SizedBox(height: 10),
 
             // Submit Button
-            Container(
-              child: ElevatedButton(
-                onPressed: isPledged ? null : () {
-                  // Handle the submission logic here
-                  String title = titleController.text;
-                  String description = descriptionController.text;
-                  String status = statusController.text;
-
-                  // Implement your save logic here
-                },
-                child: const Text(
-                  'Add Event ',
-                  style: TextStyle(fontSize: 30, fontFamily: "Lobster", color: Colors.indigo),
-                ),
+            ElevatedButton(
+              onPressed: isPledged
+                  ? null
+                  : () {
+                _addEvent(); // Add event to Firestore
+              },
+              child: const Text(
+                'Add Event',
+                style: TextStyle(fontSize: 30, fontFamily: "Lobster", color: Colors.indigo),
               ),
             ),
           ],
@@ -138,30 +204,30 @@ class _AddEventState extends State<AddEvent> {
     required String label,
     int maxLines = 1,
     String? prefixText,
-    bool enabled = true, // Added parameter to enable/disable
+    bool enabled = true,
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white, // White background
-        borderRadius: BorderRadius.circular(30.0), // Curved corners
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.5), // Shadow color
+            color: Colors.grey.withOpacity(0.5),
             spreadRadius: 2,
             blurRadius: 5,
-            offset: const Offset(0, 3), // Position of the shadow
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: TextField(
         controller: controller,
         maxLines: maxLines,
-        enabled: enabled, // Set enabled state
+        enabled: enabled,
         decoration: InputDecoration(
           labelText: label,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30.0), // Curved corners
-            borderSide: BorderSide.none, // Remove border lines
+            borderRadius: BorderRadius.circular(30.0),
+            borderSide: BorderSide.none,
           ),
           prefixText: prefixText,
         ),

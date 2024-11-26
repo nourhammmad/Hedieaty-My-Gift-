@@ -1,8 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'FirebaseDatabaseClass.dart';
-import 'UserSession.dart';
 import 'Database.dart';
 
 class HomePage extends StatefulWidget {
@@ -113,9 +111,9 @@ class _HomePageState extends State<HomePage> {
 
                       _addFriendToFirestore(currentUserId, phoneNumber);
                       Navigator.pop(context);  // Close the dialog
-
                       // Show success Snackbar
                       ScaffoldMessenger.of(context).showSnackBar(
+
                         SnackBar(content: Text("Friend added successfully!")),
                       );
                     }
@@ -495,7 +493,7 @@ class _HomePageState extends State<HomePage> {
                           title: Text(displayName,style: const TextStyle(fontFamily: "Lobster",fontSize: 30,
                             fontWeight: FontWeight.bold,),),
                           subtitle: Text(phoneNumber,style: const TextStyle(fontFamily: "Lobster",fontSize: 20,
-                            ),),
+                          ),),
                           onTap: () {
                             Navigator.pushNamed(context, '/FriendsGiftList');
                           },
