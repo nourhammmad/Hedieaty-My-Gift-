@@ -189,7 +189,19 @@ bool WhichText(status){
         giftsList[giftIndex]['status'] = 'Pledged';
         eventsList[eventIndex]['gifts'] = giftsList;
 
-        transaction.update(userDocRef, {'events_list': eventsList});
+        // Add the pledged gift to the pledged_gifts list in the friend's document
+        final pledgedGiftsList = List<Map<String, dynamic>>.from(userDocSnapshot.data()?['pledged_gifts'] ?? []);
+        pledgedGiftsList.add({
+          'pledgerId': pledgerId,
+          'eventId': eventId,
+          'giftId': giftId,
+        });
+
+        // Update the friend's document
+        transaction.update(userDocRef, {
+          'events_list': eventsList,
+          'pledged_gifts': pledgedGiftsList,
+        });
       });
 
       // Update the local state for the UI
@@ -206,6 +218,7 @@ bool WhichText(status){
       print("Error pledging gift: $e");
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
