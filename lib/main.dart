@@ -59,7 +59,7 @@ class MyApp extends StatelessWidget {
         '/AddEvent':(context)=>AddEvent(),
         '/GiftOrEvent':(context)=>GiftOrEvent(),
         '/AddGift':(context)=>AddGift(),
-        '/FriendsGiftList':(context)=>FriendsGiftList(),
+        '/FriendsGiftList':(context)=>FriendsGiftList(userId: '', userName: '',),
         '/Login':(context)=>LoginPage(),
         '/RegisterationPage':(context)=>RegistrationPage(),
 

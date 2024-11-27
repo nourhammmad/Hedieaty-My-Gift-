@@ -1,44 +1,88 @@
+import 'dart:ffi';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class FriendsGiftList extends StatefulWidget {
-  const FriendsGiftList({super.key});
+  final String userId;
+  final String userName;
+
+  const FriendsGiftList({Key? key, required this.userId, required this.userName}) : super(key: key);
 
   @override
   State<FriendsGiftList> createState() => _FriendsGiftListState();
 }
 
 class _FriendsGiftListState extends State<FriendsGiftList> {
-  List<Map<String, dynamic>> gifts = [
-    {
-      'name': 'Gift A',
-      'category': 'Toys',
-      'status': 'Available',
-      'image': 'asset/teddy.jpg',
-      'pledged': false,
-    },
-    {
-      'name': 'Gift B',
-      'category': 'Books',
-      'status': 'Pledged',
-      'image': 'asset/books.jpg',
-      'pledged': true,
-    },
-    {
-      'name': 'Gift C',
-      'category': 'Clothing',
-      'status': 'Available',
-      'image': 'asset/dress.jpg',
-      'pledged': false,
-    },
-    {
-      'name': 'Gift D',
-      'category': 'Electronics',
-      'status': 'Available',
-      'image': 'asset/elect.jpg',
-      'pledged': false,
-    },
-  ];
+  late String userId;
+  late String userName;
+
+  List<Map<String, dynamic>> gifts = [];
+  bool isLoading = true; // To show a loading indicator
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Delay context-dependent code using WidgetsBinding
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final arguments = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+
+      if (arguments != null) {
+        setState(() {
+          userId = arguments['friendId']; // Get userId (friendId)
+          userName = arguments['friendName']; // Get userName (friendName)
+        });
+
+        // Fetch the gifts only after userId and userName are set
+        _loadGifts();
+      } else {
+        print('Error: No arguments provided.');
+      }
+    });
+  }
+
+  Future<void> _loadGifts() async {
+    try {
+      // Use the userId passed from the other page (no need to fetch it from FirebaseAuth)
+      if (userId.isEmpty) return;
+
+      // Get the user's document
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      if (userDoc.exists) {
+        final eventsList = userDoc.data()?['events_list'] as List<dynamic>?;
+
+        if (eventsList != null) {
+          setState(() {
+            gifts = [];
+            // Iterate through the events and collect all gifts
+            for (var event in eventsList) {
+              if (event['gifts'] != null) {
+                gifts.addAll(List<Map<String, dynamic>>.from(event['gifts']));
+              }
+            }
+            // Set loading to false once gifts are loaded (even if empty)
+            isLoading = false;
+          });
+
+          // Print the gifts list to the console
+          print('Loaded gifts: $gifts');
+        } else {
+          // Set loading to false if no eventsList is found
+          setState(() {
+            isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading gifts: $e');
+      setState(() {
+        isLoading = false; // Ensure loading is stopped in case of error
+      });
+    }
+  }
 
   String sortCriteria = 'Name';
 
@@ -56,16 +100,31 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
     }
   }
 
-  Color _getCardColor(bool isPledged, String status) {
-    if (isPledged) {
-      return Colors.green.shade100;
-    } else if (status == 'Available') {
-      return Colors.green.shade100;
+  Color _getCardColor(String status) {
+    if (status == 'Pledged') {
+
+      return Colors.red.shade100; // Color for pledged gifts
     } else {
-      return Colors.red.shade100;
+      return Colors.green.shade100; // Color for available gifts
     }
   }
+  Color _getButtonColor(String status) {
+    if (status == 'Pledged') {
 
+      return Colors.grey; // Color for pledged gifts
+    } else {
+      return Colors.indigo; // Color for available gifts
+    }
+  }
+bool WhichText(status){
+
+  if (status == 'Pledged') {
+
+    return true; // Color for pledged gifts
+  } else {
+    return false; // Color for available gifts
+  }
+}
   void _pledgeGift(int index) {
     if (!gifts[index]['pledged']) {
       setState(() {
@@ -77,17 +136,17 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
 
   @override
   Widget build(BuildContext context) {
-    _sortGifts();
+    _sortGifts(); // Sort gifts before building the UI
 
     return Scaffold(
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Colors.indigo),
         backgroundColor: Colors.indigo.shade50,
-        title: const Row(
+        title: Row(
           children: [
             Text(
-              "Hedieaty",
-              style: TextStyle(
+              userName,
+              style: const TextStyle(
                 fontSize: 40,
                 fontFamily: "Lobster",
                 fontWeight: FontWeight.bold,
@@ -97,7 +156,7 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
             Icon(Icons.card_giftcard, color: Colors.indigo, size: 25),
           ],
         ),
-        titleSpacing: 69.0,
+        titleSpacing: 50.0,
         toolbarHeight: 70,
       ),
       body: Padding(
@@ -117,8 +176,10 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
               ],
             ),
             const SizedBox(height: 10),
-            gifts.isEmpty
-                ? const Center(child: Text('No gifts available.'))
+            isLoading
+                ? const Center(child: CircularProgressIndicator()) // Show loading indicator
+                : gifts.isEmpty
+                ? const Center(child: Text('No gifts available.')) // Show no gifts message
                 : Expanded(
               child: ListView.builder(
                 itemCount: gifts.length,
@@ -132,7 +193,7 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
                     ),
                     elevation: 4.0,
                     margin: const EdgeInsets.symmetric(vertical: 10.0),
-                    color: _getCardColor(isPledged, status),
+                    color: _getCardColor(status), // Use the updated color logic
                     child: Column(
                       children: [
                         Container(
@@ -140,18 +201,30 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
                           decoration: BoxDecoration(
                             borderRadius: const BorderRadius.vertical(top: Radius.circular(15.0)),
                             image: DecorationImage(
-                              image: AssetImage(gift['image'] ?? 'asset/placeholder.png'),
+                              image: gift['image'] != null && gift['image'].isNotEmpty
+                                  ? AssetImage(gift['image'])
+                                  : AssetImage('asset/placeholder.png'),
                               fit: BoxFit.cover,
                             ),
                           ),
+                          child: gift['image'] == null || gift['image'].isEmpty
+                              ? Center(
+                            child: Icon(
+                              Icons.image_not_supported,
+                              color: Colors.red, // You can customize the icon color
+                              size: 100, // Customize the icon size
+                            ),
+                          )
+                              : null, // No icon if an image is available
                         ),
+
                         Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                gift['name'] ?? 'Unnamed Gift',
+                                gift['title'] ?? 'Unnamed Gift',
                                 style: const TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
@@ -170,17 +243,17 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
                             ],
                           ),
                         ),
-                        // Pledge button
                         Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: isPledged ? Colors.grey : Colors.indigo,
+                              backgroundColor: _getButtonColor(status),
                             ),
                             onPressed: isPledged ? null : () => _pledgeGift(index),
-                            child: Text(isPledged ? 'Already Pledged' :
-                            'Pledge Gift',style: TextStyle(color: Colors.indigo.shade50,fontFamily:
-                            "Lobster",fontSize: 30),),
+                            child: Text(
+                              WhichText(status) ? 'Already Pledged' : 'Pledge Gift',
+                              style: TextStyle(color: Colors.indigo.shade50, fontFamily: "Lobster", fontSize: 30),
+                            ),
                           ),
                         ),
                       ],

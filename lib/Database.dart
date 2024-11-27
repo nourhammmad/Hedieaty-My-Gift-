@@ -53,17 +53,16 @@ class Databaseclass {
       ''');
       await db.execute('''
   CREATE TABLE Events (
-    ID INTEGER PRIMARY KEY AUTOINCREMENT,          -- Unique event identifier
-    USER_FIREBASE_ID TEXT NOT NULL,                -- Reference to the user's Firebase ID who created the event
-    TITLE TEXT NOT NULL,                           -- Event title
-    DESCRIPTION TEXT,                              -- Event description
-    STATUS TEXT NOT NULL,                          -- Event status (e.g., 'active', 'completed', etc.)
-    TYPE TEXT NOT NULL,                            -- Event type (e.g., 'meeting', 'celebration', etc.)
-    CREATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Event creation timestamp (defaults to current time)
-    UPDATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Event last update timestamp
-    FOREIGN KEY (USER_FIREBASE_ID) REFERENCES Users(FIREBASE_ID) -- Foreign key to Users table
+    ID INTEGER PRIMARY KEY AUTOINCREMENT,
+    eventId TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    category TEXT NOT NULL,
+    status TEXT NOT NULL,
+    userId TEXT NOT NULL,
+    FOREIGN KEY (userId) REFERENCES Users(FIREBASE_ID) ON DELETE CASCADE
   )
 ''');
+
     });
     return mydb;
   }

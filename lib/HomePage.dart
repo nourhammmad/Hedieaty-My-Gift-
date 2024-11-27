@@ -42,6 +42,7 @@ class _HomePageState extends State<HomePage> {
             friends.add({
               'displayName': doc['displayName'], // Adjust based on your document structure
               'phoneNumber': doc['phoneNumber'],
+              'friendId': friendId, // Include the friendId
             });
           }
         }));
@@ -498,7 +499,13 @@ class _HomePageState extends State<HomePage> {
                           subtitle: Text(phoneNumber,style: const TextStyle(fontFamily: "Lobster",fontSize: 20,
                           ),),
                           onTap: () {
-                            Navigator.pushNamed(context, '/FriendsGiftList');
+                            var x=friends[index]['displayName'];
+                            print("=========================$x");
+                            Navigator.pushNamed(context, '/FriendsGiftList', arguments: {
+                              'friendId': friends[index]['friendId'],
+                              'friendName': friends[index]['displayName'],
+                            });
+
                           },
                         ),
                       ),

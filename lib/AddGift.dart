@@ -1,5 +1,6 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class AddGift extends StatefulWidget {
   const AddGift({super.key});
@@ -11,10 +12,91 @@ class AddGift extends StatefulWidget {
 class _AddGiftState extends State<AddGift> {
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
-  final TextEditingController statusController = TextEditingController();
+  final TextEditingController categoryController = TextEditingController();
+  final TextEditingController priceController = TextEditingController();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  bool isPledged = false; // Track whether the gift is pledged
-  bool imageExists = false; // Track if the image exists (set to false if no image is found)
+  String? selectedStatus;
+  String? selectedEventId;
+  List<Map<String, dynamic>> events = [];
+  bool imageExists = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchEvents();
+  }
+
+  Future<void> _fetchEvents() async {
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return;
+
+      DocumentSnapshot userDoc =
+      await _firestore.collection('users').doc(userId).get();
+
+      List<dynamic> eventsList = userDoc['events_list'] ?? [];
+      setState(() {
+        events = eventsList.cast<Map<String, dynamic>>();
+      });
+    } catch (e) {
+      print('Error fetching events: $e');
+    }
+  }
+
+  Future<void> _addGift() async {
+    try {
+      if (selectedEventId == null || selectedStatus == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please fill all required fields!')),
+        );
+        return;
+      }
+
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return;
+
+      String title = titleController.text;
+      String description = descriptionController.text;
+      String category = categoryController.text;
+      String price = priceController.text;
+
+      Map<String, dynamic> giftData = {
+        'title': title,
+        'description': description,
+        'status': selectedStatus,
+        'category': category,
+        'price': price,
+        'eventId': selectedEventId,
+      };
+
+      for (var event in events) {
+        if (event['eventId'] == selectedEventId) {
+          if (event['gifts'] == null) {
+            event['gifts'] = [];
+          }
+          event['gifts'].add(giftData);
+          break;
+        }
+      }
+
+      CollectionReference usersRef = _firestore.collection('users');
+      await usersRef.doc(userId).update({
+        'events_list': events,
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Gift added successfully!')),
+      );
+
+      Navigator.pop(context);
+    } catch (e) {
+      print('Error adding gift: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error adding gift.')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,58 +125,65 @@ class _AddGiftState extends State<AddGift> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Stack for profile image and plus icon
             Center(
               child: Stack(
                 alignment: Alignment.bottomRight,
                 children: [
                   ClipOval(
+
                     child: imageExists
                         ? Image.asset(
-                      'asset/BDa.jpg', // Placeholder image
-                      width: 220,
-                      height: 220,
+                      'asset/placeholder.jpg',
+                      width: 120,
+                      height: 120,
                       fit: BoxFit.cover,
                     )
                         : Container(
-                      width: 220,
-                      height: 220,
-                      color: Colors.grey[200], // Background color for no image
-                      child: const Center(
-                          child:Icon(Icons.image_sharp,size:100)
+                      width: 120,
+                      height: 120,
+                      color: Colors.grey[200],
+                      child: const Icon(
+                        Icons.image,
+                        size: 90,
+                        color: Colors.indigo,
                       ),
                     ),
                   ),
-                  Container(
-                    margin: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.indigo,
-                    ),
-                    child: IconButton(
-                      icon: const Icon(
-                        Icons.add,
-                        color: Colors.white,
-                        size: 28,
-                      ),
-                      onPressed: () {
-                        // Add functionality for the button if needed
-                      },
-                    ),
+                  FloatingActionButton(
+                    mini: true,
+                    onPressed: () {
+                      // Add image selection functionality
+                    },
+                    child: const Icon(Icons.add),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 20),
 
-            // Gift Name Field
+            DropdownButtonFormField<String>(
+              value: selectedEventId,
+              hint: const Text('Select Event'),
+              items: events.map((event) {
+                return DropdownMenuItem<String>(
+                  value: event['eventId'],
+                  child: Text(event['title']),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() {
+                  selectedEventId = value;
+                });
+              },
+            ),
+            const SizedBox(height: 20),
+
             _buildTextField(
               controller: titleController,
               label: 'Gift Name',
             ),
             const SizedBox(height: 10),
 
-            // Description Field
             _buildTextField(
               controller: descriptionController,
               label: 'Description',
@@ -102,29 +191,40 @@ class _AddGiftState extends State<AddGift> {
             ),
             const SizedBox(height: 10),
 
-            _buildTextField(
-              controller: statusController,
-              label: 'Status',
-              maxLines: 3,
+            DropdownButtonFormField<String>(
+              value: selectedStatus,
+              hint: const Text('Select Status'),
+              items: const [
+                DropdownMenuItem(value: 'Pledged', child: Text('Pledged')),
+                DropdownMenuItem(
+                    value: 'Not Pledged', child: Text('Not Pledged')),
+              ],
+              onChanged: (value) {
+                setState(() {
+                  selectedStatus = value;
+                });
+              },
             ),
-
             const SizedBox(height: 10),
 
-            // Submit Button
-            Container(
-              child: ElevatedButton(
-                onPressed: isPledged ? null : () {
-                  // Handle the submission logic here
-                  String title = titleController.text;
-                  String description = descriptionController.text;
-                  String status = statusController.text;
+            _buildTextField(
+              controller: categoryController,
+              label: 'Category (e.g., Electronics)',
+            ),
+            const SizedBox(height: 10),
 
-                  // Implement your save logic here
-                },
-                child: const Text(
-                  'Add Gift ',
-                  style: TextStyle(fontSize: 30, fontFamily: "Lobster", color: Colors.indigo),
-                ),
+            _buildTextField(
+              controller: priceController,
+              label: 'Price',
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 20),
+
+            ElevatedButton(
+              onPressed: _addGift,
+              child: const Text(
+                'Add Gift',
+                style: TextStyle(fontSize: 20),
               ),
             ),
           ],
@@ -137,33 +237,16 @@ class _AddGiftState extends State<AddGift> {
     required TextEditingController controller,
     required String label,
     int maxLines = 1,
-    String? prefixText,
-    bool enabled = true, // Added parameter to enable/disable
+    TextInputType keyboardType = TextInputType.text,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white, // White background
-        borderRadius: BorderRadius.circular(30.0), // Curved corners
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.5), // Shadow color
-            spreadRadius: 2,
-            blurRadius: 5,
-            offset: const Offset(0, 3), // Position of the shadow
-          ),
-        ],
-      ),
-      child: TextField(
-        controller: controller,
-        maxLines: maxLines,
-        enabled: enabled, // Set enabled state
-        decoration: InputDecoration(
-          labelText: label,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30.0), // Curved corners
-            borderSide: BorderSide.none, // Remove border lines
-          ),
-          prefixText: prefixText,
+    return TextField(
+      controller: controller,
+      maxLines: maxLines,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(40.0),
         ),
       ),
     );
