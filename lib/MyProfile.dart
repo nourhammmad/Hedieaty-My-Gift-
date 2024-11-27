@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'Database.dart';
@@ -12,20 +14,21 @@ class MyProfile extends StatefulWidget {
 
 class _MyProfileState extends State<MyProfile> {
   bool isFirstNameEditable = false;
-  bool notificationsEnabled = false; // State variable for the toggle button
+  bool notificationsEnabled = false;
   String? firstName;
 
   late Databaseclass _dbHelper;
-  late FirebaseDatabaseClass _firebaseDb; // Use FirebaseDatabaseClass
-
+  late FirebaseDatabaseClass _firebaseDb;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance; // Firestore instance
+  List<Map<String, dynamic>> events = []; // List to store fetched events
 
   @override
   void initState() {
     super.initState();
-    _dbHelper = Databaseclass();  // Initialize _dbHelper here
-    _firebaseDb = FirebaseDatabaseClass(); // Initialize FirebaseDatabaseClass
+    _dbHelper = Databaseclass();
+    _firebaseDb = FirebaseDatabaseClass();
     _initializeDatabase();
-    //_fetchUserDetails(); // Fetch user details when the profile screen loads
+    _fetchUserEvents(); // Fetch events when profile loads
   }
 
   Future<void> _initializeDatabase() async {
@@ -34,56 +37,31 @@ class _MyProfileState extends State<MyProfile> {
 
     if (firebaseDisplayName != null) {
       setState(() {
-        firstName = firebaseDisplayName;  // Set the first name to the Firebase display name
+        firstName = firebaseDisplayName;
       });
     }
   }
 
+  // Fetch events from Firestore for the current user
+  Future<void> _fetchUserEvents() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
+        if (userDoc.exists) {
+          var data = userDoc.data() as Map<String, dynamic>;
+          List<dynamic> eventsList = data['events_list'] ?? [];
 
-  // // Fetch user details based on the logged-in user
-  // Future<void> _fetchUserDetails() async {
-  //   String? prefs = await _firebaseDb.getFirebaseDisplayName();
-  //   //int? userId = prefs.getInt('userId'); // Assuming you store the userId with this key
-  //
-  //   if (userId != null) {
-  //     // Query the database to fetch user details by userId
-  //     var result = await _dbHelper.readData(
-  //       'SELECT * FROM Users WHERE ID = ?',
-  //       [userId],
-  //     );
-  //
-  //     if (result.isNotEmpty) {
-  //       setState(() {
-  //         firstName = result[0]['FIRSTNAME'] as String; // Ensure the type is correct
-  //         lastName = result[0]['LASTNAME'] as String;   // Ensure the type is correct
-  //       });
-  //     } else {
-  //       print("User details not found");
-  //     }
-  //   }
-  // }
-
-  // Sample list of events with associated gifts (can be fetched from a database in real use case)
-  final List<Map<String, String>> events = [
-    {
-      'imageLeft': 'asset/BD.jpg',
-      'imageRight': 'asset/elect.jpg',
-      'eventTitle': 'Birthday Party',
-      'giftTitle': 'iPhone',
-    },
-    {
-      'imageLeft': 'asset/WA.jpg',
-      'imageRight': 'asset/teddy.jpg',
-      'eventTitle': 'Anniversary Celebration',
-      'giftTitle': 'Books',
-    },
-    {
-      'imageLeft': 'asset/GA.jpg',
-      'imageRight': 'asset/gift3.jpg',
-      'eventTitle': 'Graduation Ceremony',
-      'giftTitle': 'Teddy Bear',
-    },
-  ];
+          setState(() {
+            events = eventsList.map((event) => Map<String, dynamic>.from(event)).toList();
+          print("==============================================$events");
+          });
+        }
+      } catch (e) {
+        print("Error fetching events: $e");
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -120,7 +98,7 @@ class _MyProfileState extends State<MyProfile> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Stack for profile image and plus icon
+            // Profile image and edit button
             Center(
               child: Stack(
                 alignment: Alignment.bottomRight,
@@ -185,37 +163,6 @@ class _MyProfileState extends State<MyProfile> {
               ],
             ),
             const SizedBox(height: 20),
-            //
-            // // Last Name Field
-            // Row(
-            //   children: [
-            //     Expanded(
-            //       child: TextField(
-            //         style: const TextStyle(fontFamily: "Lobster", fontSize: 25),
-            //         enabled: isLastNameEditable,
-            //         controller: TextEditingController(text: lastName),
-            //         decoration: InputDecoration(
-            //           border: OutlineInputBorder(
-            //             borderRadius: BorderRadius.circular(30.0),
-            //           ),
-            //           hintText: 'Last Name',
-            //         ),
-            //         onChanged: (value) {
-            //           lastName = value;
-            //         },
-            //       ),
-            //     ),
-            //     IconButton(
-            //       icon: Icon(isLastNameEditable ? Icons.check : Icons.edit),
-            //       onPressed: () {
-            //         setState(() {
-            //           isLastNameEditable = !isLastNameEditable;
-            //         });
-            //       },
-            //     ),
-            //   ],
-            // ),
-            const SizedBox(height: 20),
 
             // Notification Toggle
             SwitchListTile(
@@ -250,28 +197,17 @@ class _MyProfileState extends State<MyProfile> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          ClipOval(
-                            child: Container(
-                              width: 70,
-                              height: 70,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                image: DecorationImage(
-                                  image: AssetImage(
-                                    event['imageLeft'] ??
-                                        'assets/default_image.png',
-                                  ),
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            ),
+                          Icon(
+                            Icons.image_not_supported,
+                            color: Colors.red, // You can customize the icon color
+                            size: 70, // Customize the icon size to match the original container
                           ),
                           Expanded(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  event['eventTitle'] ?? 'Event Title',
+                                  event['title'] ?? 'Event Title',
                                   style: const TextStyle(
                                     fontSize: 20,
                                     fontFamily: "Lobster",
@@ -279,31 +215,24 @@ class _MyProfileState extends State<MyProfile> {
                                   textAlign: TextAlign.center,
                                 ),
                                 Text(
-                                  event['giftTitle'] ?? 'Gift Title',
+                                  event['gifts'] != null && event['gifts'].isNotEmpty
+                                      ? event['gifts'].map((gift) => gift['title']).join(', ')
+                                      : 'No Gifts',
                                   style: const TextStyle(fontSize: 16),
                                   textAlign: TextAlign.center,
                                 ),
+
                               ],
                             ),
                           ),
-                          ClipOval(
-                            child: Container(
-                              width: 70,
-                              height: 70,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                image: DecorationImage(
-                                  image: AssetImage(
-                                    event['imageRight'] ??
-                                        'assets/default_image.png',
-                                  ),
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            ),
+                          Icon(
+                            Icons.image_not_supported,
+                            color: Colors.red, // You can customize the icon color
+                            size: 70, // Customize the icon size to match the original container
                           ),
                         ],
                       ),
+
                     ),
                   );
                 },
