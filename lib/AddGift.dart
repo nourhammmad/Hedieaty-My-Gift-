@@ -44,9 +44,10 @@ class _AddGiftState extends State<AddGift> {
     }
   }
 
+
   Future<void> _addGift() async {
     try {
-      if (selectedEventId == null || selectedStatus == null) {
+      if (selectedEventId == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please fill all required fields!')),
         );
@@ -56,20 +57,33 @@ class _AddGiftState extends State<AddGift> {
       final userId = FirebaseAuth.instance.currentUser?.uid;
       if (userId == null) return;
 
+      // Generate a unique ID for the gift
+      String giftId = _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('events_list')
+          .doc(selectedEventId)
+          .collection('gifts')
+          .doc()
+          .id;
+
       String title = titleController.text;
       String description = descriptionController.text;
       String category = categoryController.text;
       String price = priceController.text;
 
       Map<String, dynamic> giftData = {
+        'giftId': giftId, // Add the unique giftId
         'title': title,
         'description': description,
-        'status': selectedStatus,
+        'status': 'Available',
         'category': category,
         'price': price,
         'eventId': selectedEventId,
+        'PledgedBy': null,
       };
 
+      // Update the `events` list locally
       for (var event in events) {
         if (event['eventId'] == selectedEventId) {
           if (event['gifts'] == null) {
@@ -80,6 +94,7 @@ class _AddGiftState extends State<AddGift> {
         }
       }
 
+      // Update the Firestore database
       CollectionReference usersRef = _firestore.collection('users');
       await usersRef.doc(userId).update({
         'events_list': events,
@@ -97,6 +112,7 @@ class _AddGiftState extends State<AddGift> {
       );
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -191,20 +207,20 @@ class _AddGiftState extends State<AddGift> {
             ),
             const SizedBox(height: 10),
 
-            DropdownButtonFormField<String>(
-              value: selectedStatus,
-              hint: const Text('Select Status'),
-              items: const [
-                DropdownMenuItem(value: 'Pledged', child: Text('Pledged')),
-                DropdownMenuItem(
-                    value: 'Not Pledged', child: Text('Not Pledged')),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  selectedStatus = value;
-                });
-              },
-            ),
+            // DropdownButtonFormField<String>(
+            //   value: selectedStatus,
+            //   hint: const Text('Select Status'),
+            //   items: const [
+            //     DropdownMenuItem(value: 'Pledged', child: Text('Pledged')),
+            //     DropdownMenuItem(
+            //         value: 'Available', child: Text('Available')),
+            //   ],
+            //   onChanged: (value) {
+            //     setState(() {
+            //       selectedStatus = value;
+            //     });
+            //   },
+            // ),
             const SizedBox(height: 10),
 
             _buildTextField(

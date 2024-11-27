@@ -125,12 +125,85 @@ bool WhichText(status){
     return false; // Color for available gifts
   }
 }
-  void _pledgeGift(int index) {
-    if (!gifts[index]['pledged']) {
-      setState(() {
-        gifts[index]['pledged'] = true;
-        gifts[index]['status'] = 'Pledged'; // Update status
+  void _pledgeGift(String giftId) async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        print("Error: User is not logged in.");
+        return;
+      }
+
+      final pledgerId = currentUser.uid;
+
+      // Find the selected gift from the list
+      final gift = gifts.firstWhere(
+            (gift) => gift['giftId'] == giftId,
+        orElse: () => {},
+      );
+
+      if (gift == null) {
+        print("Error: Gift not found.");
+        return;
+      }
+
+      final eventId = gift['eventId'];
+
+      if (eventId == null) {
+        print("Error: Missing eventId.");
+        return;
+      }
+
+      // Debugging: Print gift and eventId
+      print("Gift being pledged: $gift");
+      print("Searching for eventId: $eventId");
+
+      // Get the friend's document (not the current user)
+      final userDocRef = FirebaseFirestore.instance.collection('users').doc(userId); // Friend's userId
+
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        final userDocSnapshot = await transaction.get(userDocRef);
+
+        if (!userDocSnapshot.exists) {
+          throw Exception("User document not found.");
+        }
+
+        final eventsList = List<Map<String, dynamic>>.from(userDocSnapshot.data()?['events_list'] ?? []);
+        print("events_list: $eventsList");
+
+        // Find the correct event in the friend's event list
+        final eventIndex = eventsList.indexWhere((event) => event['eventId'] == eventId);
+        if (eventIndex == -1) {
+          throw Exception("Event not found.");
+        }
+
+        final event = eventsList[eventIndex];
+        final giftsList = List<Map<String, dynamic>>.from(event['gifts'] ?? []);
+        final giftIndex = giftsList.indexWhere((g) => g['giftId'] == giftId);
+
+        if (giftIndex == -1) {
+          throw Exception("Gift not found.");
+        }
+
+        // Update the gift status to pledged and assign pledger
+        giftsList[giftIndex]['PledgedBy'] = pledgerId;
+        giftsList[giftIndex]['status'] = 'Pledged';
+        eventsList[eventIndex]['gifts'] = giftsList;
+
+        transaction.update(userDocRef, {'events_list': eventsList});
       });
+
+      // Update the local state for the UI
+      setState(() {
+        final localGiftIndex = gifts.indexWhere((g) => g['giftId'] == giftId);
+        if (localGiftIndex != -1) {
+          gifts[localGiftIndex]['PledgedBy'] = pledgerId;
+          gifts[localGiftIndex]['status'] = 'Pledged';
+        }
+      });
+
+      print("Gift pledged successfully.");
+    } catch (e) {
+      print("Error pledging gift: $e");
     }
   }
 
@@ -200,12 +273,12 @@ bool WhichText(status){
                           height: 200,
                           decoration: BoxDecoration(
                             borderRadius: const BorderRadius.vertical(top: Radius.circular(15.0)),
-                            image: DecorationImage(
-                              image: gift['image'] != null && gift['image'].isNotEmpty
-                                  ? AssetImage(gift['image'])
-                                  : AssetImage('asset/placeholder.png'),
-                              fit: BoxFit.cover,
-                            ),
+                            // image: DecorationImage(
+                            //   image: gift['image'] != null && gift['image'].isNotEmpty
+                            //       ? AssetImage(gift['image'])
+                            //       : AssetImage('asset/placeholder.png'),
+                            //   fit: BoxFit.cover,
+                            // ),
                           ),
                           child: gift['image'] == null || gift['image'].isEmpty
                               ? Center(
@@ -249,13 +322,14 @@ bool WhichText(status){
                             style: ElevatedButton.styleFrom(
                               backgroundColor: _getButtonColor(status),
                             ),
-                            onPressed: isPledged ? null : () => _pledgeGift(index),
+                            onPressed: isPledged ? null : () => _pledgeGift(gift['giftId']),  // Pass the giftId here
                             child: Text(
                               WhichText(status) ? 'Already Pledged' : 'Pledge Gift',
                               style: TextStyle(color: Colors.indigo.shade50, fontFamily: "Lobster", fontSize: 30),
                             ),
                           ),
                         ),
+
                       ],
                     ),
                   );
