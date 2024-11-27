@@ -19,26 +19,38 @@ class _EventsListPageState extends State<EventsListPage> {
   // Function to fetch events from Firestore
   Future<void> _loadEvents() async {
     try {
-      final FirebaseAuth _auth = FirebaseAuth.instance;  // Initialize Firebase Auth
-      final FirebaseFirestore _firestore = FirebaseFirestore.instance;  // Initialize Firestore
+      final FirebaseAuth _auth = FirebaseAuth
+          .instance; // Initialize Firebase Auth
+      final FirebaseFirestore _firestore = FirebaseFirestore
+          .instance; // Initialize Firestore
 
       User? user = _auth.currentUser;
       if (user != null) {
         String userId = user.uid;
         // Reference to the user's events collection
-        DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(
+            userId).get();
 
         if (userDoc.exists) {
           // Fetch the events list
           List<dynamic> eventsList = userDoc['events_list'] ?? [];
+
           setState(() {
-            events = eventsList.map((event) => {
-              'name': event['title'],
-              'category': event['type'], // Corresponding to the 'type' field
-              'status': event['status'],
+            events = eventsList.map((event) =>
+            {
+              'description':event['description'],
               'eventId': event['eventId'],
-              'image': event['image'] ?? '', // Default image if not provided
+              'status': event['status'],
+              'title':event['title'],
+              'type': event['type'], // Corresponding to the 'type' field
             }).toList();
+
+            // Print out the events list for debugging
+            print("Fetched events from Firestore: ");
+            events.forEach((event) {
+              print(
+                  "Event Name: ${event['name']}, Category: ${event['category']}, Status: ${event['status']}, Event ID: ${event['eventId']}, Image: ${event['image']}");
+            });
           });
         }
       }
@@ -48,26 +60,30 @@ class _EventsListPageState extends State<EventsListPage> {
   }
 
   // Function to show a confirmation dialog before deleting an event
-  void _showDeleteConfirmationDialog(int index) {
+  void _showDeleteConfirmationDialog(String eventId) {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Delete Event', style: TextStyle(fontSize: 25,color: Colors.red,)),
-          content: const Text('Are you sure you want to delete this event?', style: TextStyle(fontSize: 28,),),
+          title: const Text('Delete Event',
+              style: TextStyle(fontSize: 25, color: Colors.red)),
+          content: const Text('Are you sure you want to delete this event?',
+              style: TextStyle(fontSize: 28)),
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog without doing anything
+                Navigator.of(context)
+                    .pop(); // Close the dialog without doing anything
               },
-              child: const Text('Cancel', style: TextStyle(fontSize: 25,),),
+              child: const Text('Cancel', style: TextStyle(fontSize: 25)),
             ),
             TextButton(
               onPressed: () {
-                _deleteEvent(index);
+                _deleteEvent(eventId);
                 Navigator.of(context).pop(); // Close the dialog after deletion
               },
-              child: const Text('Delete', style: TextStyle(color: Colors.red,fontSize: 25),),
+              child: const Text(
+                  'Delete', style: TextStyle(color: Colors.red, fontSize: 25)),
             ),
           ],
         );
@@ -76,7 +92,7 @@ class _EventsListPageState extends State<EventsListPage> {
   }
 
   // Function to delete an event
-  void _deleteEvent(int index) async {
+  void _deleteEvent(String eventId) async {
     final FirebaseAuth _auth = FirebaseAuth.instance;
     final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -85,38 +101,38 @@ class _EventsListPageState extends State<EventsListPage> {
       try {
         String userId = user.uid;
 
-        // Get the event data
-        final event = events[index];
-        String eventId = event['eventId']; // The unique eventId
-
         // Reference to the user's document in Firestore
-        DocumentReference userDocRef = _firestore.collection('users').doc(userId);
+        DocumentReference userDocRef = _firestore.collection('users').doc(
+            userId);
 
-        // Debugging: Print out event and userId to confirm
-        print("Attempting to delete event with ID: $eventId");
+        // Find the index of the event in the list based on eventId
+        int eventIndex = events.indexWhere((event) =>
+        event['eventId'] == eventId);
 
-        // Delete the event from the events_list in Firestore
-        await userDocRef.update({
-          'events_list': FieldValue.arrayRemove([
-            {
-              'description': event['description'],
-              'eventId': eventId,
-              'status': event['status'],
-              'title': event['name'],
-              'type': event['category'],
-            }
-          ]),
-        }).then((_) {
-          print("Event deleted successfully from Firestore.");
-        }).catchError((error) {
-          print("Error deleting event from Firestore: $error");
-        });
+        if (eventIndex != -1) {
+          // Debugging: Print out eventId to confirm
+          print(
+              "Attempting to delete event with ID: $eventId at index $eventIndex");
 
-        // Remove the event from the UI (locally)
-        setState(() {
-          events.removeAt(index); // Update the UI to reflect the deletion
-        });
+          // Get the event to delete (from the found index)
+          var eventToDelete = events[eventIndex];
+          print("================================$eventToDelete");
+          // Remove the event from the events_list in Firestore based on its index
+          await userDocRef.update({
+            'events_list': FieldValue.arrayRemove([eventToDelete]),
+          }).then((_) {
+            print("Event deleted successfully from Firestore.");
 
+            // Remove the event from the UI (locally)
+            setState(() {
+              events.removeAt(eventIndex); // Remove event based on its index
+            });
+          }).catchError((error) {
+            print("Error deleting event from Firestore: $error");
+          });
+        } else {
+          print("Event with ID $eventId not found in local events.");
+        }
       } catch (e) {
         print("Error deleting event: $e");
       }
@@ -125,7 +141,6 @@ class _EventsListPageState extends State<EventsListPage> {
     }
   }
 
-
   // Function to sort events
   void _sortEvents() {
     switch (sortCriteria) {
@@ -133,7 +148,8 @@ class _EventsListPageState extends State<EventsListPage> {
         events.sort((a, b) => (a['name'] ?? '').compareTo(b['name'] ?? ''));
         break;
       case 'Category':
-        events.sort((a, b) => (a['category'] ?? '').compareTo(b['category'] ?? ''));
+        events.sort((a, b) =>
+            (a['category'] ?? '').compareTo(b['category'] ?? ''));
         break;
       case 'Status':
         events.sort((a, b) => (a['status'] ?? '').compareTo(b['status'] ?? ''));
@@ -147,6 +163,7 @@ class _EventsListPageState extends State<EventsListPage> {
     _loadEvents(); // Load events when the page is first initialized
   }
 
+  @override
   @override
   Widget build(BuildContext context) {
     _sortEvents(); // Sort events whenever the build method is called
@@ -192,9 +209,15 @@ class _EventsListPageState extends State<EventsListPage> {
                 DropdownButton<String>(
                   value: sortCriteria,
                   items: const [
-                    DropdownMenuItem(value: 'Name', child: Text('Sort by Name', style: TextStyle(fontFamily: "Lobster"))),
-                    DropdownMenuItem(value: 'Category', child: Text('Sort by Category', style: TextStyle(fontFamily: "Lobster"))),
-                    DropdownMenuItem(value: 'Status', child: Text('Sort by Status', style: TextStyle(fontFamily: "Lobster"))),
+                    DropdownMenuItem(value: 'Name',
+                        child: Text('Sort by Name',
+                            style: TextStyle(fontFamily: "Lobster"))),
+                    DropdownMenuItem(value: 'Category',
+                        child: Text('Sort by Category',
+                            style: TextStyle(fontFamily: "Lobster"))),
+                    DropdownMenuItem(value: 'Status',
+                        child: Text('Sort by Status',
+                            style: TextStyle(fontFamily: "Lobster"))),
                   ],
                   onChanged: (value) {
                     setState(() {
@@ -222,21 +245,29 @@ class _EventsListPageState extends State<EventsListPage> {
                     margin: const EdgeInsets.symmetric(vertical: 10.0),
                     child: Column(
                       children: [
-                        Container(
+                        // Check if image exists or not
+                        event['image']?.isNotEmpty == true
+                            ? Container(
                           height: 200,
                           decoration: BoxDecoration(
-                            borderRadius: const BorderRadius.vertical(top: Radius.circular(15.0)),
+                            borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(15.0)),
                             image: DecorationImage(
                               image: AssetImage(event['image']!),
                               fit: BoxFit.cover,
                             ),
                           ),
-                          child: event['image'] != null && event['image']!.isNotEmpty
-                              ? null
-                              : const Icon(
-                            Icons.image_not_supported,
-                            size: 50,
-                            color: Colors.red,
+                        )
+                            : Container(
+                          height: 200,
+                          color: Colors.grey.shade200,
+                          // Use a placeholder color or an empty container
+                          child: const Center(
+                            child: Icon(
+                              Icons.image_not_supported,
+                              size: 50,
+                              color: Colors.red,
+                            ),
                           ),
                         ),
                         Padding(
@@ -245,7 +276,7 @@ class _EventsListPageState extends State<EventsListPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                event['name'] ?? 'Unnamed Event',
+                                event['title'] ?? 'Unnamed Event',
                                 style: const TextStyle(
                                   fontSize: 30,
                                   fontFamily: "Lobster",
@@ -255,7 +286,8 @@ class _EventsListPageState extends State<EventsListPage> {
                               ),
                               const SizedBox(height: 8.0),
                               Text(
-                                "Category: ${event['category'] ?? 'Uncategorized'}",
+                                "Category: ${event['category'] ??
+                                    'Uncategorized'}",
                                 style: const TextStyle(fontSize: 20),
                               ),
                               Text(
@@ -269,14 +301,19 @@ class _EventsListPageState extends State<EventsListPage> {
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.indigo, size: 40),
+                              icon: const Icon(
+                                  Icons.edit, color: Colors.green, size: 30),
                               onPressed: () {
-                                Navigator.pushNamed(context, '/EventDetailsPage');
+                                Navigator.pushNamed(
+                                    context, '/EditEvent', arguments: event);
                               },
                             ),
                             IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red, size: 40),
-                              onPressed: () => _showDeleteConfirmationDialog(index),
+                              icon: const Icon(
+                                  Icons.delete, color: Colors.red, size: 30),
+                              onPressed: () {
+                                _showDeleteConfirmationDialog(event['eventId']);
+                              },
                             ),
                           ],
                         ),
