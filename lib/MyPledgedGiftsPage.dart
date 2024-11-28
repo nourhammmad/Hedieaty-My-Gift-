@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class MyPledgedGiftsPage extends StatefulWidget {
   const MyPledgedGiftsPage({super.key});
@@ -9,66 +11,86 @@ class MyPledgedGiftsPage extends StatefulWidget {
 }
 
 class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
-  // Sample data for pledged gifts
-  final List<Map<String, dynamic>> pledgedGifts = [
-    {
-      'friendName': 'Alice',
-      'giftTitle': 'Birthday Surprise',
-      'dueDate': '2024-11-10',
-      'status': 'Pending',
-      'image': 'asset/gift1.jpg',
-    },
-    {
-      'friendName': 'Bob',
-      'giftTitle': 'Anniversary Present',
-      'dueDate': '2024-12-15',
-      'status': 'Delivered',
-      'image': 'asset/gift2.jpg',
-    },
-    {
-      'friendName': 'Charlie',
-      'giftTitle': 'Graduation Gift',
-      'dueDate': '2024-11-20',
-      'status': 'Pending',
-      'image': 'asset/gift3.jpg',
-    },
-    {
-      'friendName': 'Diana',
-      'giftTitle': 'Promotion Celebration',
-      'dueDate': '2024-11-30',
-      'status': 'Pending',
-      'image': 'asset/gift4.jpg',
-    },
-    // Duplicate entries for demonstration
-    {
-      'friendName': 'Alice',
-      'giftTitle': 'Birthday Surprise',
-      'dueDate': '2024-11-10',
-      'status': 'Pending',
-      'image': 'asset/gift1.jpg',
-    },
-    {
-      'friendName': 'Bob',
-      'giftTitle': 'Anniversary Present',
-      'dueDate': '2024-12-15',
-      'status': 'Delivered',
-      'image': 'asset/gift2.jpg',
-    },
-    {
-      'friendName': 'Charlie',
-      'giftTitle': 'Graduation Gift',
-      'dueDate': '2024-11-20',
-      'status': 'Pending',
-      'image': 'asset/gift3.jpg',
-    },
-    {
-      'friendName': 'Diana',
-      'giftTitle': 'Promotion Celebration',
-      'dueDate': '2024-11-30',
-      'status': 'Pending',
-      'image': 'asset/gift4.jpg',
-    },
-  ];
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  late String _userId;
+  List<Map<String, dynamic>> pledgedGifts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _userId = _auth.currentUser!.uid; // Get logged-in user's ID
+    _fetchPledgedGifts();
+  }
+  Future<void> _fetchPledgedGifts() async {
+    try {
+      // Fetch the logged-in user's document from Firestore
+      DocumentSnapshot userDoc = await _firestore.collection('users').doc(_userId).get();
+
+      if (userDoc.exists) {
+        List pledgedGiftIds = userDoc['pledged_gifts'] ?? []; // List of pledged gifts data
+
+        // Initialize a list to store detailed pledged gifts data
+        List<Map<String, dynamic>> pledgedGiftsList = [];
+
+        for (var pledgedGift in pledgedGiftIds) {
+          // Extract the pledgerId, giftId, eventId, and status from the pledged gift
+          String pledgerId = pledgedGift['pledgerId'];
+          String giftId = pledgedGift['giftId'];
+          String eventId = pledgedGift['eventId'];
+          String status = pledgedGift['status'];
+
+          // Fetch the pledger's user document
+          DocumentSnapshot pledgerDoc = await _firestore.collection('users').doc(pledgerId).get();
+
+          if (pledgerDoc.exists) {
+            // Extract the pledger's name
+            String pledgerName = pledgerDoc['displayName'] ?? 'Unknown';
+
+            // Fetch the event details using the eventId from the pledger's events_list
+            List eventsList = pledgerDoc['events_list'] ?? [];
+            String eventTitle = 'Unknown Event';
+            String giftTitle = 'Unknown Gift';
+            String dueTo = 'No due date';
+
+            for (var event in eventsList) {
+              if (event['eventId'] == eventId) {
+                eventTitle = event['title'] ?? 'Unknown Event';
+
+                // Find the gift in the event's gifts array
+                for (var gift in event['gifts']) {
+                  if (gift['giftId'] == giftId) {
+                    giftTitle = gift['title'] ?? 'Unknown Gift';
+                    dueTo = gift['dueTo'] ?? 'No due date';
+                    break;
+                  }
+                }
+                break; // Stop once we find the matching event
+              }
+            }
+
+            // Create the detailed pledged gift entry
+            pledgedGiftsList.add({
+              'pledgerName': pledgerName,
+              'giftTitle': giftTitle,
+              'eventTitle': eventTitle,
+              'dueTo': dueTo,
+              'status': status,
+            });
+          }
+        }
+
+        // Update the UI with the fetched pledged gifts
+        setState(() {
+          pledgedGifts = pledgedGiftsList;
+        });
+      }
+    } catch (e) {
+      print("Error fetching pledged gifts: $e");
+    }
+  }
+
+
 
   void _unpledgeGift(int index) {
     setState(() {
@@ -147,7 +169,9 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
             ),
             const SizedBox(height: 16), // Space between heading and list
             Expanded(
-              child: GridView.builder(
+              child: pledgedGifts.isEmpty
+                  ? const Center(child: Text('No pledged gifts yet!', style: TextStyle(fontSize: 20)))
+                  : GridView.builder(
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2, // Two gifts per row
                   crossAxisSpacing: 10,
@@ -182,9 +206,15 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
                               Expanded(
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.vertical(top: Radius.circular(30)), // Round the top corners
-                                  child: Image.asset(
-                                    gift['image'],
+                                  child: gift['image'] != null
+                                      ? Image.network(
+                                    gift['image'], // Assuming gift image URL
                                     fit: BoxFit.cover,
+                                  )
+                                      : Icon(
+                                    Icons.image_not_supported, // Default icon when no image available
+                                    size: 100,
+                                    color: Colors.red,
                                   ),
                                 ),
                               ),
@@ -194,7 +224,7 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      gift['giftTitle'],
+                                      gift['giftTitle'] ?? 'No Title',
                                       style: const TextStyle(
                                         fontSize: 25,
                                         fontWeight: FontWeight.bold,
@@ -204,12 +234,12 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      'For: ${gift['friendName']}',
+                                      'For: ${gift['pledgerName']}',
                                       style: const TextStyle(fontSize: 16),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      'Due: ${gift['dueDate']}',
+                                      'Due: ${gift['dueTo']}',
                                       style: const TextStyle(fontSize: 16),
                                     ),
                                     const SizedBox(height: 4),
