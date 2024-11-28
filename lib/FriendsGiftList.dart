@@ -190,12 +190,13 @@ bool WhichText(status){
       eventsList[eventIndex]['gifts'] = giftsList;
 
       // Add the pledged gift to the current user's pledged_gifts list
-      final pledgedGiftsList = List<Map<String, dynamic>>.from(userDocSnapshot.data()?['pledged_gifts'] ?? []);
-      pledgedGiftsList.add({
-        'pledgerId': friendUserId,  // The current user who is pledging the gift
-        'eventId': eventId,
-        'giftId': giftId,
-      });
+      // final pledgedGiftsList = List<Map<String, dynamic>>.from(userDocSnapshot.data()?['pledged_gifts'] ?? []);
+      // pledgedGiftsList.add({
+      //   'pledgerId': friendUserId,  // The current user who is pledging the gift
+      //   'eventId': eventId,
+      //   'giftId': giftId,
+      //   'status':"Pending",
+      // });
 
       // Fetch the current user's document
       final currentUserDocRef = FirebaseFirestore.instance.collection('users').doc(pledgerId);
@@ -210,6 +211,7 @@ bool WhichText(status){
         'pledgerId': friendUserId,  // The logged-in user who is pledging the gift
         'eventId': eventId,
         'giftId': giftId,
+        'status':"Pending",
       });
 
       // Now, run the transaction to apply the changes
