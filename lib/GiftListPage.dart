@@ -163,6 +163,7 @@ class _GiftListPageState extends State<GiftListPage> {
                   final gift = gifts[index];
                   final isPledged = gift['status'] == 'Pledged';
                   final status = gift['status'] ?? 'Unknown';
+                  final duedate=gift['dueTo']??'Not Decided';
                   return Card(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(15.0),
@@ -211,6 +212,10 @@ class _GiftListPageState extends State<GiftListPage> {
                               ),
                               Text(
                                 "Status: ${status}",
+                                style: const TextStyle(fontSize: 18),
+                              ),
+                              Text(
+                                "Due Date: ${duedate}",
                                 style: const TextStyle(fontSize: 18),
                               ),
                             ],

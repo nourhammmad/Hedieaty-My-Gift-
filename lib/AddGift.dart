@@ -14,6 +14,7 @@ class _AddGiftState extends State<AddGift> {
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController categoryController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
+  final TextEditingController dueToController = TextEditingController(); // New controller for Due Date
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   String? selectedStatus;
@@ -44,10 +45,25 @@ class _AddGiftState extends State<AddGift> {
     }
   }
 
+  // Function to pick the date
+  Future<void> _selectDueDate(BuildContext context) async {
+    final DateTime? selectedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2100),
+    );
+
+    if (selectedDate != null && selectedDate != DateTime.now()) {
+      setState(() {
+        dueToController.text = "${selectedDate.toLocal()}".split(' ')[0]; // Format date to YYYY-MM-DD
+      });
+    }
+  }
 
   Future<void> _addGift() async {
     try {
-      if (selectedEventId == null) {
+      if (selectedEventId == null || dueToController.text.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please fill all required fields!')),
         );
@@ -71,16 +87,19 @@ class _AddGiftState extends State<AddGift> {
       String description = descriptionController.text;
       String category = categoryController.text;
       String price = priceController.text;
+      String dueTo = dueToController.text;
 
       Map<String, dynamic> giftData = {
-        'giftId': giftId, // Add the unique giftId
+        'giftId': giftId,
         'title': title,
         'description': description,
         'status': 'Available',
         'category': category,
         'price': price,
         'eventId': selectedEventId,
+        'dueTo': dueTo,  // Add the due date
         'PledgedBy': null,
+        'createdBy': userId,
       };
 
       // Update the `events` list locally
@@ -112,7 +131,6 @@ class _AddGiftState extends State<AddGift> {
       );
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -146,7 +164,6 @@ class _AddGiftState extends State<AddGift> {
                 alignment: Alignment.bottomRight,
                 children: [
                   ClipOval(
-
                     child: imageExists
                         ? Image.asset(
                       'asset/placeholder.jpg',
@@ -207,22 +224,6 @@ class _AddGiftState extends State<AddGift> {
             ),
             const SizedBox(height: 10),
 
-            // DropdownButtonFormField<String>(
-            //   value: selectedStatus,
-            //   hint: const Text('Select Status'),
-            //   items: const [
-            //     DropdownMenuItem(value: 'Pledged', child: Text('Pledged')),
-            //     DropdownMenuItem(
-            //         value: 'Available', child: Text('Available')),
-            //   ],
-            //   onChanged: (value) {
-            //     setState(() {
-            //       selectedStatus = value;
-            //     });
-            //   },
-            // ),
-            const SizedBox(height: 10),
-
             _buildTextField(
               controller: categoryController,
               label: 'Category (e.g., Electronics)',
@@ -233,6 +234,19 @@ class _AddGiftState extends State<AddGift> {
               controller: priceController,
               label: 'Price',
               keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 20),
+
+            // Date Picker Button for "Due To"
+            GestureDetector(
+              onTap: () => _selectDueDate(context),
+              child: AbsorbPointer(
+                child: _buildTextField(
+                  controller: dueToController,
+                  label: 'Due To',
+                  keyboardType: TextInputType.datetime,
+                ),
+              ),
             ),
             const SizedBox(height: 20),
 

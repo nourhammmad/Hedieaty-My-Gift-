@@ -158,49 +158,70 @@ bool WhichText(status){
       print("Searching for eventId: $eventId");
 
       // Get the friend's document (not the current user)
-      final userDocRef = FirebaseFirestore.instance.collection('users').doc(userId); // Friend's userId
+      final friendUserId = gift['createdBy'];  // Assuming the gift creator (friend) has the 'createdBy' field
+      final userDocRef = FirebaseFirestore.instance.collection('users').doc(friendUserId); // Friend's userId
 
+      // Fetch the user's data (events and pledged gifts)
+      final userDocSnapshot = await userDocRef.get();
+      if (!userDocSnapshot.exists) {
+        throw Exception("User document not found.");
+      }
+
+      final eventsList = List<Map<String, dynamic>>.from(userDocSnapshot.data()?['events_list'] ?? []);
+      print("events_list: $eventsList");
+
+      // Find the correct event in the friend's event list
+      final eventIndex = eventsList.indexWhere((event) => event['eventId'] == eventId);
+      if (eventIndex == -1) {
+        throw Exception("Event not found.");
+      }
+
+      final event = eventsList[eventIndex];
+      final giftsList = List<Map<String, dynamic>>.from(event['gifts'] ?? []);
+      final giftIndex = giftsList.indexWhere((g) => g['giftId'] == giftId);
+
+      if (giftIndex == -1) {
+        throw Exception("Gift not found.");
+      }
+
+      // Prepare the updates
+      giftsList[giftIndex]['PledgedBy'] = pledgerId;  // The current user pledges the gift
+      giftsList[giftIndex]['status'] = 'Pledged';
+      eventsList[eventIndex]['gifts'] = giftsList;
+
+      // Add the pledged gift to the current user's pledged_gifts list
+      final pledgedGiftsList = List<Map<String, dynamic>>.from(userDocSnapshot.data()?['pledged_gifts'] ?? []);
+      pledgedGiftsList.add({
+        'pledgerId': friendUserId,  // The current user who is pledging the gift
+        'eventId': eventId,
+        'giftId': giftId,
+      });
+
+      // Fetch the current user's document
+      final currentUserDocRef = FirebaseFirestore.instance.collection('users').doc(pledgerId);
+      final currentUserDocSnapshot = await currentUserDocRef.get();
+
+      if (!currentUserDocSnapshot.exists) {
+        throw Exception("Current user document not found.");
+      }
+
+      final currentUserPledgedGiftsList = List<Map<String, dynamic>>.from(currentUserDocSnapshot.data()?['pledged_gifts'] ?? []);
+      currentUserPledgedGiftsList.add({
+        'pledgerId': friendUserId,  // The logged-in user who is pledging the gift
+        'eventId': eventId,
+        'giftId': giftId,
+      });
+
+      // Now, run the transaction to apply the changes
       await FirebaseFirestore.instance.runTransaction((transaction) async {
-        final userDocSnapshot = await transaction.get(userDocRef);
-
-        if (!userDocSnapshot.exists) {
-          throw Exception("User document not found.");
-        }
-
-        final eventsList = List<Map<String, dynamic>>.from(userDocSnapshot.data()?['events_list'] ?? []);
-        print("events_list: $eventsList");
-
-        // Find the correct event in the friend's event list
-        final eventIndex = eventsList.indexWhere((event) => event['eventId'] == eventId);
-        if (eventIndex == -1) {
-          throw Exception("Event not found.");
-        }
-
-        final event = eventsList[eventIndex];
-        final giftsList = List<Map<String, dynamic>>.from(event['gifts'] ?? []);
-        final giftIndex = giftsList.indexWhere((g) => g['giftId'] == giftId);
-
-        if (giftIndex == -1) {
-          throw Exception("Gift not found.");
-        }
-
-        // Update the gift status to pledged and assign pledger
-        giftsList[giftIndex]['PledgedBy'] = pledgerId;
-        giftsList[giftIndex]['status'] = 'Pledged';
-        eventsList[eventIndex]['gifts'] = giftsList;
-
-        // Add the pledged gift to the pledged_gifts list in the friend's document
-        final pledgedGiftsList = List<Map<String, dynamic>>.from(userDocSnapshot.data()?['pledged_gifts'] ?? []);
-        pledgedGiftsList.add({
-          'pledgerId': pledgerId,
-          'eventId': eventId,
-          'giftId': giftId,
+        // Update the friend's document with the updated events list
+        transaction.update(userDocRef, {
+          'events_list': eventsList,  // Save the updated events list
         });
 
-        // Update the friend's document
-        transaction.update(userDocRef, {
-          'events_list': eventsList,
-          'pledged_gifts': pledgedGiftsList,
+        // Update the current user's pledged_gifts list
+        transaction.update(currentUserDocRef, {
+          'pledged_gifts': currentUserPledgedGiftsList,  // Update pledged_gifts for current user
         });
       });
 
@@ -208,7 +229,7 @@ bool WhichText(status){
       setState(() {
         final localGiftIndex = gifts.indexWhere((g) => g['giftId'] == giftId);
         if (localGiftIndex != -1) {
-          gifts[localGiftIndex]['PledgedBy'] = pledgerId;
+          gifts[localGiftIndex]['PledgedBy'] = pledgerId;  // Current user pledges the gift
           gifts[localGiftIndex]['status'] = 'Pledged';
         }
       });
@@ -218,7 +239,6 @@ bool WhichText(status){
       print("Error pledging gift: $e");
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -273,6 +293,7 @@ bool WhichText(status){
                   final gift = gifts[index];
                   final isPledged = gift['pledged'] ?? false;
                   final status = gift['status'] ?? 'Unknown';
+                  final dueTo = gift['dueTo'] ?? 'Not Decided';
                   return Card(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(15.0),
@@ -324,6 +345,10 @@ bool WhichText(status){
                               ),
                               Text(
                                 "Status: ${status}",
+                                style: const TextStyle(fontSize: 18),
+                              ),
+                              Text(
+                                "Due Data: ${dueTo}",
                                 style: const TextStyle(fontSize: 18),
                               ),
                             ],
