@@ -88,7 +88,7 @@ class _LoginPageState extends State<LoginPage> {
           print("========================================found");
 
           //await UserSession.saveUserSession(userId, userName);
-          final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+          await FirebaseAuth.instance.signInWithEmailAndPassword(
             email: emailController.text,
             password: passwordController.text,
           );

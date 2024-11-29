@@ -20,7 +20,7 @@
     Future<User?> registerUser(String displayName,
         String email,
         String password,
-        String phoneNumber,) async {
+        String phoneNumber,String? photoUrl) async {
       try {
         // Create the user with Firebase Authentication
         final credential = await FirebaseAuth.instance
@@ -48,7 +48,7 @@
             'displayName': displayName,
             'email': email,
             'phoneNumber': phoneNumber,
-            'photoURL': null,
+            'photoURL': photoUrl,
           }).then((_) {
             print("User data saved successfully for userId: ${user.uid}");
           }).catchError((e) {
@@ -66,7 +66,52 @@
   
       return null; // Return null if registration fails
     }
-  
+
+    Future<void> updatePhotoURL(String userId, String? photoUrl) async {
+      try {
+        // Get the current user
+        User? user = FirebaseAuth.instance.currentUser;
+
+        // Check if the user is logged in and the userId matches
+        if (user != null && user.uid == userId) {
+          // Update photoURL in Firebase Authentication
+          await user.updateProfile(photoURL: photoUrl).then((_) {
+            print("User's photoUrl updated in Firebase Authentication.");
+          }).catchError((e) {
+            print("Error updating photoUrl in Firebase Authentication: $e");
+          });
+
+          // Update photoURL in Firestore
+          await FirebaseFirestore.instance.collection('users').doc(userId).update({
+            'photoURL': photoUrl,
+          }).then((_) {
+            print("photoURL successfully updated in Firestore.");
+          }).catchError((e) {
+            print("Error updating photoURL in Firestore: $e");
+          });
+        } else {
+          print("User not logged in or userId does not match.");
+        }
+      } catch (e) {
+        print("Error updating photoURL: $e");
+      }
+    }
+
+    Future<void> saveUserProfilePhoto(String userId, String imgurUrl) async {
+      try {
+        // Save the profile photo URL in the user's document
+        await _firestore.collection('users').doc(userId).set(
+          {
+            'profilePhoto': imgurUrl,
+          },
+          SetOptions(merge: true), // Merges the data without overwriting existing fields
+        );
+        print('Profile photo URL saved successfully.');
+      } catch (e) {
+        print('Error saving profile photo URL: $e');
+        throw Exception('Failed to save profile photo URL.');
+      }
+    }
   
     // Add a friend by phone number
     Future<void> addFriendByPhoneNumber(String userId, String friendPhoneNumber) async {
@@ -143,7 +188,13 @@
         print("Error during logout: $e");
       }
     }
-  
+
+    String getCurrentUserId() {
+      User? user = FirebaseAuth.instance.currentUser;
+      return user!.uid; // Return the UID of the current logged-in user
+    }
+
+
     // Remove a friend
     Future<void> removeFriend(String userId, String friendId) async {
       try {
@@ -166,7 +217,7 @@
     Future<String?> getFirebaseDisplayName() async {
       // Get the current user from FirebaseAuth
       User? user = FirebaseAuth.instance.currentUser;
-  
+  print("=================================$user");
       if (user != null) {
         // If a user is logged in, return the displayName
         print("$user.displayName");
