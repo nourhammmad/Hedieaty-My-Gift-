@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'Database.dart';
+import 'imgur.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -23,7 +24,15 @@ class _HomePageState extends State<HomePage> {
     _initializeDatabase();
     _loadFriendsList();
   }
-
+  Future<String?> fetchPhotoURL(String userId) async {
+    try {
+      String? photoURL = await getPhotoURL(userId); // Fetch the URL using your function
+      return photoURL;
+    } catch (e) {
+      print('Error fetching photo URL: $e');
+      return ''; // Return empty string if the fetch fails
+    }
+  }
   Future<void> _loadFriendsList() async {
     String currentUserId = FirebaseAuth.instance.currentUser!.uid;
     DocumentSnapshot currentUserDoc = await FirebaseFirestore.instance.collection('friend_list').doc(currentUserId).get();
@@ -466,55 +475,66 @@ class _HomePageState extends State<HomePage> {
                 child: ListView.builder(
                   itemCount: friends.length,
                   itemBuilder: (context, index) {
-                    var friend = friends[index];
-
-                    // Handle missing values for display name and phone number
-                    String displayName = friend['displayName'] ?? 'No name';
-                    String phoneNumber = friend['phoneNumber'] ?? 'No phone number';
-
-                    // Handle missing avatar image, use a placeholder if not available
-                    String avatarUrl = friend['avatarUrl'] ?? '';  // Assuming avatarUrl is part of the data
-
-                    return Padding(
-                      padding: const EdgeInsets.all(8.0),  // Optional: Adds padding between the items
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,  // Background color of the container
-                          borderRadius: BorderRadius.circular(50),  // Rounded corners
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.2),  // Light grey shadow
-                              spreadRadius: 1,
-                              blurRadius: 4,
-                              offset: Offset(0, 2),  // Shadow position
+                    var friend = friends[index]; // Define friend here
+                    // Fetch photo URL for the friend
+                    return FutureBuilder<String?>(
+                      future: fetchPhotoURL(friend['friendId']!), // Fetch photo URL
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const CircularProgressIndicator(); // Show loading indicator while waiting for data
+                        } else if (snapshot.hasError) {
+                          return Text('Error: ${snapshot.error}');
+                        } else {
+                          String avatarUrl = snapshot.data ?? ''; // If error or null, fallback to empty string
+                          return Padding(
+                            padding: const EdgeInsets.all(8.0),  // Optional: Adds padding between the items
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,  // Background color of the container
+                                borderRadius: BorderRadius.circular(50),  // Rounded corners
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey.withOpacity(0.2),  // Light grey shadow
+                                    spreadRadius: 1,
+                                    blurRadius: 4,
+                                    offset: Offset(0, 2),  // Shadow position
+                                  ),
+                                ],
+                              ),
+                              child: ListTile(
+                                leading: avatarUrl.isEmpty
+                                    ? CircleAvatar(
+                                  radius: 50,
+                                  child: Icon(Icons.person, size: 40),  // Placeholder icon if avatar is missing
+                                )
+                                    : Container(
+                                  width: 120,  // Adjust size as needed
+                                  height: 120,  // Adjust size as needed
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    image: DecorationImage(
+                                      image: NetworkImage(avatarUrl),
+                                      fit: BoxFit.cover,  // Ensures the image covers the entire circle without distortion
+                                    ),
+                                  ),
+                                ),
+                                title: Text(friend['displayName']!, style: const TextStyle(fontFamily: "Lobster", fontSize: 30, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                                subtitle: Text(friend['phoneNumber'] ?? 'No phone number', style: const TextStyle(fontFamily: "Lobster", fontSize: 20)),
+                                onTap: () {
+                                  Navigator.pushNamed(context, '/FriendsGiftList', arguments: {
+                                    'friendId': friend['friendId'],
+                                    'friendName': friend['displayName'],
+                                  });
+                                },
+                              ),
                             ),
-                          ],
-                        ),
-                        child: ListTile(
-                          leading: avatarUrl.isEmpty
-                              ? CircleAvatar(radius: 60,child: Icon(Icons.person,size: 40,))  // Placeholder icon if avatar is missing
-                              : CircleAvatar(radius: 60,backgroundImage: NetworkImage(avatarUrl)),
-                          title: Text(displayName,style: const TextStyle(fontFamily: "Lobster",fontSize: 30,
-                            fontWeight: FontWeight.bold,),),
-                          subtitle: Text(phoneNumber,style: const TextStyle(fontFamily: "Lobster",fontSize: 20,
-                          ),),
-                          onTap: () {
-                            var x=friends[index]['displayName'];
-                            print("=========================$x");
-                            Navigator.pushNamed(context, '/FriendsGiftList', arguments: {
-                              'friendId': friends[index]['friendId'],
-                              'friendName': friends[index]['displayName'],
-                            });
-
-                          },
-                        ),
-                      ),
+                          );
+                        }
+                      },
                     );
                   },
                 ),
-              )
-
-
+              ),
             ],
           ),
           Positioned(
