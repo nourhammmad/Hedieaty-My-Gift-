@@ -2,8 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'Database.dart';
+import 'FirebaseDatabaseClass.dart';
 import 'imgur.dart';
-
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -15,19 +15,20 @@ class _HomePageState extends State<HomePage> {
   bool _isPressed = false; // Track the button state
   bool _isSearching = false; // Track the state of the search bar
   late Databaseclass _dbHelper;
-  List<Map<String, String>> _friends = []; // State variable for friends
-
+  List<Map<String, String>> friends = []; // State variable for friends
+  late FirebaseDatabaseClass _firebaseDb; // Use FirebaseDatabaseClass
   @override
   void initState() {
     super.initState();
-    _dbHelper = Databaseclass(); // Initialize _dbHelper here
+    _dbHelper = Databaseclass();
+    _firebaseDb=FirebaseDatabaseClass();
     _initializeDatabase();
     _loadFriendsList();
   }
   Future<String?> fetchPhotoURL(String userId) async {
     try {
       String? photoURL = await getPhotoURL(userId); // Fetch the URL using your function
-      return photoURL;
+      return photoURL ?? ''; // Return empty string if photoURL is null
     } catch (e) {
       print('Error fetching photo URL: $e');
       return ''; // Return empty string if the fetch fails
@@ -69,8 +70,8 @@ class _HomePageState extends State<HomePage> {
   Future<void> _initializeDatabase() async {
     await _dbHelper.initialize();
   }
-  final List<Map<String, String>> friends = [
-  ];
+  // final List<Map<String, String>> friends = [
+  // ];
 
 
   void _showAddFriendDialog(String currentUserId) {
@@ -265,6 +266,66 @@ class _HomePageState extends State<HomePage> {
   }
 
 
+  // bool _isPressed = false; // Track the button state
+  // bool _isSearching = false; // Track the state of the search bar
+  //
+  // final List<Map<String, String>> friends = [
+  //   {"name": "Nour", "image": "asset/pp1.jpg"},
+  //   {"name": "Liam", "image": "asset/pp2.jpg"},
+  //   {"name": "Emma", "image": "asset/pp3.jpg"},
+  //   {"name": "Oliver", "image": "asset/pp4.jpg"},
+  //   {"name": "Nina", "image": "asset/pp1.jpg"},
+  //   {"name": "Harry", "image": "asset/pp2.jpg"},
+  //   {"name": "Taylor", "image": "asset/pp3.jpg"},
+  //   {"name": "Oliver", "image": "asset/pp4.jpg"},
+  // ];
+
+  // void _showAddFriendDialog() {
+  //   final TextEditingController phoneController = TextEditingController();
+  //
+  //   showDialog(
+  //     context: context,
+  //     builder: (context) {
+  //       return AlertDialog(
+  //         title: const Text("Add Friend",style: TextStyle(fontSize: 28,color: Colors.red),),
+  //         content: Column(
+  //           mainAxisSize: MainAxisSize.min,
+  //           children: [
+  //             const Text("Enter phone number:",style: TextStyle(fontSize: 28),),
+  //             TextField(
+  //               controller: phoneController,
+  //               decoration: const InputDecoration(hintText: 'Phone Number'),
+  //             ),
+  //             const SizedBox(height: 30),
+  //             ElevatedButton(
+  //               onPressed: () {
+  //                 // Here you can add logic to select from contacts
+  //                 // For example, you can integrate the contacts package.
+  //                 // For now, just simulate adding a friend
+  //                 String phoneNumber = phoneController.text;
+  //                 if (phoneNumber.isNotEmpty) {
+  //                   setState(() {
+  //                     friends.add({"name": "Friend $phoneNumber", "image": "asset/default.jpg"});
+  //                   });
+  //                   Navigator.of(context).pop(); // Close the dialog
+  //                 }
+  //               },
+  //
+  //               child: const Text("Add Friend",style: TextStyle(fontSize: 28),),
+  //             ),
+  //           ],
+  //         ),
+  //         actions: [
+  //           TextButton(
+  //             onPressed: () => Navigator.of(context).pop(),
+  //             child: const Text("Cancel"),
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -285,18 +346,52 @@ class _HomePageState extends State<HomePage> {
               Icon(Icons.search, color: Colors.indigo.shade300),
               const SizedBox(width: 8),
               Expanded(
-                child: TextField(
-                  decoration: const InputDecoration(
-                    hintText: 'Search Friends...',
-                    border: InputBorder.none,
-                  ),
-                  style: TextStyle(
-                    fontFamily: 'Lobster',
-                    fontSize: 18,
-                    color: Colors.indigo,
-                  ),
+                child: ListView.builder(
+                  itemCount: friends.length,
+                  itemBuilder: (context, index) {
+                    final friend = friends[index];
+                    return FutureBuilder<String?>(
+                      future: fetchPhotoURL(friend['friendId']!), // Fetch photo URL for each friend
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          // While waiting for the photo URL, show a loading indicator
+                          return FriendListItem(
+                            displayName: friend['displayName']!,
+                            phoneNumber: friend['phoneNumber']!,
+                            friendId: friend['friendId']!,
+                            image: '', // Pass an empty string or a placeholder image while loading
+                          );
+                        } else if (snapshot.hasError) {
+                          // Handle any errors that occur while fetching the photo URL
+                          return FriendListItem(
+                            displayName: friend['displayName']!,
+                            phoneNumber: friend['phoneNumber']!,
+                            friendId: friend['friendId']!,
+                            image: '', // Handle error case by passing an empty string
+                          );
+                        } else if (snapshot.hasData) {
+                          // Successfully fetched the photo URL
+                          return FriendListItem(
+                            displayName: friend['displayName']!,
+                            phoneNumber: friend['phoneNumber']!,
+                            friendId: friend['friendId']!,
+                            image: snapshot.data, // Pass the fetched photo URL
+                          );
+                        } else {
+                          // If no data is available, show a fallback
+                          return FriendListItem(
+                            displayName: friend['displayName']!,
+                            phoneNumber: friend['phoneNumber']!,
+                            friendId: friend['friendId']!,
+                            image: '', // Fallback to empty string if no photo URL
+                          );
+                        }
+                      },
+                    );
+                  },
                 ),
               ),
+
               IconButton(
                 icon: const Icon(Icons.close, color: Colors.indigo),
                 onPressed: () {
@@ -475,59 +570,41 @@ class _HomePageState extends State<HomePage> {
                 child: ListView.builder(
                   itemCount: friends.length,
                   itemBuilder: (context, index) {
-                    var friend = friends[index]; // Define friend here
-                    // Fetch photo URL for the friend
+                    final friend = friends[index];
                     return FutureBuilder<String?>(
-                      future: fetchPhotoURL(friend['friendId']!), // Fetch photo URL
+                      future: fetchPhotoURL(friend['friendId']!), // Fetch photo URL for each friend
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const CircularProgressIndicator(); // Show loading indicator while waiting for data
+                          // While waiting for the photo URL, show a loading indicator
+                          return FriendListItem(
+                            displayName: friend['displayName']!,
+                            phoneNumber: friend['phoneNumber']!,
+                            friendId: friend['friendId']!,
+                            image: '', // Pass an empty string or a placeholder image while loading
+                          );
                         } else if (snapshot.hasError) {
-                          return Text('Error: ${snapshot.error}');
+                          // Handle any errors that occur while fetching the photo URL
+                          return FriendListItem(
+                            displayName: friend['displayName']!,
+                            phoneNumber: friend['phoneNumber']!,
+                            friendId: friend['friendId']!,
+                            image: '', // Handle error case by passing an empty string
+                          );
+                        } else if (snapshot.hasData) {
+                          // Successfully fetched the photo URL
+                          return FriendListItem(
+                            displayName: friend['displayName']!,
+                            phoneNumber: friend['phoneNumber']!,
+                            friendId: friend['friendId']!,
+                            image: snapshot.data, // Pass the fetched photo URL
+                          );
                         } else {
-                          String avatarUrl = snapshot.data ?? ''; // If error or null, fallback to empty string
-                          return Padding(
-                            padding: const EdgeInsets.all(8.0),  // Optional: Adds padding between the items
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,  // Background color of the container
-                                borderRadius: BorderRadius.circular(50),  // Rounded corners
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.grey.withOpacity(0.2),  // Light grey shadow
-                                    spreadRadius: 1,
-                                    blurRadius: 4,
-                                    offset: Offset(0, 2),  // Shadow position
-                                  ),
-                                ],
-                              ),
-                              child: ListTile(
-                                leading: avatarUrl.isEmpty
-                                    ? CircleAvatar(
-                                  radius: 50,
-                                  child: Icon(Icons.person, size: 40),  // Placeholder icon if avatar is missing
-                                )
-                                    : Container(
-                                  width: 120,  // Adjust size as needed
-                                  height: 120,  // Adjust size as needed
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    image: DecorationImage(
-                                      image: NetworkImage(avatarUrl),
-                                      fit: BoxFit.cover,  // Ensures the image covers the entire circle without distortion
-                                    ),
-                                  ),
-                                ),
-                                title: Text(friend['displayName']!, style: const TextStyle(fontFamily: "Lobster", fontSize: 30, fontWeight: FontWeight.bold, color: Colors.indigo)),
-                                subtitle: Text(friend['phoneNumber'] ?? 'No phone number', style: const TextStyle(fontFamily: "Lobster", fontSize: 20)),
-                                onTap: () {
-                                  Navigator.pushNamed(context, '/FriendsGiftList', arguments: {
-                                    'friendId': friend['friendId'],
-                                    'friendName': friend['displayName'],
-                                  });
-                                },
-                              ),
-                            ),
+                          // If no data is available, show a fallback
+                          return FriendListItem(
+                            displayName: friend['displayName']!,
+                            phoneNumber: friend['phoneNumber']!,
+                            friendId: friend['friendId']!,
+                            image: '', // Fallback to empty string if no photo URL
                           );
                         }
                       },
@@ -535,22 +612,16 @@ class _HomePageState extends State<HomePage> {
                   },
                 ),
               ),
+
             ],
           ),
           Positioned(
             bottom: 20,
             right: 20,
             child: FloatingActionButton(
-              onPressed: () async {
-
-                User? currentUser = FirebaseAuth.instance.currentUser;
-                if (currentUser != null) {
-                  String currentUserId = currentUser.uid;
-                  _showAddFriendDialog(currentUserId);  // Pass the user ID
-                } else {
-                  print("No user is currently logged in.");
-                }
-              }, // Open the dialog
+              onPressed: () {
+                _showAddFriendDialog(_firebaseDb.getCurrentUserId());
+              },
               backgroundColor: Colors.indigo.shade100,
               child: Icon(
                 Icons.person_add,
@@ -566,69 +637,101 @@ class _HomePageState extends State<HomePage> {
 }
 
 // Widget to display each friend with a fading image and info
-// Widget to display each friend with a fading image and info
 class FriendListItem extends StatelessWidget {
-  final String name;
-  final String image;
+  final String displayName;
+  final String phoneNumber;
+  final String? image; // image is nullable
+  final String friendId;
 
-  const FriendListItem({required this.name, required this.image});
+  const FriendListItem({
+    Key? key,
+    required this.displayName,
+    required this.phoneNumber,
+    required this.image,
+    required this.friendId,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // Check if image is null or empty
-    final imageWidget = image.isEmpty
-        ? Icon(
-      Icons.account_circle, // Default icon for profile
-      size: 100,
-      color: Colors.grey.shade400, // Default icon color
-    )
-        : Container(
-      width: 100,
-      height: 100,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        image: DecorationImage(
-          image: AssetImage(image),
-          fit: BoxFit.cover,
-        ),
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.centerRight,
-            end: Alignment.centerLeft,
-            colors: [
-              Colors.transparent,
-              Colors.black.withOpacity(0.4),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(20),
-        ),
-      ),
-    );
+    // Safe handling for nullable image
+    final String imageUrl = image?.isNotEmpty == true ? image! : ''; // If image is null or empty, fallback to empty string
+
+    // Print image URL to console for debugging
+    print('===============================Image URL: $imageUrl'); // Prints the image URL to the console
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 1.0, horizontal: 10.0),
       child: Row(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: imageWidget,
+          // Profile Image or fallback icon
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: imageUrl.isEmpty ? Colors.indigo.shade100 : null, // Background color if no image
+              image: imageUrl.isNotEmpty
+                  ? DecorationImage(
+                image: NetworkImage(imageUrl), // Assuming image is a URL
+                fit: BoxFit.cover,
+              )
+                  : null, // No image, so no background image
+            ),
+            child: imageUrl.isEmpty
+                ? const Center(
+              child: Icon(
+                Icons.account_circle,
+                size: 60,
+                color: Colors.indigo, // Default icon color
+              ),
+            )
+                : Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerRight,
+                  end: Alignment.centerLeft,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.4),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
           ),
           const SizedBox(width: 16),
+          // Friend Info
           Expanded(
             child: GestureDetector(
               onTap: () {
-                Navigator.pushNamed(context, '/FriendsGiftList');
+                // Navigate to Friend's Gift List
+                Navigator.pushNamed(
+                  context,
+                  '/FriendsGiftList',
+                  arguments: {
+                    'friendId': friendId,
+                    'friendName': displayName,
+                  },
+                );
               },
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    name,
+                    displayName,
                     style: const TextStyle(
                       fontSize: 30,
                       fontWeight: FontWeight.bold,
+                      fontFamily: "Lobster",
+                      color: Colors.indigo
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    phoneNumber,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey,
                       fontFamily: "Lobster",
                     ),
                   ),
@@ -644,6 +747,13 @@ class FriendListItem extends StatelessWidget {
                 ],
               ),
             ),
+          ),
+          // Delete Icon Button
+          IconButton(
+            icon: const Icon(Icons.delete, color: Colors.red),
+            onPressed: () {
+              // Add delete logic here (if needed)
+            },
           ),
         ],
       ),
