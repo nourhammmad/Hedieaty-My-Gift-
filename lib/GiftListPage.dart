@@ -75,14 +75,54 @@ class _GiftListPageState extends State<GiftListPage> {
   }
 
   // Function to delete a gift
-  void _deleteGift(int index) {
-    setState(() {
-      gifts.removeAt(index);
-    });
+  Future<void> _deleteGift(String giftId, String eventId) async {
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return;
+
+      // Reference to the user's document
+      final userDocRef = FirebaseFirestore.instance.collection('users').doc(userId);
+
+      // Find and remove the gift from Firestore
+      final userDoc = await userDocRef.get();
+      if (userDoc.exists) {
+        final eventsList = userDoc.data()?['events_list'] as List<dynamic>?;
+        if (eventsList != null) {
+          // Find the specific event by eventId
+          final event = eventsList.firstWhere(
+                (event) => event['eventId'] == eventId,
+            orElse: () => null, // Return null if no event found
+          );
+
+          if (event != null && event['gifts'] != null) {
+            final giftList = List<Map<String, dynamic>>.from(event['gifts']);
+            final giftToDelete = giftList.firstWhere(
+                  (gift) => gift['giftId'] == giftId,
+              orElse: () => {}, // Return null if no gift found
+            );
+
+            if (giftToDelete != null) {
+              // Remove the gift from the event's gift list
+              event['gifts'].remove(giftToDelete);
+              // Update the event in Firestore
+              await userDocRef.update({'events_list': eventsList});
+
+              // Remove the gift from the local list as well
+              setState(() {
+                gifts.removeWhere((gift) => gift['giftId'] == giftId);
+              });
+            }
+          }
+        }
+      }
+    } catch (e) {
+      print('Error deleting gift: $e');
+    }
   }
 
+
   // Function to show a confirmation dialog before deleting a gift
-  void _showDeleteDialog(int index) {
+  void _showDeleteDialog(String giftId,String eventId) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -101,7 +141,7 @@ class _GiftListPageState extends State<GiftListPage> {
             ),
             TextButton(
               onPressed: () {
-                _deleteGift(index); // Delete the gift
+                _deleteGift(giftId,eventId); // Delete the gift
                 Navigator.of(context).pop(); // Close the dialog
               },
               child: const Text("Delete", style: TextStyle(fontSize: 25, color: Colors.red)),
@@ -111,6 +151,7 @@ class _GiftListPageState extends State<GiftListPage> {
       },
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -233,7 +274,7 @@ class _GiftListPageState extends State<GiftListPage> {
                               ),
                             IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red, size: 40),
-                              onPressed: () => _showDeleteDialog(index), // Show delete confirmation dialog
+                              onPressed: () => _showDeleteDialog(gift['giftId'],gift['eventId']), // Show delete confirmation dialog
                             ),
                           ],
                         ),
