@@ -40,6 +40,8 @@ class _EventsListPageState extends State<EventsListPage> {
             {
               'description':event['description'],
               'eventId': event['eventId'],
+              'gifts':event['gifts'],
+
               'status': event['status'],
               'title':event['title'],
               'type': event['type'], // Corresponding to the 'type' field
