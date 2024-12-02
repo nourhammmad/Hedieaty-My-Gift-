@@ -75,11 +75,15 @@
         // Check if the user is logged in and the userId matches
         if (user != null && user.uid == userId) {
           // Update photoURL in Firebase Authentication
-          await user.updateProfile(photoURL: photoUrl).then((_) {
-            print("User's photoUrl updated in Firebase Authentication.");
-          }).catchError((e) {
-            print("Error updating photoUrl in Firebase Authentication: $e");
-          });
+          if (photoUrl != null && photoUrl.isNotEmpty) {
+            await user.updatePhotoURL(photoUrl).then((_) {
+              print("User's photoUrl updated in Firebase Authentication.");
+            }).catchError((e) {
+              print("Error updating photoUrl in Firebase Authentication: $e");
+            });
+          } else {
+            print("photoUrl is null or empty, skipping update in Firebase Authentication.");
+          }
 
           // Update photoURL in Firestore
           await FirebaseFirestore.instance.collection('users').doc(userId).update({
@@ -96,6 +100,7 @@
         print("Error updating photoURL: $e");
       }
     }
+
 
     Future<void> saveUserProfilePhoto(String userId, String imgurUrl) async {
       try {
@@ -213,20 +218,36 @@
         print('Error removing friend: $e');
       }
     }
-  
+
     Future<String?> getFirebaseDisplayName() async {
       // Get the current user from FirebaseAuth
       User? user = FirebaseAuth.instance.currentUser;
-  print("=================================$user");
+      print("=================================$user");
+
       if (user != null) {
-        // If a user is logged in, return the displayName
-        print("$user.displayName");
-        return user.displayName;
+        try {
+          // Fetch the user document from Firestore
+          DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+
+          if (userDoc.exists) {
+            // Get the 'displayName' field from the Firestore document
+            String? displayName = userDoc['displayName'];
+            print("Fetched displayName from Firestore: $displayName");
+            return displayName;
+          } else {
+            print("User document does not exist in Firestore.");
+            return null;
+          }
+        } catch (e) {
+          print("Error fetching displayName from Firestore: $e");
+          return null;
+        }
       } else {
         // If no user is logged in, return null
         return null;
       }
     }
+
   
   }
 

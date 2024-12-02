@@ -257,8 +257,15 @@
                         hintText: firstName,
                       ),
                       onChanged: (value) async {
-                        firstName = (await _firebaseDb.getFirebaseDisplayName())!;
+                        setState(() {
+                          firstName = value;
+                        });
+                        User? user = FirebaseAuth.instance.currentUser;
+                        if (user != null) {
+                          await _firestore.collection('users').doc(user.uid).update({'firstName': value});
+                        }
                       },
+
                     ),
                   ),
                   IconButton(
