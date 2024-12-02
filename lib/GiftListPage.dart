@@ -18,27 +18,86 @@ class _GiftListPageState extends State<GiftListPage> {
     super.initState();
     _loadGifts();
   }
+  // Function to fetch the gift image URL based on the gift ID
+  Future<String> _fetchGiftImage(String eventId, String giftId) async {
+    try {
+      final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+      final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Function to load the gifts from Firestore
+      User? user = _auth.currentUser;
+      if (user != null) {
+        String userId = user.uid;
+
+        // Fetch the user's document
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
+
+        if (userDoc.exists) {
+          // Access the events array from the user's document
+          List<dynamic> eventsList = userDoc['events_list'] ?? [];
+
+          // Find the event by its eventId
+          var event = eventsList.firstWhere((event) => event['eventId'] == eventId, orElse: () => null);
+
+          if (event != null) {
+            // Find the gift inside the event by its giftId
+            var gift = event['gifts']?.firstWhere((gift) => gift['giftId'] == giftId, orElse: () => null);
+
+            if (gift != null) {
+              // Return the photoURL from the gift
+              return gift['photoURL'] ?? '';
+            }
+          }
+        }
+      }
+    } catch (e) {
+      print("Error fetching gift image: $e");
+    }
+
+    return '';  // Return an empty string if image fetching fails
+  }
+
+
+// Function to load the gifts for the logged-in user
   Future<void> _loadGifts() async {
     try {
-      final userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId == null) return;
+      final FirebaseAuth _auth = FirebaseAuth.instance;
+      final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-      // Get the user's document
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
-      if (userDoc.exists) {
-        final eventsList = userDoc.data()?['events_list'] as List<dynamic>?;
+      User? user = _auth.currentUser;
+      if (user != null) {
+        String userId = user.uid;
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
 
-        if (eventsList != null) {
-          setState(() {
-            gifts = [];
-            // Iterate through the events and collect all gifts
-            for (var event in eventsList) {
-              if (event['gifts'] != null) {
-                gifts.addAll(List<Map<String, dynamic>>.from(event['gifts']));
+        if (userDoc.exists) {
+          List<dynamic> eventsList = userDoc['events_list'] ?? [];
+
+          // Fetch the gifts and event images asynchronously
+          List<Map<String, dynamic>> updatedGifts = [];
+          for (var event in eventsList) {
+            if (event['gifts'] != null) {
+              // Iterate through gifts in the event and add them with the event image
+              for (var gift in event['gifts']) {
+                String photoURL = await _fetchGiftImage(gift['eventId'], gift['giftId']);
+print("=================gift image url:$photoURL");
+                updatedGifts.add({
+                  'PledgedBy': gift['PledgedBy'],
+                  'category': gift['category'],
+                  'createdBy': gift['createdBy'],
+                  'description': gift['description'],
+                  'dueTo': gift['dueTo'],
+                  'eventId': event['eventId'],
+                  'giftId': gift['giftId'],
+                  'photoURL': photoURL,
+                  'price': gift['price'],
+                  'status': gift['status'],
+                  'title': gift['title'],
+                });
               }
             }
+          }
+
+          setState(() {
+            gifts = updatedGifts;
           });
         }
       }
@@ -219,12 +278,15 @@ class _GiftListPageState extends State<GiftListPage> {
                           decoration: BoxDecoration(
                             borderRadius: const BorderRadius.vertical(top: Radius.circular(15.0)),
                           ),
-                          child: gift['image'] != null && gift['image'].isNotEmpty
+                          child: gift['photoURL'] != null && gift['photoURL'].isNotEmpty
                               ? ClipRRect(
                             borderRadius: const BorderRadius.vertical(top: Radius.circular(15.0)),
                             child: Image.network(
-                              gift['image'], // Use the image URL if available
+                              gift['photoURL'], // Use the image URL if available
                               fit: BoxFit.cover,
+                              alignment: Alignment.center, // Ensure the image is centered
+                              width: double.infinity, // Make sure image fills the width
+                              height: double.infinity, // Make sure image fills the height
                             ),
                           )
                               : Icon(
@@ -233,6 +295,7 @@ class _GiftListPageState extends State<GiftListPage> {
                             color: Colors.red, // Set color of the icon
                           ),
                         ),
+
                         Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: Column(
@@ -241,23 +304,28 @@ class _GiftListPageState extends State<GiftListPage> {
                               Text(
                                 gift['title'] ?? 'Unnamed Gift',
                                 style: const TextStyle(
-                                  fontSize: 24,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.indigo,
+                                  fontSize: 40,
+                                  fontFamily: "Lobster",
+
                                 ),
                               ),
                               const SizedBox(height: 8.0),
                               Text(
                                 "Category: ${gift['category'] ?? 'Uncategorized'}",
-                                style: const TextStyle(fontSize: 18),
+                                style: const TextStyle(fontSize: 30,fontFamily: "Lobster",
+                                ),
                               ),
                               Text(
                                 "Status: ${status}",
-                                style: const TextStyle(fontSize: 18),
+                                style: const TextStyle(fontSize: 30,fontFamily: "Lobster",
+                                ),
                               ),
                               Text(
                                 "Due Date: ${duedate}",
-                                style: const TextStyle(fontSize: 18),
+                                style: const TextStyle(fontSize: 30,          fontFamily: "Lobster",
+                                ),
                               ),
                             ],
                           ),

@@ -116,20 +116,20 @@ class _AddEventState extends State<AddEvent> {
                 alignment: Alignment.bottomRight,
                 children: [
                   CircleAvatar(
-                    radius: 70,
+                    radius: 90,
                     backgroundColor: Colors.indigo.shade100,
                     child: _eventImage != null
                         ? ClipOval(
                       child: Image.file(
                         _eventImage!,
-                        width: 140, // Match the CircleAvatar size
-                        height: 140,
+                        width: 160, // Match the CircleAvatar size
+                        height: 160,
                         fit: BoxFit.cover,
                       ),
                     )
                         : Icon(
-                      Icons.person,
-                      size: 70,
+                      Icons.image_not_supported,
+                      size: 80,
                       color: Colors.indigo.shade300,
                     ),
                   ),
@@ -143,6 +143,7 @@ class _AddEventState extends State<AddEvent> {
                       child: const Icon(
                         Icons.add,
                         color: Colors.white,
+                        size:40
                       ),
                     ),
                   ),

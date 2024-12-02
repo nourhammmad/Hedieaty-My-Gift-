@@ -1,6 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image_picker/image_picker.dart';
+
+import 'imgur.dart';
 
 class AddGift extends StatefulWidget {
   const AddGift({super.key});
@@ -16,7 +21,16 @@ class _AddGiftState extends State<AddGift> {
   final TextEditingController priceController = TextEditingController();
   final TextEditingController dueToController = TextEditingController(); // New controller for Due Date
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
+  File? _giftImage;
+  final ImagePicker _imagePicker = ImagePicker();
+  Future<void> _pickImage() async {
+    final XFile? image = await _imagePicker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      setState(() {
+        _giftImage = File(image.path);
+      });
+    }
+  }
   String? selectedStatus;
   String? selectedEventId;
   List<Map<String, dynamic>> events = [];
@@ -88,7 +102,11 @@ class _AddGiftState extends State<AddGift> {
       String category = categoryController.text;
       String price = priceController.text;
       String dueTo = dueToController.text;
-
+      String? photoUrl;
+      if (_giftImage != null) {
+        // Upload image to Imgur and get the URL
+        photoUrl = await uploadImageToImgur(_giftImage!.path);
+      }
       Map<String, dynamic> giftData = {
         'giftId': giftId,
         'title': title,
@@ -100,6 +118,7 @@ class _AddGiftState extends State<AddGift> {
         'dueTo': dueTo,  // Add the due date
         'PledgedBy': null,
         'createdBy': userId,
+        'photoURL':photoUrl,
       };
 
       // Update the `events` list locally
@@ -163,32 +182,45 @@ class _AddGiftState extends State<AddGift> {
               child: Stack(
                 alignment: Alignment.bottomRight,
                 children: [
-                  ClipOval(
-                    child: imageExists
-                        ? Image.asset(
-                      'asset/placeholder.jpg',
-                      width: 120,
-                      height: 120,
-                      fit: BoxFit.cover,
-                    )
-                        : Container(
-                      width: 120,
-                      height: 120,
-                      color: Colors.grey[200],
-                      child: const Icon(
-                        Icons.image,
-                        size: 90,
-                        color: Colors.indigo,
-                      ),
-                    ),
-                  ),
-                  FloatingActionButton(
-                    mini: true,
-                    onPressed: () {
-                      // Add image selection functionality
-                    },
-                    child: const Icon(Icons.add),
-                  ),
+          CircleAvatar(
+          radius: 90,
+          backgroundColor: Colors.indigo.shade100,
+          child: _giftImage != null
+              ? ClipOval(
+            child: Image.file(
+              _giftImage!,
+              width: 160, // Match the CircleAvatar size
+              height: 160,
+              fit: BoxFit.cover,
+            ),
+          )
+              : Icon(
+            Icons.image_not_supported,
+            size: 80,
+            color: Colors.indigo.shade300,
+          ),
+        ),
+        InkWell(
+          onTap: _pickImage,
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.indigo,
+            ),
+            child: const Icon(
+                Icons.add,
+                color: Colors.white,
+                size:40
+            ),
+          ),
+        ),
+                  // FloatingActionButton(
+                  //   mini: true,
+                  //   onPressed: () {
+                  //     // Add image selection functionality
+                  //   },
+                  //   child: const Icon(Icons.add),
+                  // ),
                 ],
               ),
             ),
