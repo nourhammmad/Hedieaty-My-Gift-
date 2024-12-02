@@ -43,34 +43,69 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
       }
     });
   }
+  Future<String> _fetchGiftImage(String eventId, String giftId) async {
+    try {
+      final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+      if (userId != null) {
+        // Fetch the user's document
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
+
+        if (userDoc.exists) {
+          // Access the events array from the user's document
+          List<dynamic> eventsList = userDoc['events_list'] ?? [];
+
+          // Find the event by its eventId
+          var event = eventsList.firstWhere((event) => event['eventId'] == eventId, orElse: () => null);
+
+          if (event != null) {
+            // Find the gift inside the event by its giftId
+            var gift = event['gifts']?.firstWhere((gift) => gift['giftId'] == giftId, orElse: () => null);
+
+            if (gift != null) {
+              // Return the photoURL from the gift
+              return gift['photoURL'] ?? '';
+            }
+          }
+        }
+      }
+    } catch (e) {
+      print("Error fetching gift image: $e");
+    }
+
+    return ''; // Return an empty string if image fetching fails
+  }
 
   Future<void> _loadGifts() async {
     try {
-      // Use the userId passed from the other page (no need to fetch it from FirebaseAuth)
       if (userId.isEmpty) return;
 
-      // Get the user's document
       final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
       if (userDoc.exists) {
         final eventsList = userDoc.data()?['events_list'] as List<dynamic>?;
 
         if (eventsList != null) {
-          setState(() {
-            gifts = [];
-            // Iterate through the events and collect all gifts
-            for (var event in eventsList) {
-              if (event['gifts'] != null) {
-                gifts.addAll(List<Map<String, dynamic>>.from(event['gifts']));
+          final loadedGifts = <Map<String, dynamic>>[];
+
+          for (var event in eventsList) {
+            if (event['gifts'] != null) {
+              final eventGifts = List<Map<String, dynamic>>.from(event['gifts']);
+
+              for (var gift in eventGifts) {
+                // Fetch and add the image URL for each gift
+                gift['image'] = await _fetchGiftImage(event['eventId'], gift['giftId']);
+                loadedGifts.add(gift);
               }
             }
-            // Set loading to false once gifts are loaded (even if empty)
+          }
+
+          setState(() {
+            gifts = loadedGifts;
             isLoading = false;
           });
 
-          // Print the gifts list to the console
           print('Loaded gifts: $gifts');
         } else {
-          // Set loading to false if no eventsList is found
           setState(() {
             isLoading = false;
           });
@@ -79,10 +114,11 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
     } catch (e) {
       print('Error loading gifts: $e');
       setState(() {
-        isLoading = false; // Ensure loading is stopped in case of error
+        isLoading = false;
       });
     }
   }
+
 
   String sortCriteria = 'Name';
 
@@ -116,15 +152,15 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
       return Colors.indigo; // Color for available gifts
     }
   }
-bool WhichText(status){
+  bool WhichText(status){
 
-  if (status == 'Pledged') {
+    if (status == 'Pledged') {
 
-    return true; // Color for pledged gifts
-  } else {
-    return false; // Color for available gifts
+      return true; // Color for pledged gifts
+    } else {
+      return false; // Color for available gifts
+    }
   }
-}
   void _pledgeGift(String giftId) async {
     try {
       final currentUser = FirebaseAuth.instance.currentUser;
@@ -309,14 +345,9 @@ bool WhichText(status){
                           height: 200,
                           decoration: BoxDecoration(
                             borderRadius: const BorderRadius.vertical(top: Radius.circular(15.0)),
-                            // image: DecorationImage(
-                            //   image: gift['image'] != null && gift['image'].isNotEmpty
-                            //       ? AssetImage(gift['image'])
-                            //       : AssetImage('asset/placeholder.png'),
-                            //   fit: BoxFit.cover,
-                            // ),
+
                           ),
-                          child: gift['image'] == null || gift['image'].isEmpty
+                          child: gift['photoURL'] == null || gift['photoURL'].isEmpty
                               ? Center(
                             child: Icon(
                               Icons.image_not_supported,
@@ -324,7 +355,22 @@ bool WhichText(status){
                               size: 100, // Customize the icon size
                             ),
                           )
-                              : null, // No icon if an image is available
+                              : Image.network(
+                            width: double.infinity, // Make sure image fills the width
+                            height: double.infinity, // Make
+                  gift['photoURL'],
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                  return Center(
+                  child: Icon(
+                  Icons.error,
+                  color: Colors.red,
+                  size: 50,
+                  ),
+                  );
+                  },
+                  ),
+                   // No icon if an image is available
                         ),
 
                         Padding(

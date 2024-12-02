@@ -189,6 +189,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                           child: const Icon(
                             Icons.add,
                             color: Colors.white,
+                            size:40
                           ),
                         ),
                       ),

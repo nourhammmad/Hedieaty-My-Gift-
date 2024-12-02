@@ -266,65 +266,6 @@ class _HomePageState extends State<HomePage> {
   }
 
 
-  // bool _isPressed = false; // Track the button state
-  // bool _isSearching = false; // Track the state of the search bar
-  //
-  // final List<Map<String, String>> friends = [
-  //   {"name": "Nour", "image": "asset/pp1.jpg"},
-  //   {"name": "Liam", "image": "asset/pp2.jpg"},
-  //   {"name": "Emma", "image": "asset/pp3.jpg"},
-  //   {"name": "Oliver", "image": "asset/pp4.jpg"},
-  //   {"name": "Nina", "image": "asset/pp1.jpg"},
-  //   {"name": "Harry", "image": "asset/pp2.jpg"},
-  //   {"name": "Taylor", "image": "asset/pp3.jpg"},
-  //   {"name": "Oliver", "image": "asset/pp4.jpg"},
-  // ];
-
-  // void _showAddFriendDialog() {
-  //   final TextEditingController phoneController = TextEditingController();
-  //
-  //   showDialog(
-  //     context: context,
-  //     builder: (context) {
-  //       return AlertDialog(
-  //         title: const Text("Add Friend",style: TextStyle(fontSize: 28,color: Colors.red),),
-  //         content: Column(
-  //           mainAxisSize: MainAxisSize.min,
-  //           children: [
-  //             const Text("Enter phone number:",style: TextStyle(fontSize: 28),),
-  //             TextField(
-  //               controller: phoneController,
-  //               decoration: const InputDecoration(hintText: 'Phone Number'),
-  //             ),
-  //             const SizedBox(height: 30),
-  //             ElevatedButton(
-  //               onPressed: () {
-  //                 // Here you can add logic to select from contacts
-  //                 // For example, you can integrate the contacts package.
-  //                 // For now, just simulate adding a friend
-  //                 String phoneNumber = phoneController.text;
-  //                 if (phoneNumber.isNotEmpty) {
-  //                   setState(() {
-  //                     friends.add({"name": "Friend $phoneNumber", "image": "asset/default.jpg"});
-  //                   });
-  //                   Navigator.of(context).pop(); // Close the dialog
-  //                 }
-  //               },
-  //
-  //               child: const Text("Add Friend",style: TextStyle(fontSize: 28),),
-  //             ),
-  //           ],
-  //         ),
-  //         actions: [
-  //           TextButton(
-  //             onPressed: () => Navigator.of(context).pop(),
-  //             child: const Text("Cancel"),
-  //           ),
-  //         ],
-  //       );
-  //     },
-  //   );
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -657,7 +598,7 @@ class FriendListItem extends StatelessWidget {
     final String imageUrl = image?.isNotEmpty == true ? image! : ''; // If image is null or empty, fallback to empty string
 
     // Print image URL to console for debugging
-    print('===============================Image URL: $imageUrl'); // Prints the image URL to the console
+    //print('===============================Image URL: $imageUrl'); // Prints the image URL to the console
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 1.0, horizontal: 10.0),

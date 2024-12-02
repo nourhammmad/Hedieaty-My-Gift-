@@ -97,6 +97,7 @@ print("=================gift image url:$photoURL");
           }
 
           setState(() {
+            print("====================$updatedGifts");
             gifts = updatedGifts;
           });
         }

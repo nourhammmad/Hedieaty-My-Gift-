@@ -22,6 +22,43 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
     _userId = _auth.currentUser!.uid; // Get logged-in user's ID
     _fetchPledgedGifts();
   }
+  Future<String> _fetchGiftImage(String PledgerId,String eventId, String giftId) async {
+    try {
+      final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+      final FirebaseAuth _auth = FirebaseAuth.instance;
+
+      User? user = _auth.currentUser;
+      if (user != null) {
+        String userId = user.uid;
+
+        // Fetch the user's document
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(PledgerId).get();
+
+        if (userDoc.exists) {
+          // Access the events array from the user's document
+          List<dynamic> eventsList = userDoc['events_list'] ?? [];
+
+          // Find the event by its eventId
+          var event = eventsList.firstWhere((event) => event['eventId'] == eventId, orElse: () => null);
+
+          if (event != null) {
+            // Find the gift inside the event by its giftId
+            var gift = event['gifts']?.firstWhere((gift) => gift['giftId'] == giftId, orElse: () => null);
+
+            if (gift != null) {
+              // Return the photoURL from the gift
+              return gift['photoURL'] ?? '';
+            }
+          }
+        }
+      }
+    } catch (e) {
+      print("Error fetching gift image: $e");
+    }
+
+    return '';  // Return an empty string if image fetching fails
+  }
+
   Future<void> _fetchPledgedGifts() async {
     try {
       // Fetch the logged-in user's document from Firestore
@@ -52,6 +89,7 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
             String eventTitle = 'Unknown Event';
             String giftTitle = 'Unknown Gift';
             String dueTo = 'No due date';
+            String giftImage = '';  // To store the gift image URL
 
             for (var event in eventsList) {
               if (event['eventId'] == eventId) {
@@ -62,6 +100,9 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
                   if (gift['giftId'] == giftId) {
                     giftTitle = gift['title'] ?? 'Unknown Gift';
                     dueTo = gift['dueTo'] ?? 'No due date';
+
+                    // Fetch the gift image using the _fetchGiftImage method
+                    giftImage = await _fetchGiftImage(pledgedGift['pledgerId'],eventId, giftId);
                     break;
                   }
                 }
@@ -72,16 +113,18 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
             // Create the detailed pledged gift entry
             pledgedGiftsList.add({
               'pledgerName': pledgerName,
-              'giftTitle': giftTitle,
+              'title': giftTitle,
               'eventTitle': eventTitle,
               'dueTo': dueTo,
               'status': status,
+              'photoURL': giftImage,  // Add the gift image URL
             });
           }
         }
 
         // Update the UI with the fetched pledged gifts
         setState(() {
+          print("===================$pledgedGiftsList");
           pledgedGifts = pledgedGiftsList;
         });
       }
@@ -206,25 +249,31 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
                               Expanded(
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.vertical(top: Radius.circular(30)), // Round the top corners
-                                  child: gift['image'] != null
+                                  child: (gift['photoURL'] != null && gift['photoURL'].isNotEmpty)
                                       ? Image.network(
-                                    gift['image'], // Assuming gift image URL
+                                    gift['photoURL'], // Assuming gift image URL
                                     fit: BoxFit.cover,
                                   )
-                                      : Icon(
-                                    Icons.image_not_supported, // Default icon when no image available
-                                    size: 100,
-                                    color: Colors.red,
+                                      : Container(
+                                    color: Colors.grey[200], // Optional: background color for fallback
+                                    child: Center(
+                                      child: Icon(
+                                        Icons.image_not_supported, // Default icon when no image available
+                                        size: 100,
+                                        color: Colors.red,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
+
                               Padding(
                                 padding: const EdgeInsets.all(8.0),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      gift['giftTitle'] ?? 'No Title',
+                                      gift['title'] ?? 'No Title',
                                       style: const TextStyle(
                                         fontSize: 25,
                                         fontWeight: FontWeight.bold,
