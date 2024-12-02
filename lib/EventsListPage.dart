@@ -19,40 +19,34 @@ class _EventsListPageState extends State<EventsListPage> {
   // Function to fetch events from Firestore
   Future<void> _loadEvents() async {
     try {
-      final FirebaseAuth _auth = FirebaseAuth
-          .instance; // Initialize Firebase Auth
-      final FirebaseFirestore _firestore = FirebaseFirestore
-          .instance; // Initialize Firestore
+      final FirebaseAuth _auth = FirebaseAuth.instance;
+      final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
       User? user = _auth.currentUser;
       if (user != null) {
         String userId = user.uid;
-        // Reference to the user's events collection
-        DocumentSnapshot userDoc = await _firestore.collection('users').doc(
-            userId).get();
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
 
         if (userDoc.exists) {
-          // Fetch the events list
           List<dynamic> eventsList = userDoc['events_list'] ?? [];
 
-          setState(() {
-            events = eventsList.map((event) =>
-            {
-              'description':event['description'],
+          // Fetch the event images asynchronously
+          List<Map<String, dynamic>> updatedEvents = [];
+          for (var event in eventsList) {
+            String photoURL = await _fetchEventImage(event['eventId']);
+            updatedEvents.add({
+              'description': event['description'],
               'eventId': event['eventId'],
-              'gifts':event['gifts'],
-
+              'photoURL': photoURL,
+              'gifts': event['gifts'],
               'status': event['status'],
-              'title':event['title'],
-              'type': event['type'], // Corresponding to the 'type' field
-            }).toList();
-
-            // Print out the events list for debugging
-            print("Fetched events from Firestore: ");
-            events.forEach((event) {
-              print(
-                  "Event Name: ${event['name']}, Category: ${event['category']}, Status: ${event['status']}, Event ID: ${event['eventId']}, Image: ${event['image']}");
+              'title': event['title'],
+              'type': event['type'],
             });
+          }
+
+          setState(() {
+            events = updatedEvents;
           });
         }
       }
@@ -60,6 +54,40 @@ class _EventsListPageState extends State<EventsListPage> {
       print("Error loading events: $e");
     }
   }
+
+  Future<String> _fetchEventImage(String eventId) async {
+    try {
+      final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+      final FirebaseAuth _auth = FirebaseAuth.instance;
+
+      User? user = _auth.currentUser;
+      if (user != null) {
+        String userId = user.uid;
+
+        // Fetch the user's document
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
+
+        if (userDoc.exists) {
+          // Access the events array from the user's document
+          List<dynamic> eventsList = userDoc['events_list'] ?? [];
+
+          // Find the event by its eventId
+          var event = eventsList.firstWhere((event) => event['eventId'] == eventId, orElse: () => null);
+
+          if (event != null) {
+            // Return the photoURL from the event
+            return event['photoURL'] ?? '';
+          }
+        }
+      }
+    } catch (e) {
+      print("Error fetching event image: $e");
+    }
+
+    return '';  // Return an empty string if image fetching fails
+  }
+
+
 
   // Function to show a confirmation dialog before deleting an event
   void _showDeleteConfirmationDialog(String eventId) {
@@ -149,9 +177,9 @@ class _EventsListPageState extends State<EventsListPage> {
       case 'Name':
         events.sort((a, b) => (a['name'] ?? '').compareTo(b['name'] ?? ''));
         break;
-      case 'Category':
+      case 'type':
         events.sort((a, b) =>
-            (a['category'] ?? '').compareTo(b['category'] ?? ''));
+            (a['type'] ?? '').compareTo(b['type'] ?? ''));
         break;
       case 'Status':
         events.sort((a, b) => (a['status'] ?? '').compareTo(b['status'] ?? ''));
@@ -248,14 +276,14 @@ class _EventsListPageState extends State<EventsListPage> {
                     child: Column(
                       children: [
                         // Check if image exists or not
-                        event['image']?.isNotEmpty == true
+                        event['photoURL']?.isNotEmpty == true
                             ? Container(
                           height: 200,
                           decoration: BoxDecoration(
                             borderRadius: const BorderRadius.vertical(
                                 top: Radius.circular(15.0)),
                             image: DecorationImage(
-                              image: AssetImage(event['image']!),
+                              image: NetworkImage(event['photoURL']!),
                               fit: BoxFit.cover,
                             ),
                           ),
@@ -280,7 +308,7 @@ class _EventsListPageState extends State<EventsListPage> {
                               Text(
                                 event['title'] ?? 'Unnamed Event',
                                 style: const TextStyle(
-                                  fontSize: 30,
+                                  fontSize: 40,
                                   fontFamily: "Lobster",
                                   fontWeight: FontWeight.bold,
                                   color: Colors.indigo,
@@ -288,13 +316,13 @@ class _EventsListPageState extends State<EventsListPage> {
                               ),
                               const SizedBox(height: 8.0),
                               Text(
-                                "Category: ${event['category'] ??
+                                "Category: ${event['type'] ??
                                     'Uncategorized'}",
-                                style: const TextStyle(fontSize: 20),
+                                style: const TextStyle(fontSize: 30,fontFamily: "Lobster",),
                               ),
                               Text(
                                 "Status: ${event['status'] ?? 'Unknown'}",
-                                style: const TextStyle(fontSize: 20),
+                                style: const TextStyle(fontSize: 30,fontFamily: "Lobster",),
                               ),
                             ],
                           ),

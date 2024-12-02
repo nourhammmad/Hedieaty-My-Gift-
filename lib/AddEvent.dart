@@ -1,7 +1,11 @@
+import 'dart:io';
+import 'imgur.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AddEvent extends StatefulWidget {
   const AddEvent({super.key});
@@ -13,17 +17,26 @@ class AddEvent extends StatefulWidget {
 class _AddEventState extends State<AddEvent> {
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
+  File? _eventImage;
 
   bool isPledged = false;
   bool imageExists = false;
 
   String eventStatus = 'Upcoming';
   String eventType = 'Birthday';
+  final ImagePicker _imagePicker = ImagePicker();
 
   // Add the Firestore instance
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-
+  Future<void> _pickImage() async {
+    final XFile? image = await _imagePicker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      setState(() {
+        _eventImage = File(image.path);
+      });
+    }
+  }
   // Function to add an event to Firestore
     void _addEvent() async {
       User? user = _auth.currentUser;
@@ -35,6 +48,11 @@ class _AddEventState extends State<AddEvent> {
         // Generate a unique event ID using Firestore document ID
         String eventId = _firestore.collection('users').doc().id;
 
+          String? photoUrl;
+          if (_eventImage != null) {
+            // Upload image to Imgur and get the URL
+            photoUrl = await uploadImageToImgur(_eventImage!.path);
+          }
         // Prepare event data
         Map<String, dynamic> eventData = {
           'eventId': eventId, // Unique ID for event
@@ -42,6 +60,8 @@ class _AddEventState extends State<AddEvent> {
           'description': description,
           'status': eventStatus,
           'type': eventType,
+          'photoURL':photoUrl,
+          'gifts':null,
         };
 
         try {
@@ -95,42 +115,41 @@ class _AddEventState extends State<AddEvent> {
               child: Stack(
                 alignment: Alignment.bottomRight,
                 children: [
-                  ClipOval(
-                    child: imageExists
-                        ? Image.asset(
-                      '', // Placeholder image
-                      width: 220,
-                      height: 220,
-                      fit: BoxFit.cover,
+                  CircleAvatar(
+                    radius: 70,
+                    backgroundColor: Colors.indigo.shade100,
+                    child: _eventImage != null
+                        ? ClipOval(
+                      child: Image.file(
+                        _eventImage!,
+                        width: 140, // Match the CircleAvatar size
+                        height: 140,
+                        fit: BoxFit.cover,
+                      ),
                     )
-                        : Container(
-                      width: 220,
-                      height: 220,
-                      color: Colors.grey[200], // Background for no image
-                      child: const Center(
-                          child: Icon(Icons.person, size: 100, color: Colors.white)),
+                        : Icon(
+                      Icons.person,
+                      size: 70,
+                      color: Colors.indigo.shade300,
                     ),
                   ),
-                  Container(
-                    margin: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.indigo,
-                    ),
-                    child: IconButton(
-                      icon: const Icon(
+                  InkWell(
+                    onTap: _pickImage,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.indigo,
+                      ),
+                      child: const Icon(
                         Icons.add,
                         color: Colors.white,
-                        size: 28,
                       ),
-                      onPressed: () {
-                        // Add image upload logic if needed
-                      },
                     ),
                   ),
                 ],
               ),
             ),
+
             const SizedBox(height: 20),
 
             // Event Name Field
