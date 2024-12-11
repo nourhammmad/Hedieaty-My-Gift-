@@ -1,10 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
 import 'Database.dart';
 import 'EventsListPage.dart';
 import 'FirebaseDatabaseClass.dart';
 import 'FriendsEvent.dart';
+import 'UserSession.dart';
 import 'imgur.dart';
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -20,16 +23,32 @@ class _HomePageState extends State<HomePage> {
   List<Map<String, String>> friends = []; // State variable for friends
   late FirebaseDatabaseClass _firebaseDb; // Use FirebaseDatabaseClass
   late String currentUserId;
+  bool isLoading = true;
+  bool isOnline = false;
   @override
   void initState() {
     super.initState();
+    print("=======================DAKHALT=====================");
     _dbHelper = Databaseclass();
     _firebaseDb=FirebaseDatabaseClass();
-    currentUserId = FirebaseAuth.instance.currentUser!.uid;
+
+    //currentUserId = FirebaseAuth.instance.currentUser!.uid;
     _initializeDatabase();
     _loadFriendsList();
   }
   Future<String?> fetchPhotoURL(String userId) async {
+    bool online = false; // Default value in case of failure
+    try {
+      var internetConnection = InternetConnection(); // Initialize safely
+      if (internetConnection != null) {
+        online = await internetConnection.hasInternetAccess ?? false;
+      }
+    } catch (e) {
+      // Handle exceptions, such as if the method throws an error
+      print("Error checking internet connection: $e");
+    }
+    if(!online)
+      return '';
     try {
       String? photoURL = await getPhotoURL(userId); // Fetch the URL using your function
       return photoURL ?? ''; // Return empty string if photoURL is null
@@ -38,34 +57,125 @@ class _HomePageState extends State<HomePage> {
       return ''; // Return empty string if the fetch fails
     }
   }
+
   Future<void> _loadFriendsList() async {
-    DocumentSnapshot currentUserDoc = await FirebaseFirestore.instance.collection('friend_list').doc(currentUserId).get();
+    // Check connectivity status
+    bool online = false; // Default value in case of failure
+    try {
+      var internetConnection = InternetConnection(); // Initialize safely
+      if (internetConnection != null) {
+        online = await internetConnection.hasInternetAccess ?? false;
+      }
+    } catch (e) {
+      // Handle exceptions, such as if the method throws an error
+      print("Error checking internet connection: $e");
+    }
+    print("=======LESSA MADAKAHLTSH=============");
+    // If online, fetch from Firestore and update local database
+    if (online) {
+      try {
+        currentUserId = FirebaseAuth.instance.currentUser!.uid;
+        print("Online, fetch from Firestore and update local database");
+        DocumentSnapshot currentUserDoc = await FirebaseFirestore.instance.collection('friend_list').doc(currentUserId).get();
 
-    if (currentUserDoc.exists) {
-      List<dynamic> friendIds = currentUserDoc['friends'] ?? [];
-      List<Future<void>> friendFetchTasks = [];
+        if (currentUserDoc.exists) {
+          List<dynamic> friendIds = currentUserDoc['friends'] ?? [];
+          List<Future<void>> friendFetchTasks = [];
 
-      // Clear the current list of friends before adding new ones
+          // Clear the current list of friends before adding new ones
+          friends.clear();
+
+          for (var friendId in friendIds) {
+            // Fetch user data for each friend
+            friendFetchTasks.add(FirebaseFirestore.instance.collection('users').doc(friendId).get().then((doc) async {
+              if (doc.exists) {
+                // Create friend data map
+                Map<String, String> friendData = {
+                  'displayName': doc['displayName'],
+                  'phoneNumber': doc['phoneNumber'],
+                  'friendId': friendId,
+                };
+
+                // Add friend to the list (UI update)
+                friends.add(friendData);
+
+                // Insert into local database for offline use
+                _dbHelper.insertFriend(currentUserId, friendData);  // Pass currentUserId to insertFriend
+
+              }
+
+            }));
+          }
+          // List<Map<String, String>> users = await _dbHelper.getFriends();
+          //
+          // // Print the users' details
+          // for (var user in users) {
+          //   print('User ID: ${user['userId']}');
+          //   print('Firebase ID: ${user['friendId']}');
+          //   print('Display Name: ${user['displayName']}');
+          //   print('Email: ${user['email']}');
+          //   print('Phone: ${user['phone']}');
+          //   print('Friends: ${user['friends']}');
+          //   print('---------------------------');
+          // }
+          // List<Map<String, Object?>> localFriends = await _dbHelper.getFriendsByUserId(currentUserId);
+          //
+          // // Print the fetched friends list
+          // for (var friend in localFriends) {
+          //   print("Friend:");
+          //   print("friendId: ${friend['friendId']}");
+          //   print("displayName: ${friend['displayName']}");
+          //   print("phoneNumber: ${friend['phoneNumber']}");
+          //   print("---------------------------");
+          // }
+
+          // Wait for all Firestore fetch tasks to complete
+          await Future.wait(friendFetchTasks);
+
+          // Once all friends are loaded, call setState to rebuild the UI
+          setState(() {});
+        }
+      } catch (e) {
+        print("Error fetching friends from Firestore: $e");
+      }
+    } else {
+      // If offline, load from local database
+      _loadFriendsFromLocalDatabase();
+    }
+  }
+
+
+// Load friends from local database when offline
+  Future<void> _loadFriendsFromLocalDatabase() async {
+    print("======================DALHALT BARDO-========");
+    try {
+      print("Offline, fetching friends from local database");
+      String? currentUserId = await UserSession.getUserId();
+      if (currentUserId == null) {
+        print("Error: currentUserId is null. Unable to load friends list.");
+        return;
+      }
+      // Assuming currentUserId is already available
+      // Fetch friends of the current user from the local database
+      List<Map<String, Object?>> localFriends = await _dbHelper.getFriendsByUserId(currentUserId!);
+
+      // Clear the existing list of friends before adding new ones
       friends.clear();
 
-      for (var friendId in friendIds) {
-        // Fetch user data for each friend
-        friendFetchTasks.add(FirebaseFirestore.instance.collection('users').doc(friendId).get().then((doc) {
-          if (doc.exists) {
-            friends.add({
-              'displayName': doc['displayName'], // Adjust based on your document structure
-              'phoneNumber': doc['phoneNumber'],
-              'friendId': friendId, // Include the friendId
-            });
-          }
-        }));
+      for (var friendData in localFriends) {
+        // Add friend to the list (UI update)
+        // Ensure proper type casting from Object? to String
+        friends.add({
+          'friendId': friendData['friendId']?.toString() ?? '',
+          'displayName': friendData['displayName']?.toString() ?? '',
+          'phoneNumber': friendData['phoneNumber']?.toString() ?? '',
+        });
       }
 
-      // Wait for all the asynchronous tasks to complete
-      await Future.wait(friendFetchTasks);
-
-      // Once all friends are loaded, call setState to rebuild the UI
+      // Update UI
       setState(() {});
+    } catch (e) {
+      print("Error loading friends from local database: $e");
     }
   }
 
@@ -447,7 +557,9 @@ class _HomePageState extends State<HomePage> {
               onTap: () async {
                 Navigator.pop(context); // Close the drawer
                 // Navigate to the logout page or handle the logout functionality
-                //await _firebaseDb.logout();
+                await _firebaseDb.logout();
+                await UserSession.clearUserSession();
+
                 Navigator.pushNamed(context, '/Login'); // Example navigation
               },
             ),

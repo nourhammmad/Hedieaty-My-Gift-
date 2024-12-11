@@ -28,6 +28,7 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
+  internet_connection_checker_plus: ^2.5.2
   flutter:
     sdk: flutter
 
@@ -49,6 +50,7 @@ dependencies:
   flutter_image_compress: ^2.3.0
   http: ^1.2.2
   cached_network_image: ^3.4.1
+
 
 dev_dependencies:
   flutter_test:

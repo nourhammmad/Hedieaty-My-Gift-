@@ -1,8 +1,9 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'Database.dart';
 import 'UserSession.dart';  // Import the UserSession class
-
+import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
 class HoverEffectText extends StatefulWidget {
   @override
   _HoverEffectTextState createState() => _HoverEffectTextState();
@@ -67,14 +68,22 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _login() async {
+    bool online = false; // Default value in case of failure
+    try {
+      var internetConnection = InternetConnection(); // Initialize safely
+      if (internetConnection != null) {
+        online = await internetConnection.hasInternetAccess ?? false;
+      }
+    } catch (e) {
+      // Handle exceptions, such as if the method throws an error
+      print("Error checking internet connection: $e");
+    }
     if (_formKey.currentState?.validate() ?? false) {
       // Step 1: Check the local database for the user
-
       bool isLocalValid = await _dbHelper.validateLogin(
         emailController.text,
         passwordController.text,
       );
-      //print("================================isLocalValid:$isLocalValid ");
 
       if (isLocalValid) {
         // Fetch user details from the local database
@@ -82,54 +91,72 @@ class _LoginPageState extends State<LoginPage> {
           "SELECT * FROM Users WHERE EMAIL = ? AND PASSWORD = ?",
           [emailController.text, passwordController.text],
         );
+        String userId = result.isNotEmpty && result[0]['FIREBASE_ID'] != null
+            ? result[0]['FIREBASE_ID']
+            : 'offline_user';
+        String userName = result.isNotEmpty && result[0]['displayName'] != null
+            ? result[0]['displayName']
+            : 'Offline User';
+
+        await UserSession.saveUserSession(userId, userName);
+        print("====================user id for user session$userId");
 
         if (result.isNotEmpty) {
           // Local user found
           print("User found locally");
 
-          //await UserSession.saveUserSession(userId, userName);
-          await FirebaseAuth.instance.signInWithEmailAndPassword(
-            email: emailController.text,
-            password: passwordController.text,
-          );
-          // Navigate to home page
+          // If internet is available, attempt Firebase authentication
+          if (online) {
+            try {
+              await FirebaseAuth.instance.signInWithEmailAndPassword(
+                email: emailController.text,
+                password: passwordController.text,
+              );
+              print("User authenticated with Firebase");
+            } catch (e) {
+              // Handle Firebase authentication failure
+              print("Firebase authentication failed: $e");
+            }
+          }
+
+          // Regardless of internet, navigate to the homepage
           Navigator.pushReplacementNamed(context, '/');
           return; // Stop further processing
         }
       }
 
-      // Step 2: If not found in the local database, validate with Firebase
-      try {
-        print("User found on firestore and then inserted in the local database");
-        // Attempt Firebase authentication
-        final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: emailController.text,
-          password: passwordController.text,
-        );
+      // Step 2: If not found locally, attempt Firebase authentication
+      if (online) {
+        try {
+          final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+            email: emailController.text,
+            password: passwordController.text,
+          );
 
-        User? firebaseUser = userCredential.user;
+          User? firebaseUser = userCredential.user;
 
-        if (firebaseUser != null) {
-          // Firebase user found, sync with local database
-          await _dbHelper.insertOrUpdateUser({
-            'FIREBASE_ID': firebaseUser.uid, // Firebase UID as TEXT
-            'EMAIL': firebaseUser.email,
-            'displayName': firebaseUser.displayName,
-            'PASSWORD': passwordController.text,
-          });
+          if (firebaseUser != null) {
+            await _dbHelper.insertOrUpdateUser({
+              'FIREBASE_ID': firebaseUser.uid,
+              'EMAIL': firebaseUser.email ?? '',
+              'displayName': firebaseUser.displayName ?? 'Unknown User',
+              'PASSWORD': passwordController.text,
+            });
+          } else {
+            print("Firebase user is null.");
+          }
 
-
-          //await UserSession.saveUserSession(firebaseUser.uid, firebaseUser.displayName);
-
-          // Navigate to home page
-          Navigator.pushReplacementNamed(context, '/');
+        } catch (e) {
+          // Handle Firebase errors (e.g., wrong credentials, user not found)
+          _showErrorDialog('Firebase Authentication Failed: $e');
         }
-      } catch (e) {
-        // Handle Firebase errors (e.g., wrong credentials, user not found)
-        _showErrorDialog('Firebase Authentication Failed: $e');
+      } else {
+        // No internet connection, show a message or handle offline behavior
+        print("No internet connection");
       }
     }
   }
+
 
   void _showErrorDialog(String message) {
     showDialog(
