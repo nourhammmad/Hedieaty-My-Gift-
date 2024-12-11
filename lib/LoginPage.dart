@@ -85,7 +85,7 @@ class _LoginPageState extends State<LoginPage> {
 
         if (result.isNotEmpty) {
           // Local user found
-          print("========================================found");
+          print("User found locally");
 
           //await UserSession.saveUserSession(userId, userName);
           await FirebaseAuth.instance.signInWithEmailAndPassword(
@@ -100,6 +100,7 @@ class _LoginPageState extends State<LoginPage> {
 
       // Step 2: If not found in the local database, validate with Firebase
       try {
+        print("User found on firestore and then inserted in the local database");
         // Attempt Firebase authentication
         final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: emailController.text,
