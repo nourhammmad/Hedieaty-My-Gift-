@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:projecttrial/GiftDetailsPage.dart';
 
 class GiftListPage extends StatefulWidget {
   final String eventId;
@@ -136,7 +137,7 @@ class _GiftListPageState extends State<GiftListPage> {
 
   // Function to navigate to the GiftDetailsPage
   void _navigateToGiftDetails(int index) {
-    Navigator.pushNamed(context, '/GiftDetailsPage', arguments: gifts[index]);
+
   }
 
   // Function to delete a gift
@@ -344,7 +345,14 @@ class _GiftListPageState extends State<GiftListPage> {
                             if (status != 'Pledged')
                               IconButton(
                                 icon: const Icon(Icons.edit, color: Colors.indigo, size: 40),
-                                onPressed: () => _navigateToGiftDetails(index), // Navigate to GiftDetailsPage
+
+
+                                onPressed: () {Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => GiftDetailsPage(id:gift['giftId'],eventId: gift['eventId'],status: gift['status'],giftName:gift['title'],description:gift['description'],image:gift['photoURL'] ,category:gift['category'],price:gift['price']),
+                                  ),
+                                );}, // Navigate to GiftDetailsPage
                               ),
                             IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red, size: 40),

@@ -55,7 +55,7 @@ class MyApp extends StatelessWidget {
         '/MyPledgedGiftsPage':(context)=>MyPledgedGiftsPage(),
         '/EventsListPage':(context)=>EventsListPage(userId: '',),
         '/GiftListPage':(context)=>GiftListPage(eventId: '',),
-        '/GiftDetailsPage':(context)=>GiftDetailsPage(),
+        '/GiftDetailsPage':(context)=>GiftDetailsPage(id: '', eventId: '',status: '', giftName: '', description: '', image: '', category: '', price: '',),
         '/EventDetailsPage':(context)=>EventDetailsPage(),
         '/AddEvent':(context)=>AddEvent(),
         '/GiftOrEvent':(context)=>GiftOrEvent(),

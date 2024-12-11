@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
+import 'package:projecttrial/AddEvent.dart';
 
 import 'GiftListPage.dart';
 
@@ -22,32 +24,47 @@ class _EventsListPageState extends State<EventsListPage> {
 
   // Function to fetch events from Firestore
   Future<void> _loadEvents(String userId) async {
+    bool online = false; // Default value in case of failure
     try {
-      final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+      var internetConnection = InternetConnection(); // Initialize safely
+      if (internetConnection != null) {
+        online = await internetConnection.hasInternetAccess ?? false;
+      }
+    } catch (e) {
+      // Handle exceptions, such as if the method throws an error
+      print("Error checking internet connection: $e");
+    }
+    try {
+      if(online) {
+        final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-      DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(
+            userId).get();
 
-      if (userDoc.exists) {
-        List<dynamic> eventsList = userDoc['events_list'] ?? [];
+        if (userDoc.exists) {
+          List<dynamic> eventsList = userDoc['events_list'] ?? [];
 
-        // Fetch the event images asynchronously
-        List<Map<String, dynamic>> updatedEvents = [];
-        for (var event in eventsList) {
-          String photoURL = await _fetchEventImage(event['eventId']);
-          updatedEvents.add({
-            'description': event['description'],
-            'eventId': event['eventId'],
-            'photoURL': photoURL,
-            'gifts': event['gifts'],
-            'status': event['status'],
-            'title': event['title'],
-            'type': event['type'],
+          // Fetch the event images asynchronously
+          List<Map<String, dynamic>> updatedEvents = [];
+          for (var event in eventsList) {
+            String photoURL = await _fetchEventImage(event['eventId']);
+            updatedEvents.add({
+              'description': event['description'],
+              'eventId': event['eventId'],
+              'photoURL': photoURL,
+              'gifts': event['gifts'],
+              'status': event['status'],
+              'title': event['title'],
+              'type': event['type'],
+            });
+          }
+
+          setState(() {
+            events = updatedEvents;
           });
         }
-
-        setState(() {
-          events = updatedEvents;
-        });
+      }else{
+        print("YOU ARE OFFLINE");
       }
     } catch (e) {
       print("Error loading events: $e");
@@ -56,6 +73,18 @@ class _EventsListPageState extends State<EventsListPage> {
 
 
   Future<String> _fetchEventImage(String eventId) async {
+    bool online = false; // Default value in case of failure
+    try {
+      var internetConnection = InternetConnection(); // Initialize safely
+      if (internetConnection != null) {
+        online = await internetConnection.hasInternetAccess ?? false;
+      }
+    } catch (e) {
+      // Handle exceptions, such as if the method throws an error
+      print("Error checking internet connection: $e");
+    }
+    if(!online)
+      {return '';}
     try {
       final FirebaseFirestore _firestore = FirebaseFirestore.instance;
       final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -123,52 +152,64 @@ class _EventsListPageState extends State<EventsListPage> {
 
   // Function to delete an event
   void _deleteEvent(String eventId) async {
-    final FirebaseAuth _auth = FirebaseAuth.instance;
-    final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-    User? user = _auth.currentUser;
-    if (user != null) {
-      try {
-        String userId = user.uid;
-
-        // Reference to the user's document in Firestore
-        DocumentReference userDocRef = _firestore.collection('users').doc(
-            userId);
-
-        // Find the index of the event in the list based on eventId
-        int eventIndex = events.indexWhere((event) =>
-        event['eventId'] == eventId);
-
-        if (eventIndex != -1) {
-          // Debugging: Print out eventId to confirm
-          print(
-              "Attempting to delete event with ID: $eventId at index $eventIndex");
-
-          // Get the event to delete (from the found index)
-          var eventToDelete = events[eventIndex];
-          print("================================$eventToDelete");
-          // Remove the event from the events_list in Firestore based on its index
-          await userDocRef.update({
-            'events_list': FieldValue.arrayRemove([eventToDelete]),
-          }).then((_) {
-            print("Event deleted successfully from Firestore.");
-
-            // Remove the event from the UI (locally)
-            setState(() {
-              events.removeAt(eventIndex); // Remove event based on its index
-            });
-          }).catchError((error) {
-            print("Error deleting event from Firestore: $error");
-          });
-        } else {
-          print("Event with ID $eventId not found in local events.");
-        }
-      } catch (e) {
-        print("Error deleting event: $e");
+    bool online = false; // Default value in case of failure
+    try {
+      var internetConnection = InternetConnection(); // Initialize safely
+      if (internetConnection != null) {
+        online = await internetConnection.hasInternetAccess ?? false;
       }
-    } else {
-      print("No user is currently logged in.");
+    } catch (e) {
+      // Handle exceptions, such as if the method throws an error
+      print("Error checking internet connection: $e");
     }
+    if (online) {
+      final FirebaseAuth _auth = FirebaseAuth.instance;
+      final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+      User? user = _auth.currentUser;
+      if (user != null) {
+        try {
+          String userId = user.uid;
+
+          // Reference to the user's document in Firestore
+          DocumentReference userDocRef = _firestore.collection('users').doc(
+              userId);
+
+          // Find the index of the event in the list based on eventId
+          int eventIndex = events.indexWhere((event) =>
+          event['eventId'] == eventId);
+
+          if (eventIndex != -1) {
+            // Debugging: Print out eventId to confirm
+            print(
+                "Attempting to delete event with ID: $eventId at index $eventIndex");
+
+            // Get the event to delete (from the found index)
+            var eventToDelete = events[eventIndex];
+            print("================================$eventToDelete");
+            // Remove the event from the events_list in Firestore based on its index
+            await userDocRef.update({
+              'events_list': FieldValue.arrayRemove([eventToDelete]),
+            }).then((_) {
+              print("Event deleted successfully from Firestore.");
+
+              // Remove the event from the UI (locally)
+              setState(() {
+                events.removeAt(eventIndex); // Remove event based on its index
+              });
+            }).catchError((error) {
+              print("Error deleting event from Firestore: $error");
+            });
+          } else {
+            print("Event with ID $eventId not found in local events.");
+          }
+        } catch (e) {
+          print("Error deleting event: $e");
+        }
+      } else {
+        print("No user is currently logged in.");
+      }
+    }else{print("YOU ARE OFFLINE");}
   }
 
   // Function to sort events
@@ -341,7 +382,12 @@ class _EventsListPageState extends State<EventsListPage> {
                               IconButton(
                                 icon: const Icon(Icons.edit, color: Colors.green, size: 30),
                                 onPressed: () {
-                                  Navigator.pushNamed(context, '/EditEvent', arguments: event);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => AddEvent(id:event['eventId'],title: event['title'],description:event['description'],status:event['status'],type:event['type'] ,imageUrl:event['photoURL']),
+                                    ),
+                                  );
                                 },
                               ),
                               IconButton(

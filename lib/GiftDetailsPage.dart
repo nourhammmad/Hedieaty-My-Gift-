@@ -1,22 +1,167 @@
+import 'dart:io';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:projecttrial/GiftListPage.dart';
+
+import 'imgur.dart';
 
 class GiftDetailsPage extends StatefulWidget {
-  const GiftDetailsPage({super.key});
+  final String id;
+  final String eventId;
+  final String status;
+  final String giftName;
+  final String description;
+  final String image;
+  final String category;
+  final String price;
+
+  const GiftDetailsPage({
+    super.key,
+    required this.id,
+    required this.eventId,
+    required this.status,
+    required this.giftName,
+    required this.description,
+    required this.image,
+    required this.category,
+    required this.price,
+  });
 
   @override
   State<GiftDetailsPage> createState() => _GiftDetailsPageState();
 }
 
 class _GiftDetailsPageState extends State<GiftDetailsPage> {
-  // Controllers for input fields
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController categoryController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
+  File? _giftImage;
+  final ImagePicker _imagePicker = ImagePicker();
 
   bool isPledged = false; // Track whether the gift is pledged
 
+  @override
+
+  void initState() {
+    super.initState();
+    // Initialize the controllers with the passed values
+    titleController.text = widget.giftName;
+    descriptionController.text = widget.description;
+    categoryController.text = widget.category;
+    priceController.text = widget.price.toString();
+
+    // Set the pledged status based on the passed status
+    isPledged = widget.status== 'Pledged';
+  }
+  void updateGiftDetails({
+    required bool isPledged,
+    required String title,
+    required String description,
+    required String category,
+    required String price,
+ // The gift ID to access the specific gift
+  }) async {
+    final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+    final FirebaseAuth _auth = FirebaseAuth.instance;
+    String? photoUrl;
+
+    if (_giftImage != null) {
+      // Upload image to Imgur and get the URL
+      photoUrl = await uploadImageToImgur(_giftImage!.path);
+    }
+
+    // Get current user ID
+    User? user = _auth.currentUser;
+    if (user != null) {
+      String userId = user.uid;
+
+      // Prepare the updated gift data
+      Map<String, dynamic> updatedGiftData = {
+        'giftId': widget.id, // Using the passed giftId
+        'title': title,
+        'description': description,
+        'category': category,
+        'price': price,
+        'photoURL':photoUrl,
+        'status': isPledged ? 'Pledged' : 'Available', // Update status based on isPledged
+      };
+
+      try {
+        // Reference to the user's collection
+        DocumentReference userDocRef = _firestore.collection('users').doc(userId);
+
+        // Retrieve the user's events_list
+        DocumentSnapshot userSnapshot = await userDocRef.get();
+        if (userSnapshot.exists) {
+          List<dynamic> eventsList = userSnapshot['events_list'];
+
+          // Find the event with the given eventId
+          var event = eventsList.firstWhere(
+                (event) => event['eventId'] == widget.eventId,
+            orElse: () => null,
+          );
+
+          if (event != null) {
+            List<dynamic> giftsList = event['gifts'] ?? [];
+
+            // Find the gift within the event using giftId
+            var giftIndex = giftsList.indexWhere((gift) => gift['giftId'] == widget.id);
+
+            if (giftIndex != -1) {
+              // Update the gift in the list
+              if (isPledged) {
+                // If pledged, update only the status
+                giftsList[giftIndex]['status'] = 'Pledged';
+              } else {
+                // Otherwise, update all gift details
+                giftsList[giftIndex] = updatedGiftData;
+              }
+
+              // Update the events_list with the modified gifts list
+              await userDocRef.update({
+                'events_list': eventsList, // Update the entire events list
+              });
+
+              // Show success message
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gift updated successfully!')));
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => GiftListPage(eventId: widget.eventId),  // The page you want to navigate to
+                ),
+              );
+            } else {
+              // Gift not found
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gift not found in this event.')));
+            }
+          } else {
+            // Event not found
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Event not found.')));
+          }
+        } else {
+          // User not found
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('User not found.')));
+        }
+      } catch (e) {
+        // Handle errors
+        print("Error updating gift: $e");
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('An error occurred while updating the gift.')));
+      }
+    }
+  }
+  Future<void> _pickImage() async {
+    final XFile? image = await _imagePicker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      setState(() {
+        _giftImage = File(image.path);
+      });
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -49,31 +194,48 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
               child: Stack(
                 alignment: Alignment.bottomRight,
                 children: [
-                  ClipOval(
-                    child: Image.asset(
-                      'asset/teddy.jpg', // Placeholder image
-                      width: 220,
-                      height: 220,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  Container(
-                    margin: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.indigo,
-                    ),
-                    child: IconButton(
-                      icon: const Icon(
-                        Icons.add,
-                        color: Colors.white,
-                        size: 28,
+                  CircleAvatar(
+                    radius: 90,
+                    backgroundColor: Colors.indigo.shade100,
+                    child: _giftImage != null
+                        ? ClipOval(
+                      child: Image.file(
+                        _giftImage!,
+                        width: 160,
+                        height: 160,
+                        fit: BoxFit.cover,
                       ),
-                      onPressed: () {
-                        // Add functionality for the button if needed
-                      },
+                    )
+                        : widget.image != ''
+                        ? ClipOval(
+                      child: Image.network(
+                        widget.image!,
+                        width: 160,
+                        height: 160,
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                        : Icon(
+                      Icons.image_not_supported,
+                      size: 80,
+                      color: Colors.indigo.shade300,
                     ),
+
                   ),
+        InkWell(
+          onTap: _pickImage,
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.indigo,
+            ),
+            child: const Icon(
+                Icons.add,
+                color: Colors.white,
+                size:40
+            ),
+          ),
+        ),
                 ],
               ),
             ),
@@ -82,7 +244,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
             // Status Toggle
             Row(
               children: [
-                const Text("Status:",style: TextStyle(fontFamily: "Lobster",color: Colors.indigo,fontSize: 25),),
+                const Text("Status:", style: TextStyle(fontFamily: "Lobster", color: Colors.indigo, fontSize: 25)),
                 Switch(
                   value: isPledged,
                   onChanged: (value) {
@@ -92,7 +254,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
                   },
                   activeColor: Colors.indigo,
                 ),
-                const Text("Pledged",style: TextStyle(fontFamily: "Lobster",color: Colors.indigo,fontSize: 25),),
+                const Text("Pledged", style: TextStyle(fontFamily: "Lobster", color: Colors.indigo, fontSize: 25)),
               ],
             ),
             const SizedBox(height: 20),
@@ -134,15 +296,20 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
             // Submit Button
             Container(
               child: ElevatedButton(
-                onPressed: isPledged ? null : () {
+                onPressed:  () {
                   // Handle the submission logic here
                   String title = titleController.text;
                   String description = descriptionController.text;
                   String category = categoryController.text;
                   String price = priceController.text;
 
-                  // Implement your save logic here
-                },
+                  updateGiftDetails(
+                    isPledged: isPledged,
+                    title: title,
+                    description: description,
+                    category: category,
+                    price: price,
+                  );                },
                 child: const Text(
                   'Save Gift Details',
                   style: TextStyle(fontSize: 30, fontFamily: "Lobster", color: Colors.indigo),

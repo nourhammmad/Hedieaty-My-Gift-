@@ -150,14 +150,15 @@ class _HomePageState extends State<HomePage> {
     print("======================DALHALT BARDO-========");
     try {
       print("Offline, fetching friends from local database");
-      String? currentUserId = await UserSession.getUserId();
+      String? currentUserIdoff = await UserSession.getUserId();
+      currentUserId=currentUserIdoff!;
       if (currentUserId == null) {
         print("Error: currentUserId is null. Unable to load friends list.");
         return;
       }
       // Assuming currentUserId is already available
       // Fetch friends of the current user from the local database
-      List<Map<String, Object?>> localFriends = await _dbHelper.getFriendsByUserId(currentUserId!);
+      List<Map<String, Object?>> localFriends = await _dbHelper.getFriendsByUserId(currentUserIdoff!);
 
       // Clear the existing list of friends before adding new ones
       friends.clear();
