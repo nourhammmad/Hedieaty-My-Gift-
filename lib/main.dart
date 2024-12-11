@@ -15,6 +15,7 @@ import 'GiftOrEvent.dart';
 import 'AddGift.dart';
 import 'LoginPage.dart';
 import 'RegisterationPage.dart';
+import 'FriendsEvent.dart';
 
 
 void main() async {
@@ -52,16 +53,17 @@ class MyApp extends StatelessWidget {
         '/':(context)=>HomePage(),
         '/MyProfile':(context)=>MyProfile(),
         '/MyPledgedGiftsPage':(context)=>MyPledgedGiftsPage(),
-        '/EventsListPage':(context)=>EventsListPage(),
-        '/GiftListPage':(context)=>GiftListPage(),
+        '/EventsListPage':(context)=>EventsListPage(userId: '',),
+        '/GiftListPage':(context)=>GiftListPage(eventId: '',),
         '/GiftDetailsPage':(context)=>GiftDetailsPage(),
         '/EventDetailsPage':(context)=>EventDetailsPage(),
         '/AddEvent':(context)=>AddEvent(),
         '/GiftOrEvent':(context)=>GiftOrEvent(),
         '/AddGift':(context)=>AddGift(),
-        '/FriendsGiftList':(context)=>FriendsGiftList(userId: '', userName: '',),
+        '/FriendsGiftList':(context)=>FriendsGiftList(userId: '', eventId: '', userName: '',),
         '/Login':(context)=>LoginPage(),
         '/RegisterationPage':(context)=>RegistrationPage(),
+        '/FriendsEvent':(context)=>FriendsEvent(userId: '', userName: ''),
 
 
 

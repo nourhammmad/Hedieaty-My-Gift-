@@ -2,7 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'Database.dart';
+import 'EventsListPage.dart';
 import 'FirebaseDatabaseClass.dart';
+import 'FriendsEvent.dart';
 import 'imgur.dart';
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -17,11 +19,13 @@ class _HomePageState extends State<HomePage> {
   late Databaseclass _dbHelper;
   List<Map<String, String>> friends = []; // State variable for friends
   late FirebaseDatabaseClass _firebaseDb; // Use FirebaseDatabaseClass
+  late String currentUserId;
   @override
   void initState() {
     super.initState();
     _dbHelper = Databaseclass();
     _firebaseDb=FirebaseDatabaseClass();
+    currentUserId = FirebaseAuth.instance.currentUser!.uid;
     _initializeDatabase();
     _loadFriendsList();
   }
@@ -35,7 +39,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
   Future<void> _loadFriendsList() async {
-    String currentUserId = FirebaseAuth.instance.currentUser!.uid;
     DocumentSnapshot currentUserDoc = await FirebaseFirestore.instance.collection('friend_list').doc(currentUserId).get();
 
     if (currentUserDoc.exists) {
@@ -423,22 +426,12 @@ class _HomePageState extends State<HomePage> {
               ),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
-                Navigator.pushNamed(context, '/EventsListPage');
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.wallet_giftcard, color: Colors.indigo, size: 45),
-              title: const Text(
-                'My Gifts',
-                style: TextStyle(
-                    fontSize: 50,
-                    fontFamily: "Lobster",
-                    fontWeight: FontWeight.bold,
-                    color: Colors.indigo),
-              ),
-              onTap: () {
-                Navigator.pop(context); // Close the drawer
-                Navigator.pushNamed(context, '/GiftListPage');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => EventsListPage(userId:currentUserId ),
+                  ),
+                );
               },
             ),
             ListTile(
@@ -646,13 +639,11 @@ class FriendListItem extends StatelessWidget {
             child: GestureDetector(
               onTap: () {
                 // Navigate to Friend's Gift List
-                Navigator.pushNamed(
+                Navigator.push(
                   context,
-                  '/FriendsGiftList',
-                  arguments: {
-                    'friendId': friendId,
-                    'friendName': displayName,
-                  },
+                  MaterialPageRoute(
+                    builder: (context) => FriendsEvent(userId:friendId,userName: displayName ),
+                  ),
                 );
               },
               child: Column(

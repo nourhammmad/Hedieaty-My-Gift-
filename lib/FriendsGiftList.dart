@@ -7,56 +7,55 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class FriendsGiftList extends StatefulWidget {
   final String userId;
+  final String eventId;
   final String userName;
 
-  const FriendsGiftList({Key? key, required this.userId, required this.userName}) : super(key: key);
+  const FriendsGiftList({Key? key, required this.userId, required this.eventId,required this.userName}) : super(key: key);
 
   @override
   State<FriendsGiftList> createState() => _FriendsGiftListState();
 }
 
 class _FriendsGiftListState extends State<FriendsGiftList> {
-  late String userId;
-  late String userName;
+
 
   List<Map<String, dynamic>> gifts = [];
   bool isLoading = true; // To show a loading indicator
 
   @override
+  @override
   void initState() {
     super.initState();
-
-    // Delay context-dependent code using WidgetsBinding
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final arguments = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
-      if (arguments != null) {
-        setState(() {
-          userId = arguments['friendId']; // Get userId (friendId)
-          userName = arguments['friendName']; // Get userName (friendName)
-        });
 
-        // Fetch the gifts only after userId and userName are set
+
+      if (widget.userId.isNotEmpty && widget.eventId.isNotEmpty) {
         _loadGifts();
       } else {
-        print('Error: No arguments provided.');
+        setState(() {
+          isLoading = false; // Stop loading if no valid arguments
+        });
+        print('Error: Missing or invalid arguments.');
       }
     });
   }
+
   Future<String> _fetchGiftImage(String eventId, String giftId) async {
     try {
       final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-      if (userId != null) {
+      if (widget.userId != null) {
         // Fetch the user's document
-        DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(widget.userId).get();
 
         if (userDoc.exists) {
           // Access the events array from the user's document
           List<dynamic> eventsList = userDoc['events_list'] ?? [];
 
           // Find the event by its eventId
-          var event = eventsList.firstWhere((event) => event['eventId'] == eventId, orElse: () => null);
+          var event = eventsList.firstWhere((event) => event['eventId'] == widget.eventId, orElse: () => null);
 
           if (event != null) {
             // Find the gift inside the event by its giftId
@@ -78,46 +77,54 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
 
   Future<void> _loadGifts() async {
     try {
-      if (userId.isEmpty) return;
+      final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
-      if (userDoc.exists) {
-        final eventsList = userDoc.data()?['events_list'] as List<dynamic>?;
+      if (widget.userId.isNotEmpty) {
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(widget.userId).get();
 
-        if (eventsList != null) {
-          final loadedGifts = <Map<String, dynamic>>[];
+        if (userDoc.exists) {
+          List<dynamic> eventsList = userDoc['events_list'] ?? [];
 
-          for (var event in eventsList) {
-            if (event['gifts'] != null) {
-              final eventGifts = List<Map<String, dynamic>>.from(event['gifts']);
+          var event = eventsList.firstWhere(
+                (e) => e['eventId'] == widget.eventId,
+            orElse: () => null,
+          );
 
-              for (var gift in eventGifts) {
-                // Fetch and add the image URL for each gift
-                gift['image'] = await _fetchGiftImage(event['eventId'], gift['giftId']);
-                loadedGifts.add(gift);
-              }
+          if (event != null && event['gifts'] != null) {
+            List<Map<String, dynamic>> updatedGifts = [];
+
+            for (var gift in event['gifts']) {
+              String photoURL = await _fetchGiftImage(widget.eventId, gift['giftId']);
+              updatedGifts.add({
+                'PledgedBy': gift['PledgedBy'],
+                'category': gift['category'],
+                'createdBy': gift['createdBy'],
+                'description': gift['description'],
+                'dueTo': gift['dueTo'],
+                'eventId': widget.eventId,
+                'giftId': gift['giftId'],
+                'photoURL': photoURL,
+                'price': gift['price'],
+                'status': gift['status'],
+                'title': gift['title'],
+              });
             }
+
+            setState(() {
+              gifts = updatedGifts;
+            });
           }
-
-          setState(() {
-            gifts = loadedGifts;
-            isLoading = false;
-          });
-
-          print('Loaded gifts: $gifts');
-        } else {
-          setState(() {
-            isLoading = false;
-          });
         }
       }
     } catch (e) {
       print('Error loading gifts: $e');
+    } finally {
       setState(() {
-        isLoading = false;
+        isLoading = false; // Stop the loading spinner regardless of success
       });
     }
   }
+
 
 
   String sortCriteria = 'Name';
@@ -225,14 +232,6 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
       giftsList[giftIndex]['status'] = 'Pledged';
       eventsList[eventIndex]['gifts'] = giftsList;
 
-      // Add the pledged gift to the current user's pledged_gifts list
-      // final pledgedGiftsList = List<Map<String, dynamic>>.from(userDocSnapshot.data()?['pledged_gifts'] ?? []);
-      // pledgedGiftsList.add({
-      //   'pledgerId': friendUserId,  // The current user who is pledging the gift
-      //   'eventId': eventId,
-      //   'giftId': giftId,
-      //   'status':"Pending",
-      // });
 
       // Fetch the current user's document
       final currentUserDocRef = FirebaseFirestore.instance.collection('users').doc(pledgerId);
@@ -289,7 +288,7 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
         title: Row(
           children: [
             Text(
-              userName,
+              widget.userName,
               style: const TextStyle(
                 fontSize: 40,
                 fontFamily: "Lobster",

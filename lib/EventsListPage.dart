@@ -2,8 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import 'GiftListPage.dart';
+
 class EventsListPage extends StatefulWidget {
-  const EventsListPage({super.key});
+  final String userId; // Add this parameter to pass the user ID
+
+  const EventsListPage({super.key, required this.userId});
 
   @override
   State<EventsListPage> createState() => _EventsListPageState();
@@ -17,43 +21,39 @@ class _EventsListPageState extends State<EventsListPage> {
   String sortCriteria = 'Name';
 
   // Function to fetch events from Firestore
-  Future<void> _loadEvents() async {
+  Future<void> _loadEvents(String userId) async {
     try {
-      final FirebaseAuth _auth = FirebaseAuth.instance;
       final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-      User? user = _auth.currentUser;
-      if (user != null) {
-        String userId = user.uid;
-        DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
+      DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
 
-        if (userDoc.exists) {
-          List<dynamic> eventsList = userDoc['events_list'] ?? [];
+      if (userDoc.exists) {
+        List<dynamic> eventsList = userDoc['events_list'] ?? [];
 
-          // Fetch the event images asynchronously
-          List<Map<String, dynamic>> updatedEvents = [];
-          for (var event in eventsList) {
-            String photoURL = await _fetchEventImage(event['eventId']);
-            updatedEvents.add({
-              'description': event['description'],
-              'eventId': event['eventId'],
-              'photoURL': photoURL,
-              'gifts': event['gifts'],
-              'status': event['status'],
-              'title': event['title'],
-              'type': event['type'],
-            });
-          }
-
-          setState(() {
-            events = updatedEvents;
+        // Fetch the event images asynchronously
+        List<Map<String, dynamic>> updatedEvents = [];
+        for (var event in eventsList) {
+          String photoURL = await _fetchEventImage(event['eventId']);
+          updatedEvents.add({
+            'description': event['description'],
+            'eventId': event['eventId'],
+            'photoURL': photoURL,
+            'gifts': event['gifts'],
+            'status': event['status'],
+            'title': event['title'],
+            'type': event['type'],
           });
         }
+
+        setState(() {
+          events = updatedEvents;
+        });
       }
     } catch (e) {
       print("Error loading events: $e");
     }
   }
+
 
   Future<String> _fetchEventImage(String eventId) async {
     try {
@@ -190,7 +190,7 @@ class _EventsListPageState extends State<EventsListPage> {
   @override
   void initState() {
     super.initState();
-    _loadEvents(); // Load events when the page is first initialized
+    _loadEvents(widget.userId);
   }
 
   @override
@@ -267,89 +267,96 @@ class _EventsListPageState extends State<EventsListPage> {
                 itemCount: events.length,
                 itemBuilder: (context, index) {
                   final event = events[index];
-                  return Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15.0),
-                    ),
-                    elevation: 4.0,
-                    margin: const EdgeInsets.symmetric(vertical: 10.0),
-                    child: Column(
-                      children: [
-                        // Check if image exists or not
-                        event['photoURL']?.isNotEmpty == true
-                            ? Container(
-                          height: 200,
-                          decoration: BoxDecoration(
-                            borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(15.0)),
-                            image: DecorationImage(
-                              image: NetworkImage(event['photoURL']!),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        )
-                            : Container(
-                          height: 200,
-                          color: Colors.grey.shade200,
-                          // Use a placeholder color or an empty container
-                          child: const Center(
-                            child: Icon(
-                              Icons.image_not_supported,
-                              size: 50,
-                              color: Colors.red,
-                            ),
-                          ),
+                  return InkWell(
+                    onTap: () {
+                      // Navigate to the GiftListPage
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => GiftListPage(eventId: event['eventId']),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                event['title'] ?? 'Unnamed Event',
-                                style: const TextStyle(
-                                  fontSize: 40,
-                                  fontFamily: "Lobster",
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.indigo,
+                      );
+                    },
+                    child: Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15.0),
+                      ),
+                      elevation: 4.0,
+                      margin: const EdgeInsets.symmetric(vertical: 10.0),
+                      child: Column(
+                        children: [
+                          // Check if image exists or not
+                          event['photoURL']?.isNotEmpty == true
+                              ? Container(
+                            height: 200,
+                            decoration: BoxDecoration(
+                              borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(15.0)),
+                              image: DecorationImage(
+                                image: NetworkImage(event['photoURL']!),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          )
+                              : Container(
+                            height: 200,
+                            color: Colors.grey.shade200,
+                            child: const Center(
+                              child: Icon(
+                                Icons.image_not_supported,
+                                size: 50,
+                                color: Colors.red,
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  event['title'] ?? 'Unnamed Event',
+                                  style: const TextStyle(
+                                    fontSize: 40,
+                                    fontFamily: "Lobster",
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.indigo,
+                                  ),
                                 ),
+                                const SizedBox(height: 8.0),
+                                Text(
+                                  "Category: ${event['type'] ?? 'Uncategorized'}",
+                                  style: const TextStyle(fontSize: 30, fontFamily: "Lobster"),
+                                ),
+                                Text(
+                                  "Status: ${event['status'] ?? 'Unknown'}",
+                                  style: const TextStyle(fontSize: 30, fontFamily: "Lobster"),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit, color: Colors.green, size: 30),
+                                onPressed: () {
+                                  Navigator.pushNamed(context, '/EditEvent', arguments: event);
+                                },
                               ),
-                              const SizedBox(height: 8.0),
-                              Text(
-                                "Category: ${event['type'] ??
-                                    'Uncategorized'}",
-                                style: const TextStyle(fontSize: 30,fontFamily: "Lobster",),
-                              ),
-                              Text(
-                                "Status: ${event['status'] ?? 'Unknown'}",
-                                style: const TextStyle(fontSize: 30,fontFamily: "Lobster",),
+                              IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.red, size: 30),
+                                onPressed: () {
+                                  _showDeleteConfirmationDialog(event['eventId']);
+                                },
                               ),
                             ],
                           ),
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            IconButton(
-                              icon: const Icon(
-                                  Icons.edit, color: Colors.green, size: 30),
-                              onPressed: () {
-                                Navigator.pushNamed(
-                                    context, '/EditEvent', arguments: event);
-                              },
-                            ),
-                            IconButton(
-                              icon: const Icon(
-                                  Icons.delete, color: Colors.red, size: 30),
-                              onPressed: () {
-                                _showDeleteConfirmationDialog(event['eventId']);
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   );
+
                 },
               ),
             ),

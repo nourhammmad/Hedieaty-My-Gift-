@@ -3,11 +3,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class GiftListPage extends StatefulWidget {
-  const GiftListPage({super.key});
+  final String eventId;
+
+  const GiftListPage({Key? key, required this.eventId}) : super(key: key);
 
   @override
   State<GiftListPage> createState() => _GiftListPageState();
 }
+
 
 class _GiftListPageState extends State<GiftListPage> {
   List<Map<String, dynamic>> gifts = [];
@@ -71,41 +74,43 @@ class _GiftListPageState extends State<GiftListPage> {
         if (userDoc.exists) {
           List<dynamic> eventsList = userDoc['events_list'] ?? [];
 
-          // Fetch the gifts and event images asynchronously
-          List<Map<String, dynamic>> updatedGifts = [];
-          for (var event in eventsList) {
-            if (event['gifts'] != null) {
-              // Iterate through gifts in the event and add them with the event image
-              for (var gift in event['gifts']) {
-                String photoURL = await _fetchGiftImage(gift['eventId'], gift['giftId']);
-print("=================gift image url:$photoURL");
-                updatedGifts.add({
-                  'PledgedBy': gift['PledgedBy'],
-                  'category': gift['category'],
-                  'createdBy': gift['createdBy'],
-                  'description': gift['description'],
-                  'dueTo': gift['dueTo'],
-                  'eventId': event['eventId'],
-                  'giftId': gift['giftId'],
-                  'photoURL': photoURL,
-                  'price': gift['price'],
-                  'status': gift['status'],
-                  'title': gift['title'],
-                });
-              }
-            }
-          }
+          // Find the specific event by ID
+          var event = eventsList.firstWhere(
+                (e) => e['eventId'] == widget.eventId,
+            orElse: () => null,
+          );
 
-          setState(() {
-            print("====================$updatedGifts");
-            gifts = updatedGifts;
-          });
+          if (event != null && event['gifts'] != null) {
+            List<Map<String, dynamic>> updatedGifts = [];
+
+            for (var gift in event['gifts']) {
+              String photoURL = await _fetchGiftImage(widget.eventId, gift['giftId']);
+              updatedGifts.add({
+                'PledgedBy': gift['PledgedBy'],
+                'category': gift['category'],
+                'createdBy': gift['createdBy'],
+                'description': gift['description'],
+                'dueTo': gift['dueTo'],
+                'eventId': widget.eventId,
+                'giftId': gift['giftId'],
+                'photoURL': photoURL,
+                'price': gift['price'],
+                'status': gift['status'],
+                'title': gift['title'],
+              });
+            }
+
+            setState(() {
+              gifts = updatedGifts;
+            });
+          }
         }
       }
     } catch (e) {
       print('Error loading gifts: $e');
     }
   }
+
 
   void _sortGifts() {
     switch (sortCriteria) {
