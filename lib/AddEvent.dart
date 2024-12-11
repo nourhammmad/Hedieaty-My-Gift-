@@ -95,7 +95,7 @@ class _AddEventState extends State<AddEvent> {
               'description': description,
               'status': eventStatus,
               'type': eventType,
-              'photoURL': photoUrl != null ?eventsList[eventIndex]['photoURL']:null, // Retain old photo URL if no new image
+              'photoURL': photoUrl, // Retain old photo URL if no new image
               'gifts': eventsList[eventIndex]['gifts'], // Retain existing gifts
             };
 

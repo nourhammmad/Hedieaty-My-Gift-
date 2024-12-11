@@ -80,7 +80,6 @@
 
             setState(() {
               events = eventsList.map((event) => Map<String, dynamic>.from(event)).toList();
-              //print("==============================================$events");
             });
           }
         } catch (e) {
@@ -314,11 +313,28 @@
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Icon(
-                              Icons.image_not_supported,
-                              color: Colors.red, // You can customize the icon color
-                              size: 70, // Customize the icon size to match the original container
+                            Container(
+                              width: 70, // Specify the width of the circle
+                              height: 70, // Specify the height of the circle
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle, // Makes the container circular
+                              ),
+                              child: ClipOval(
+                                child: event['photoURL'] != null
+                                    ? Image.network(
+                                  event['photoURL'],
+                                  fit: BoxFit.cover,
+                                  width: 70,
+                                  height: 70,
+                                )
+                                    : Icon(
+                                  Icons.image_not_supported,
+                                  color: Colors.red, // Customize the icon color
+                                  size: 70, // Icon size inside the circle
+                                ),
+                              ),
                             ),
+
                             Expanded(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -341,10 +357,29 @@
                                 ],
                               ),
                             ),
-                            Icon(
-                              Icons.image_not_supported,
-                              color: Colors.red, // You can customize the icon color
-                              size: 70, // Customize the icon size to match the original container
+                            Container(
+                              width: 70, // Specify the width of the circle
+                              height: 70, // Specify the height of the circle
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle, // Makes the container circular
+                              ),
+                              child: ClipOval(
+                                child: (event['gifts'] != null &&
+                                    event['gifts'].isNotEmpty &&
+                                    event['gifts'][0]['photoURL'] != null &&
+                                    event['gifts'][0]['photoURL'].isNotEmpty)
+                                    ? Image.network(
+                                  event['gifts'][0]['photoURL'], // Fetch the first gift's image URL
+                                  fit: BoxFit.cover,
+                                  width: 70,
+                                  height: 70,
+                                )
+                                    : Icon(
+                                  Icons.image_not_supported,
+                                  color: Colors.red, // Customize the icon color
+                                  size: 70, // Icon size inside the circle
+                                ),
+                              ),
                             ),
                           ],
                         ),
