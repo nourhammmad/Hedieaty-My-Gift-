@@ -261,9 +261,7 @@ class _GiftListPageState extends State<GiftListPage> {
               ],
             ),
             const SizedBox(height: 10),
-            gifts.isEmpty
-                ? const Center(child: Text('No gifts available.'))
-                : Expanded(
+            if (gifts.isEmpty) const Center(child: Text('No gifts available.')) else Expanded(
               child: ListView.builder(
                 itemCount: gifts.length,
                 itemBuilder: (context, index) {
@@ -342,18 +340,37 @@ class _GiftListPageState extends State<GiftListPage> {
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             // Disable edit button if the gift is pledged
-                            if (status != 'Pledged')
+                            if (!isPledged) // Show the edit icon only if the gift is not pledged
                               IconButton(
-                                icon: const Icon(Icons.edit, color: Colors.indigo, size: 40),
-
-
-                                onPressed: () {Navigator.push(
+                              icon: const Icon(Icons.edit, color: Colors.indigo, size: 40),
+                              onPressed: () async {
+                                // Navigate to GiftDetailsPage and wait for a result when coming back
+                                final result = await Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => GiftDetailsPage(id:gift['giftId'],eventId: gift['eventId'],status: gift['status'],giftName:gift['title'],description:gift['description'],image:gift['photoURL'] ,category:gift['category'],price:gift['price']),
+                                    builder: (context) => GiftDetailsPage(
+                                      id: gift['giftId'],
+                                      eventId: gift['eventId'],
+                                      status: gift['status'],
+                                      giftName: gift['title'],
+                                      description: gift['description'],
+                                      image: gift['photoURL'],
+                                      category: gift['category'],
+                                      price: gift['price'],
+                                    ),
                                   ),
-                                );}, // Navigate to GiftDetailsPage
-                              ),
+                                );
+
+                                // Check the result, and if you need to reload, you can trigger a setState
+                                if (result != null && result == 'reload') {
+                                  setState(() {
+                                    // Reload the data here
+                                    _loadGifts();
+                                  });
+                                }
+                              },
+                            ),
+
                             IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red, size: 40),
                               onPressed: () => _showDeleteDialog(gift['giftId'],gift['eventId']), // Show delete confirmation dialog

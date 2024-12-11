@@ -129,12 +129,15 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
 
               // Show success message
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gift updated successfully!')));
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => GiftListPage(eventId: widget.eventId),  // The page you want to navigate to
-                ),
-              );
+              // Navigator.pushReplacement(
+              //   context,
+              //   MaterialPageRoute(
+              //     builder: (context) => GiftListPage(eventId: widget.eventId),  // The page you want to navigate to
+              //   ),
+              // );
+              Navigator.pop(context,'reload');
+
+
             } else {
               // Gift not found
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gift not found in this event.')));

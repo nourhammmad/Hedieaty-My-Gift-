@@ -95,7 +95,7 @@ class _AddEventState extends State<AddEvent> {
               'description': description,
               'status': eventStatus,
               'type': eventType,
-              'photoURL': photoUrl ?? eventsList[eventIndex]['photoURL'], // Retain old photo URL if no new image
+              'photoURL': photoUrl != null ?eventsList[eventIndex]['photoURL']:null, // Retain old photo URL if no new image
               'gifts': eventsList[eventIndex]['gifts'], // Retain existing gifts
             };
 
@@ -113,13 +113,9 @@ class _AddEventState extends State<AddEvent> {
 
 
             );
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => EventsListPage(userId: userId),  // The page you want to navigate to
-              ),
-            );
-            
+            Navigator.pop(context,'reload');
+
+
 
           } else {
             // Event not found
@@ -165,50 +161,52 @@ class _AddEventState extends State<AddEvent> {
     }
   }
   // Function to add an event to Firestore
-    void _addEvent() async {
-      User? user = _auth.currentUser;
-      if (user != null) {
-        String userId = user.uid;
-        String title = titleController.text;
-        String description = descriptionController.text;
+  void _addEvent() async {
+    User? user = _auth.currentUser;
+    if (user != null) {
+      String userId = user.uid;
+      String title = titleController.text;
+      String description = descriptionController.text;
 
-        // Generate a unique event ID using Firestore document ID
-        String eventId = _firestore.collection('users').doc().id;
+      // Generate a unique event ID using Firestore document ID
+      String eventId = _firestore.collection('users').doc().id;
 
-          String? photoUrl;
-          if (_eventImage != null) {
-            // Upload image to Imgur and get the URL
-            photoUrl = await uploadImageToImgur(_eventImage!.path);
-          }
-        // Prepare event data
-        Map<String, dynamic> eventData = {
-          'eventId': eventId, // Unique ID for event
-          'title': title,
-          'description': description,
-          'status': eventStatus,
-          'type': eventType,
-          'photoURL':photoUrl,
-          'gifts':null,
-        };
+      String? photoUrl;
+      if (_eventImage != null) {
+        // Upload image to Imgur and get the URL
+        photoUrl = await uploadImageToImgur(_eventImage!.path);
+      }
+      // Prepare event data
+      Map<String, dynamic> eventData = {
+        'description': description,
+        'eventId': eventId, // Unique ID for event
+        'gifts':null,
+        'photoURL':photoUrl != null ? photoUrl : null,
+        'status': eventStatus,
+        'title': title,
+        'type': eventType,
+      };
 
-        try {
-          // Reference to the user's events collection (document is the userId)
-          CollectionReference eventsRef = _firestore.collection('users');
+      try {
+        // Reference to the user's events collection (document is the userId)
+        CollectionReference eventsRef = _firestore.collection('users');
 
-          // Update the events array field in the user's document
-          await eventsRef.doc(userId).update({
-            'events_list': FieldValue.arrayUnion([eventData]), // Add event to the list
-          });
+        // Update the events array field in the user's document
+        await eventsRef.doc(userId).update({
+          'events_list': FieldValue.arrayUnion([eventData]), // Add event to the list
+        });
 
-          // Show success message
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Event added successfully!')));
-        } catch (e) {
-          // Handle errors
-          print("Error adding event: $e");
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('An error occurred while adding the event.')));
-        }
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Event added successfully!')));
+        Navigator.pop(context,'reload');
+
+      } catch (e) {
+        // Handle errors
+        print("Error adding event: $e");
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('An error occurred while adding the event.')));
       }
     }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -254,7 +252,7 @@ class _AddEventState extends State<AddEvent> {
                         fit: BoxFit.cover,
                       ),
                     )
-                        : widget.imageUrl != ''
+                        : (widget.imageUrl != null && widget.imageUrl!.isNotEmpty)
                         ? ClipOval(
                       child: Image.network(
                         widget.imageUrl!,
@@ -268,8 +266,8 @@ class _AddEventState extends State<AddEvent> {
                       size: 80,
                       color: Colors.indigo.shade300,
                     ),
-
                   ),
+
                   InkWell(
                     onTap: _pickImage,
                     child: Container(
@@ -278,9 +276,9 @@ class _AddEventState extends State<AddEvent> {
                         color: Colors.indigo,
                       ),
                       child: const Icon(
-                        Icons.add,
-                        color: Colors.white,
-                        size:40
+                          Icons.add,
+                          color: Colors.white,
+                          size:40
                       ),
                     ),
                   ),

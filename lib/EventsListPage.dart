@@ -51,7 +51,7 @@ class _EventsListPageState extends State<EventsListPage> {
             updatedEvents.add({
               'description': event['description'],
               'eventId': event['eventId'],
-              'photoURL': photoURL,
+              'photoURL': photoURL != null ? photoURL : null,
               'gifts': event['gifts'],
               'status': event['status'],
               'title': event['title'],
@@ -159,7 +159,6 @@ class _EventsListPageState extends State<EventsListPage> {
         online = await internetConnection.hasInternetAccess ?? false;
       }
     } catch (e) {
-      // Handle exceptions, such as if the method throws an error
       print("Error checking internet connection: $e");
     }
     if (online) {
@@ -172,30 +171,28 @@ class _EventsListPageState extends State<EventsListPage> {
           String userId = user.uid;
 
           // Reference to the user's document in Firestore
-          DocumentReference userDocRef = _firestore.collection('users').doc(
-              userId);
+          DocumentReference userDocRef = _firestore.collection('users').doc(userId);
 
-          // Find the index of the event in the list based on eventId
-          int eventIndex = events.indexWhere((event) =>
-          event['eventId'] == eventId);
+          // Find the event in the local list
+          int eventIndex = events.indexWhere((event) => event['eventId'] == eventId);
 
           if (eventIndex != -1) {
-            // Debugging: Print out eventId to confirm
-            print(
-                "Attempting to delete event with ID: $eventId at index $eventIndex");
-
-            // Get the event to delete (from the found index)
             var eventToDelete = events[eventIndex];
-            print("================================$eventToDelete");
-            // Remove the event from the events_list in Firestore based on its index
+
+            // Ensure photoURL consistency for removal
+            if (eventToDelete['photoURL'] == null || eventToDelete['photoURL']!.isEmpty) {
+              eventToDelete['photoURL'] = null; // Standardize missing image value
+            }
+
+            print("Deleting event: $eventToDelete");
+
+            // Remove the event from Firestore
             await userDocRef.update({
               'events_list': FieldValue.arrayRemove([eventToDelete]),
             }).then((_) {
               print("Event deleted successfully from Firestore.");
-
-              // Remove the event from the UI (locally)
               setState(() {
-                events.removeAt(eventIndex); // Remove event based on its index
+                events.removeAt(eventIndex); // Remove event locally
               });
             }).catchError((error) {
               print("Error deleting event from Firestore: $error");
@@ -209,8 +206,11 @@ class _EventsListPageState extends State<EventsListPage> {
       } else {
         print("No user is currently logged in.");
       }
-    }else{print("YOU ARE OFFLINE");}
+    } else {
+      print("YOU ARE OFFLINE");
+    }
   }
+
 
   // Function to sort events
   void _sortEvents() {
@@ -262,9 +262,18 @@ class _EventsListPageState extends State<EventsListPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: () {
-              Navigator.pushNamed(context, '/AddEvent');
-            },
+            onPressed: () async {
+            final result =await Navigator.push(context,MaterialPageRoute(
+      builder: (context) => AddEvent(),
+       ),
+      );
+     if (result != null && result == 'reload') {
+          setState(() {
+            _loadEvents(widget.userId);
+          });
+     }
+     },
+
           ),
         ],
       ),
@@ -381,13 +390,19 @@ class _EventsListPageState extends State<EventsListPage> {
                             children: [
                               IconButton(
                                 icon: const Icon(Icons.edit, color: Colors.green, size: 30),
-                                onPressed: () {
-                                  Navigator.push(
+                                onPressed: () async {
+                                  final result =await Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) => AddEvent(id:event['eventId'],title: event['title'],description:event['description'],status:event['status'],type:event['type'] ,imageUrl:event['photoURL']),
                                     ),
                                   );
+                                  if (result != null && result == 'reload') {
+                                    setState(() {
+                                      // Reload the data here
+                                      _loadEvents(widget.userId);
+                                    });
+                                  }
                                 },
                               ),
                               IconButton(
