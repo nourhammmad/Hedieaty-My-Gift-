@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
 import 'package:projecttrial/AddEvent.dart';
 
+import 'Database.dart';
 import 'GiftListPage.dart';
+import 'UserSession.dart';
 
 class EventsListPage extends StatefulWidget {
   final String userId; // Add this parameter to pass the user ID
@@ -18,17 +20,20 @@ class EventsListPage extends StatefulWidget {
 class _EventsListPageState extends State<EventsListPage> {
   // List to store events fetched from Firestore
   List<Map<String, dynamic>> events = [];
+  late String currentUserId;
+  late Databaseclass _dbHelper;
+  late bool online; // Default value in case of failure
+
 
   // Sorting criteria
   String sortCriteria = 'Name';
 
   // Function to fetch events from Firestore
   Future<void> _loadEvents(String userId) async {
-    bool online = false; // Default value in case of failure
     try {
       var internetConnection = InternetConnection(); // Initialize safely
       if (internetConnection != null) {
-        online = await internetConnection.hasInternetAccess ?? false;
+        online = await internetConnection.hasInternetAccess;
       }
     } catch (e) {
       // Handle exceptions, such as if the method throws an error
@@ -36,6 +41,8 @@ class _EventsListPageState extends State<EventsListPage> {
     }
     try {
       if(online) {
+        currentUserId = FirebaseAuth.instance.currentUser!.uid;
+
         final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
         DocumentSnapshot userDoc = await _firestore.collection('users').doc(
@@ -57,6 +64,17 @@ class _EventsListPageState extends State<EventsListPage> {
               'title': event['title'],
               'type': event['type'],
             });
+            Map<String, String> eventData = {
+              'type': event['type'],
+              'title': event['title'],
+              'eventId': event['eventId'],
+              'FIRESTORE_USER_ID':currentUserId,
+              'status':event['status'],
+            };
+            // Print the content of the eventData map
+
+            _dbHelper.insertEvent(currentUserId, eventData);  // Pass currentUserId to insertFriend
+
           }
 
           setState(() {
@@ -64,13 +82,47 @@ class _EventsListPageState extends State<EventsListPage> {
           });
         }
       }else{
+        // If offline, load from local database
+        _loadEventsFromLocalDatabase();
         print("YOU ARE OFFLINE");
       }
     } catch (e) {
       print("Error loading events: $e");
     }
   }
+  Future<void> _loadEventsFromLocalDatabase() async {
+    print("======================DALHALT BARDO-========");
+    try {
+      print("Offline, fetching friends from local database");
+      String? currentUserIdoff = await UserSession.getUserId();
+      currentUserId=currentUserIdoff!;
+      if (currentUserId == null) {
+        print("Error: currentUserId is null. Unable to load events list.");
+        return;
+      }
+      // Assuming currentUserId is already available
+      // Fetch friends of the current user from the local database
+      List<Map<String, Object?>> localEvents = await _dbHelper.getEventsByUserId(currentUserIdoff!);
 
+      // Clear the existing list of friends before adding new ones
+      events.clear();
+
+      for (var eventData in localEvents) {
+        // Add friend to the list (UI update)
+        // Ensure proper type casting from Object? to String
+        events.add({
+          'title': eventData['title']?.toString() ?? '',
+          'type': eventData['type']?.toString() ?? '',
+          'status': eventData['status']?.toString() ?? '',
+        });
+      }
+
+      // Update UI
+      setState(() {});
+    } catch (e) {
+      print("Error loading friends from local database: $e");
+    }
+  }
 
   Future<String> _fetchEventImage(String eventId) async {
     bool online = false; // Default value in case of failure
@@ -115,6 +167,7 @@ class _EventsListPageState extends State<EventsListPage> {
 
     return '';  // Return an empty string if image fetching fails
   }
+
 
 
 
@@ -231,6 +284,7 @@ class _EventsListPageState extends State<EventsListPage> {
   @override
   void initState() {
     super.initState();
+    _dbHelper = Databaseclass();
     _loadEvents(widget.userId);
   }
 
@@ -318,12 +372,21 @@ class _EventsListPageState extends State<EventsListPage> {
                 itemBuilder: (context, index) {
                   final event = events[index];
                   return InkWell(
-                    onTap: () {
-                      // Navigate to the GiftListPage
+                    onTap: () async {
+                      String? id;
+                      print("this is online status $online");
+
+                      if(online)
+                        {
+                          id=event['eventId'];}
+                      else{
+                        id=await UserSession.getUserId();
+                      }
+
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => GiftListPage(eventId: event['eventId']),
+                          builder: (context) => GiftListPage(eventId: id!),
                         ),
                       );
                     },

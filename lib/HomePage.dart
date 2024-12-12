@@ -28,7 +28,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    print("=======================DAKHALT=====================");
+    print("=======================DAKHALT EL HOME PAGE=====================");
     _dbHelper = Databaseclass();
     _firebaseDb=FirebaseDatabaseClass();
 
@@ -70,7 +70,6 @@ class _HomePageState extends State<HomePage> {
       // Handle exceptions, such as if the method throws an error
       print("Error checking internet connection: $e");
     }
-    print("=======LESSA MADAKAHLTSH=============");
     // If online, fetch from Firestore and update local database
     if (online) {
       try {
@@ -106,29 +105,6 @@ class _HomePageState extends State<HomePage> {
 
             }));
           }
-          // List<Map<String, String>> users = await _dbHelper.getFriends();
-          //
-          // // Print the users' details
-          // for (var user in users) {
-          //   print('User ID: ${user['userId']}');
-          //   print('Firebase ID: ${user['friendId']}');
-          //   print('Display Name: ${user['displayName']}');
-          //   print('Email: ${user['email']}');
-          //   print('Phone: ${user['phone']}');
-          //   print('Friends: ${user['friends']}');
-          //   print('---------------------------');
-          // }
-          // List<Map<String, Object?>> localFriends = await _dbHelper.getFriendsByUserId(currentUserId);
-          //
-          // // Print the fetched friends list
-          // for (var friend in localFriends) {
-          //   print("Friend:");
-          //   print("friendId: ${friend['friendId']}");
-          //   print("displayName: ${friend['displayName']}");
-          //   print("phoneNumber: ${friend['phoneNumber']}");
-          //   print("---------------------------");
-          // }
-
           // Wait for all Firestore fetch tasks to complete
           await Future.wait(friendFetchTasks);
 

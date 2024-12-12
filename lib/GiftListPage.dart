@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
 import 'package:projecttrial/GiftDetailsPage.dart';
+
+import 'Database.dart';
 
 class GiftListPage extends StatefulWidget {
   final String eventId;
@@ -16,10 +19,13 @@ class GiftListPage extends StatefulWidget {
 class _GiftListPageState extends State<GiftListPage> {
   List<Map<String, dynamic>> gifts = [];
   String sortCriteria = 'Name';
-
+  late bool online; // Default value in case of failure
+  late String currentUserId;
+  late Databaseclass _dbHelper;
   @override
   void initState() {
     super.initState();
+    _dbHelper = Databaseclass();
     _loadGifts();
   }
   // Function to fetch the gift image URL based on the gift ID
@@ -64,50 +70,78 @@ class _GiftListPageState extends State<GiftListPage> {
 // Function to load the gifts for the logged-in user
   Future<void> _loadGifts() async {
     try {
-      final FirebaseAuth _auth = FirebaseAuth.instance;
-      final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+      var internetConnection = InternetConnection(); // Initialize safely
+      if (internetConnection != null) {
+        online = await internetConnection.hasInternetAccess;
+      }
+    }catch (e) {
+      // Handle exceptions, such as if the method throws an error
+      print("Error checking internet connection: $e");
+    }
+    try {
+      if (online) {
+        currentUserId = FirebaseAuth.instance.currentUser!.uid;
+        final FirebaseAuth _auth = FirebaseAuth.instance;
+        final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-      User? user = _auth.currentUser;
-      if (user != null) {
-        String userId = user.uid;
-        DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
+        User? user = _auth.currentUser;
+        if (user != null) {
+          String userId = user.uid;
+          DocumentSnapshot userDoc = await _firestore.collection('users').doc(
+              userId).get();
 
-        if (userDoc.exists) {
-          List<dynamic> eventsList = userDoc['events_list'] ?? [];
+          if (userDoc.exists) {
+            List<dynamic> eventsList = userDoc['events_list'] ?? [];
 
-          // Find the specific event by ID
-          var event = eventsList.firstWhere(
-                (e) => e['eventId'] == widget.eventId,
-            orElse: () => null,
-          );
+            // Find the specific event by ID
+            var event = eventsList.firstWhere(
+                  (e) => e['eventId'] == widget.eventId,
+              orElse: () => null,
+            );
 
-          if (event != null && event['gifts'] != null) {
-            List<Map<String, dynamic>> updatedGifts = [];
+            if (event != null && event['gifts'] != null) {
+              List<Map<String, dynamic>> updatedGifts = [];
 
-            for (var gift in event['gifts']) {
-              String photoURL = await _fetchGiftImage(widget.eventId, gift['giftId']);
-              updatedGifts.add({
-                'PledgedBy': gift['PledgedBy'],
-                'category': gift['category'],
-                'createdBy': gift['createdBy'],
-                'description': gift['description'],
-                'dueTo': gift['dueTo'],
-                'eventId': widget.eventId,
-                'giftId': gift['giftId'],
-                'photoURL': photoURL,
-                'price': gift['price'],
-                'status': gift['status'],
-                'title': gift['title'],
+              for (var gift in event['gifts']) {
+                String photoURL = await _fetchGiftImage(
+                    widget.eventId, gift['giftId']);
+                updatedGifts.add({
+                  'PledgedBy': gift['PledgedBy'],
+                  'category': gift['category'],
+                  'createdBy': gift['createdBy'],
+                  'description': gift['description'],
+                  'dueTo': gift['dueTo'],
+                  'eventId': widget.eventId,
+                  'giftId': gift['giftId'],
+                  'photoURL': photoURL,
+                  'price': gift['price'],
+                  'status': gift['status'],
+                  'title': gift['title'],
+                });
+                Map<String, String> giftData = {
+                  'FIRESTORE_GIFT_ID': gift['giftId'] ?? '',       // Default to empty string if null
+                  'giftName': gift['title'] ?? '',                  // Default to empty string if null
+                  'status': gift['status'] ?? '',                   // Default to empty string if null
+                  'dueTo': gift['dueTo'] ?? '',                     // Default to empty string if null
+                  'giftValue': gift['price']?.toString() ?? '',     // Convert to string and default to empty if null
+                  'FIRESTORE_EVENT_ID': widget.eventId ?? '',       // Default to empty string if null
+                };
+
+                // Print the content of the eventData map
+
+                _dbHelper.insertGift(widget.eventId, giftData);
+              }
+
+              setState(() {
+                gifts = updatedGifts;
               });
             }
-
-            setState(() {
-              gifts = updatedGifts;
-            });
           }
         }
+      }else{
+        print("YOU ARE OFFLINE");
       }
-    } catch (e) {
+    }catch (e) {
       print('Error loading gifts: $e');
     }
   }

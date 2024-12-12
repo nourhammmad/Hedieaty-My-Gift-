@@ -27,7 +27,7 @@ class Databaseclass {
 
       // Create the Users table
       await db.execute('''
-        CREATE TABLE Users (
+      CREATE TABLE Users (
           ID INTEGER PRIMARY KEY AUTOINCREMENT,
           FIREBASE_ID TEXT NOT NULL,
           displayName TEXT,
@@ -36,11 +36,11 @@ class Databaseclass {
           phoneNumber INT,
           FRIENDS TEXT
         )
-      ''');
+        ''');
 
       // Create the Friends table to track friendships between users
       await db.execute('''
-        CREATE TABLE Friends (
+      CREATE TABLE Friends (
               ID INTEGER PRIMARY KEY AUTOINCREMENT,
               USER_FIREBASE_ID TEXT NOT NULL,
               FRIEND_FIREBASE_ID TEXT NOT NULL,
@@ -50,18 +50,30 @@ class Databaseclass {
               FOREIGN KEY (USER_FIREBASE_ID) REFERENCES Users(FIREBASE_ID),
               FOREIGN KEY (FRIEND_FIREBASE_ID) REFERENCES Users(FIREBASE_ID)
             )
-      ''');
+            ''');
       await db.execute('''
-  CREATE TABLE Events (
-    ID INTEGER PRIMARY KEY AUTOINCREMENT,
-    eventId TEXT NOT NULL UNIQUE,
-    name TEXT NOT NULL,
-    category TEXT NOT NULL,
-    status TEXT NOT NULL,
-    userId TEXT NOT NULL,
-    FOREIGN KEY (userId) REFERENCES Users(FIREBASE_ID) ON DELETE CASCADE
-  )
-''');
+      CREATE TABLE Events (
+              eventId INTEGER PRIMARY KEY AUTOINCREMENT,
+              FIRESTORE_EVENT_ID TEXT NOT NULL UNIQUE,
+              name TEXT NOT NULL,
+              type TEXT NOT NULL,
+              status TEXT NOT NULL,
+              FIRESTORE_USER_ID TEXT NOT NULL,
+              FOREIGN KEY (FIRESTORE_USER_ID) REFERENCES Users(FIREBASE_ID) 
+              )
+              ''');
+      await db.execute('''
+      CREATE TABLE Gifts (
+              giftId INTEGER PRIMARY KEY AUTOINCREMENT,
+              FIRESTORE_GIFT_ID TEXT NOT NULL UNIQUE,
+              giftName TEXT NOT NULL,
+              status TEXT,
+              dueTo TEXT,
+              giftValue TEXT,
+              FIRESTORE_EVENT_ID TEXT NOT NULL,
+              FOREIGN KEY (FIRESTORE_EVENT_ID) REFERENCES Events(FIRESTORE_EVENT_ID)
+              )
+              ''');
 
     });
     return mydb;
@@ -73,20 +85,7 @@ class Databaseclass {
   }
 
   // Method to insert friends into the database
-  Future<void> insertFriendsToLocal(String userId, List<Map<String, dynamic>> friendsData) async {
-    final db = await MyDataBase;
-    Batch batch = db.batch();
 
-    // Remove existing friends of the user before inserting
-    batch.delete('Friends', where: 'USER_FIREBASE_ID = ?', whereArgs: [userId]);
-
-    // Insert new friends data
-    for (var friend in friendsData) {
-      batch.insert('Friends', friend);
-    }
-
-    await batch.commit();
-  }
   Future<void> insertOrUpdateUser(Map<String, dynamic> userData) async {
     final Database db = await MyDataBase;
 
@@ -115,6 +114,114 @@ class Databaseclass {
       print("Error inserting or updating user: $e");
     }
   }
+  Future<void> insertEvent(String currentUserId, Map<String, String> eventData) async {
+    final Database db = await MyDataBase;
+
+    // Check if the friend already exists for the current user
+    var existingEvent = await db.query(
+        'Events',
+        where: 'FIRESTORE_USER_ID = ? AND FIRESTORE_EVENT_ID = ?',
+        whereArgs: [currentUserId, eventData['eventId']]
+    );
+
+    // If the friend does not exist, insert the friend into the database
+    if (existingEvent.isEmpty) {
+      await db.insert(
+        'Events',
+        {
+          'FIRESTORE_USER_ID': currentUserId!,  // Logged-in user's Firebase ID
+          'FIRESTORE_EVENT_ID': eventData['eventId']!, // The friend's Firebase ID
+          'name': eventData['title']!,
+          'type': eventData['type']!,
+          'status': eventData['status']!,
+        },
+        conflictAlgorithm: ConflictAlgorithm.ignore,  // Avoid inserting duplicates
+      );
+      print("Event inserted for user $currentUserId");
+    } else {
+      // If the friend already exists, check if there are updates required (e.g., displayName, phoneNumber)
+      bool needsUpdate = false;
+
+      if (existingEvent[0]['name'] != eventData['title'] ||
+          existingEvent[0]['type'] != eventData['type'] ||
+          existingEvent[0]['status'] != eventData['status']) {
+        needsUpdate = true;
+      }
+
+      // Update if necessary
+      if (needsUpdate) {
+        await db.update(
+            'Events',
+            {
+              'name': eventData['title']!,
+              'type': eventData['type']!,
+              'status': eventData['status']!,
+            },
+            where: 'FIRESTORE_USER_ID = ? AND FIRESTORE_EVENT_ID = ?',
+            whereArgs: [currentUserId, eventData['eventId']]
+        );
+        print("Event updated for user $currentUserId");
+      } else {
+        print("No update needed for user $currentUserId");
+      }
+    }
+  }
+  Future<void> insertGift(String eventId, Map<String, String> giftData) async {
+    final Database db = await MyDataBase;
+
+    // Check if the friend already exists for the current user
+    var existingGift = await db.query(
+        'Gifts',
+        where: 'FIRESTORE_EVENT_ID = ? AND FIRESTORE_GIFT_ID = ?',
+        whereArgs: [eventId, giftData['FIRESTORE_GIFT_ID']]
+    );
+
+    // If the friend does not exist, insert the friend into the database
+    if (existingGift.isEmpty) {
+      await db.insert(
+        'Gifts',
+        {
+          'FIRESTORE_GIFT_ID': giftData['FIRESTORE_GIFT_ID']!,
+          'FIRESTORE_EVENT_ID': eventId, // The friend's Firebase ID
+          'giftName': giftData['giftName']!,
+          'status': giftData['status']!,
+          'dueTo': giftData['dueTo']!,
+          'giftValue': giftData['giftValue']!,
+        },
+        conflictAlgorithm: ConflictAlgorithm.ignore,  // Avoid inserting duplicates
+      );
+      print("Gift inserted for event $eventId");
+    } else {
+      // If the friend already exists, check if there are updates required (e.g., displayName, phoneNumber)
+      bool needsUpdate = false;
+
+      if (existingGift[0]['giftName'] != giftData['giftName'] ||
+          existingGift[0]['dueTo'] != giftData['dueTo'] ||
+          existingGift[0]['status'] != giftData['status']||
+          existingGift[0]['giftValue'] != giftData['giftValue']) {
+        needsUpdate = true;
+      }
+
+      // Update if necessary
+      if (needsUpdate) {
+        await db.update(
+            'Gifts',
+            {
+              'giftName': giftData['giftName']!,
+              'status': giftData['status']!,
+              'dueTo': giftData['dueTo']!,
+              'giftValue': giftData['giftValue']!,
+            },
+            where: 'FIRESTORE_EVENT_ID = ? AND FIRESTORE_GIFT_ID = ?',
+            whereArgs: [eventId, giftData['FIRESTORE_GIFT_ID']]
+        );
+        print("Gift updated for user $eventId");
+      } else {
+        print("No update needed for user $eventId");
+      }
+    }
+  }
+
 
   Future<void> insertFriend(String currentUserId, Map<String, String> friendData) async {
     final Database db = await MyDataBase;
@@ -271,6 +378,25 @@ class Databaseclass {
         'friendId': friend['FRIEND_FIREBASE_ID'],
         'displayName': friend['displayName'],
         'phoneNumber': friend['phoneNumber'],
+      };
+    }).toList();
+  }
+  Future<List<Map<String, Object?>>> getEventsByUserId(String currentUserId) async {
+    final Database db = await MyDataBase;
+
+    // Query to get all friends of the current user based on USER_FIREBASE_ID
+    var result = await db.query(
+      'Events',
+      where: 'FIRESTORE_USER_ID = ?',
+      whereArgs: [currentUserId],
+    );
+
+    // Return a list of friends data from the query result
+    return result.map((event) {
+      return {
+        'title': event['name']!,
+        'type': event['type']!,
+        'status': event['status']!,
       };
     }).toList();
   }
