@@ -120,7 +120,7 @@ class _EventsListPageState extends State<EventsListPage> {
       // Update UI
       setState(() {});
     } catch (e) {
-      print("Error loading friends from local database: $e");
+      print("Error loading events from local database: $e");
     }
   }
 

@@ -5,6 +5,7 @@ import 'package:internet_connection_checker_plus/internet_connection_checker_plu
 import 'package:projecttrial/GiftDetailsPage.dart';
 
 import 'Database.dart';
+import 'UserSession.dart';
 
 class GiftListPage extends StatefulWidget {
   final String eventId;
@@ -30,6 +31,8 @@ class _GiftListPageState extends State<GiftListPage> {
   }
   // Function to fetch the gift image URL based on the gift ID
   Future<String> _fetchGiftImage(String eventId, String giftId) async {
+    if(!online)
+    {return '';}
     try {
       final FirebaseFirestore _firestore = FirebaseFirestore.instance;
       final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -119,12 +122,13 @@ class _GiftListPageState extends State<GiftListPage> {
                   'title': gift['title'],
                 });
                 Map<String, String> giftData = {
-                  'FIRESTORE_GIFT_ID': gift['giftId'] ?? '',       // Default to empty string if null
-                  'giftName': gift['title'] ?? '',                  // Default to empty string if null
-                  'status': gift['status'] ?? '',                   // Default to empty string if null
-                  'dueTo': gift['dueTo'] ?? '',                     // Default to empty string if null
-                  'giftValue': gift['price']?.toString() ?? '',     // Convert to string and default to empty if null
-                  'FIRESTORE_EVENT_ID': widget.eventId ?? '',       // Default to empty string if null
+                  'FIRESTORE_GIFT_ID': gift['giftId'] ?? '',
+                  'giftName': gift['title'] ?? '',
+                  'status': gift['status'] ?? '',
+                  'dueTo': gift['dueTo'] ?? '',
+                  'category': gift['category'].toString() ?? '',
+                  'giftValue': gift['price']?.toString() ?? '',
+                  'FIRESTORE_EVENT_ID': widget.eventId ?? '',
                 };
 
                 // Print the content of the eventData map
@@ -139,12 +143,43 @@ class _GiftListPageState extends State<GiftListPage> {
           }
         }
       }else{
+        _loadGiftsFromLocalDatabase();
         print("YOU ARE OFFLINE");
       }
     }catch (e) {
       print('Error loading gifts: $e');
     }
   }
+  Future<void> _loadGiftsFromLocalDatabase() async {
+    print("======================DALHALT BARDO-========");
+    try {
+      print("Offline, fetching friends from local database");
+      currentUserId = (await UserSession.getUserId())!;
+
+
+      List<Map<String, Object?>> localGifts = await _dbHelper.getGiftsByEventId(widget.eventId!);
+
+      // Clear the existing list of friends before adding new ones
+      gifts.clear();
+
+      for (var giftData in localGifts) {
+
+        gifts.add({
+        'title': giftData['giftName'] ?? '',
+        'status': giftData['status'] ?? '',
+        'category':giftData['category'] ?? '',
+        'dueTo': giftData['dueTo'] ?? '',
+        'giftValue': giftData['giftValue']?.toString() ?? '',
+        });
+      }
+
+      // Update UI
+      setState(() {});
+    } catch (e) {
+      print("Error loading gifts from local database: $e");
+    }
+  }
+
 
 
   void _sortGifts() {
@@ -357,12 +392,12 @@ class _GiftListPageState extends State<GiftListPage> {
                                 ),
                               ),
                               Text(
-                                "Status: ${status}",
+                                "Status: ${gift['status'] ?? 'Unknown'}",
                                 style: const TextStyle(fontSize: 30,fontFamily: "Lobster",
                                 ),
                               ),
                               Text(
-                                "Due Date: ${duedate}",
+                                "Due Date: ${gift['dueTo']??'Unknown'}",
                                 style: const TextStyle(fontSize: 30,          fontFamily: "Lobster",
                                 ),
                               ),
@@ -391,6 +426,7 @@ class _GiftListPageState extends State<GiftListPage> {
                                       image: gift['photoURL'],
                                       category: gift['category'],
                                       price: gift['price'],
+                                      date: gift['dueTo'],
                                     ),
                                   ),
                                 );

@@ -68,6 +68,7 @@ class Databaseclass {
               FIRESTORE_GIFT_ID TEXT NOT NULL UNIQUE,
               giftName TEXT NOT NULL,
               status TEXT,
+              category TEXT,
               dueTo TEXT,
               giftValue TEXT,
               FIRESTORE_EVENT_ID TEXT NOT NULL,
@@ -187,6 +188,7 @@ class Databaseclass {
           'status': giftData['status']!,
           'dueTo': giftData['dueTo']!,
           'giftValue': giftData['giftValue']!,
+          'category':giftData['category']!,
         },
         conflictAlgorithm: ConflictAlgorithm.ignore,  // Avoid inserting duplicates
       );
@@ -381,6 +383,28 @@ class Databaseclass {
       };
     }).toList();
   }
+  Future<List<Map<String, Object?>>> getGiftsByEventId(String eventId) async {
+    final Database db = await MyDataBase;
+
+    // Query to get all friends of the current user based on USER_FIREBASE_ID
+    var result = await db.query(
+      'Gifts',
+      where: 'FIRESTORE_EVENT_ID = ?',
+      whereArgs: [eventId],
+    );
+
+    // Return a list of friends data from the query result
+    return result.map((gift) {
+      return {
+        'giftName': gift['giftName']!,
+        'status': gift['status']!,
+        'category':gift['category'],
+        'dueTo': gift['dueTo']!,
+        'giftValue': gift['giftValue']!,
+      };
+    }).toList();
+  }
+
   Future<List<Map<String, Object?>>> getEventsByUserId(String currentUserId) async {
     final Database db = await MyDataBase;
 

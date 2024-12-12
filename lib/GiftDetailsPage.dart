@@ -18,6 +18,7 @@ class GiftDetailsPage extends StatefulWidget {
   final String image;
   final String category;
   final String price;
+  final String date;
 
   const GiftDetailsPage({
     super.key,
@@ -29,6 +30,7 @@ class GiftDetailsPage extends StatefulWidget {
     required this.image,
     required this.category,
     required this.price,
+    required this.date,
   });
 
   @override
@@ -40,6 +42,8 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController categoryController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
+  late TextEditingController dueToController;
+
   File? _giftImage;
   final ImagePicker _imagePicker = ImagePicker();
 
@@ -54,9 +58,27 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
     descriptionController.text = widget.description;
     categoryController.text = widget.category;
     priceController.text = widget.price.toString();
+    dueToController = TextEditingController(text: widget.date);
+
 
     // Set the pledged status based on the passed status
     isPledged = widget.status== 'Pledged';
+  }
+
+  Future<void> _selectDueDate(BuildContext context) async {
+    // Implement your date picker logic here
+    DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+
+    if (pickedDate != null) {
+      setState(() {
+        dueToController.text = pickedDate.toIso8601String().split('T')[0]; // Update controller
+      });
+    }
   }
   void updateGiftDetails({
     required bool isPledged,
@@ -64,6 +86,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
     required String description,
     required String category,
     required String price,
+    required String date,
  // The gift ID to access the specific gift
   }) async {
     final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -88,6 +111,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
         'category': category,
         'price': price,
         'photoURL':photoUrl,
+        'dueTo':date,
         'status': isPledged ? 'Pledged' : 'Available', // Update status based on isPledged
       };
 
@@ -287,6 +311,17 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
               enabled: !isPledged, // Disable if pledged
             ),
             const SizedBox(height: 20),
+            GestureDetector(
+              onTap: () => _selectDueDate(context), // Trigger date picker on tap
+              child: AbsorbPointer(
+                child: _buildTextField(
+                  controller: dueToController,
+                  label: 'Due To',
+                  //keyboardType: TextInputType.datetime,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
 
             // Submit Button
             Container(
@@ -297,13 +332,14 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
                   String description = descriptionController.text;
                   String category = categoryController.text;
                   String price = priceController.text;
+                  String date = dueToController.text;
 
                   updateGiftDetails(
                     isPledged: isPledged,
                     title: title,
                     description: description,
                     category: category,
-                    price: price,
+                    price: price, date: date,
                   );                },
                 child: const Text(
                   'Save Gift Details',
