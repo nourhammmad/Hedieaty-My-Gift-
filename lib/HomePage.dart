@@ -25,6 +25,8 @@ class _HomePageState extends State<HomePage> {
   late String currentUserId;
   bool isLoading = true;
   bool isOnline = false;
+
+
   @override
   void initState() {
     super.initState();
@@ -58,7 +60,10 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+
+
   Future<void> _loadFriendsList() async {
+
     // Check connectivity status
     bool online = false; // Default value in case of failure
     try {
@@ -171,7 +176,13 @@ class _HomePageState extends State<HomePage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text("Add Friend"),
+          title: Center(
+            child: Text("Add Friend",style: TextStyle(
+              fontSize: 35, // Adjust the font size as needed
+              fontFamily: "Lobster", // Optional: Adjust the font weight
+              color: Colors.indigo, // Optional: Adjust the text color
+            ),),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -233,13 +244,21 @@ class _HomePageState extends State<HomePage> {
                   );
                 }
               },
-              child: Text("Add Friend"),
+              child: Text("Add Friend" ,style: TextStyle(
+        fontSize: 26, // Adjust the font size as needed
+        fontFamily: "Lobster", // Optional: Adjust the font weight
+        color: Colors.indigo, // Optional: Adjust the text color
+        ),),
             ),
             TextButton(
               onPressed: () {
                 Navigator.pop(context);  // Close the dialog without adding a friend
               },
-              child: Text("Cancel"),
+              child: Text("Cancel", style: TextStyle(
+        fontSize: 26, // Adjust the font size as needed
+        fontFamily: "Lobster", // Optional: Adjust the font weight
+        color: Colors.red, // Optional: Adjust the text color
+        ),),
             ),
           ],
         );
@@ -673,7 +692,52 @@ class FriendListItem extends StatelessWidget {
     required this.image,
     required this.friendId,
   }) : super(key: key);
+  Future<int> getEventCount(String userId) async {
+    bool online = false; // Default value in case of failure
+    try {
+      var internetConnection = InternetConnection(); // Initialize safely
+      if (internetConnection != null) {
+        online = await internetConnection.hasInternetAccess ?? false;
+      }
+    } catch (e) {
+      // Handle exceptions, such as if the method throws an error
+      print("Error checking internet connection: $e");
+    }
+    if (online) {
+      try {
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .get();
 
+        if (userDoc.exists) {
+          // Explicitly cast the data to Map<String, dynamic>
+          Map<String, dynamic>? data = userDoc.data() as Map<String, dynamic>?;
+
+          if (data != null && data.containsKey('events_list')) {
+            var eventsList = data['events_list'];
+            if (eventsList is List) {
+              return eventsList.length;
+            } else {
+              print('events_list is not a List');
+              return 0;
+            }
+          } else {
+            print('events_list field does not exist');
+            return 0;
+          }
+        } else {
+          print('User document does not exist');
+          return 0;
+        }
+      } catch (e) {
+        print('Error fetching event count: $e');
+        return 0; // Return 0 on error
+      }
+    }else{
+      return 0;
+    }
+  }
   @override
   Widget build(BuildContext context) {
     // Safe handling for nullable image
@@ -751,20 +815,60 @@ class FriendListItem extends StatelessWidget {
                   Text(
                     phoneNumber,
                     style: const TextStyle(
-                      fontSize: 18,
+                      fontSize: 20,
                       color: Colors.grey,
                       fontFamily: "Lobster",
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    "No Upcoming Events", // Example status
-                    style: TextStyle(
-                      fontSize: 19,
-                      color: Colors.grey,
-                      fontFamily: "Lobster",
-                    ),
-                  ),
+                  FutureBuilder<int>(
+                    future: getEventCount(friendId), // Ensure friendId is not null
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        // Show a loading indicator while fetching data
+                        return const Text(
+                          "Loading events...",
+                          style: TextStyle(
+                            fontSize: 19,
+                            color: Colors.grey,
+                            fontFamily: "Lobster",
+                          ),
+                        );
+                      } else if (snapshot.hasError) {
+                        // Show an error message if something goes wrong
+                        return const Text(
+                          "Error loading events",
+                          style: TextStyle(
+                            fontSize: 19,
+                            color: Colors.red,
+                            fontFamily: "Lobster",
+                          ),
+                        );
+                      } else if (!snapshot.hasData || snapshot.data == 0) {
+                        // Handle case when data is null or empty
+                        return const Text(
+                          "No Upcoming events",
+                          style: TextStyle(
+                            fontSize: 22,
+                            color: Colors.grey,
+                            fontFamily: "Lobster",
+                          ),
+                        );
+                      } else {
+                        // Successfully loaded event count
+                        return Text(
+                          "Events: ${snapshot.data}",
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontFamily: "Lobster",
+                            color: Colors.indigo,
+                          ),
+                        );
+                      }
+                    },
+                  )
+
+
                 ],
               ),
             ),

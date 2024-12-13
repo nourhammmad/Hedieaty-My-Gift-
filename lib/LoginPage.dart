@@ -59,7 +59,7 @@ class _LoginPageState extends State<LoginPage> {
   void initState() {
     super.initState();
     _dbHelper = Databaseclass();  // Initialize _dbHelper here
-    _dbHelper.mydeletedatabase();
+    //_dbHelper.mydeletedatabase();
     _initializeDatabase();
   }
 
