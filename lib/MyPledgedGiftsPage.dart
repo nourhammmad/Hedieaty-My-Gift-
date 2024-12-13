@@ -113,7 +113,10 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
             // Create the detailed pledged gift entry
             pledgedGiftsList.add({
               'pledgerName': pledgerName,
+              'pledgerId': pledgerId,
+              'eventId':eventId,
               'title': giftTitle,
+              'giftId': giftId,
               'eventTitle': eventTitle,
               'dueTo': dueTo,
               'status': status,
@@ -135,11 +138,78 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
 
 
 
-  void _unpledgeGift(int index) {
-    setState(() {
-      pledgedGifts.removeAt(index);
-    });
+  Future<void> _unpledgeGift(int index) async {
+    try {
+      // Retrieve the gift data using the index
+      var giftToUnpledge = pledgedGifts[index];
+      print(giftToUnpledge);
+
+      // Check if the gift status is pending
+      if (giftToUnpledge['status'] == 'Pending') {
+        // Fetch the logged-in user's document
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(_userId).get();
+
+        if (userDoc.exists) {
+          // Get the current pledged gifts list
+          List pledgedGiftIds = List.from(userDoc['pledged_gifts'] ?? []);
+
+          // Find and remove the corresponding gift from the Firestore data
+          pledgedGiftIds.removeWhere((pledgedGift) =>
+          pledgedGift['giftId'] == giftToUnpledge['giftId']);
+
+          // Update Firestore with the updated pledged gifts list
+          await _firestore.collection('users').doc(_userId).update({
+            'pledged_gifts': pledgedGiftIds,
+          });
+
+          // Navigate to the pledgerId's document
+          String pledgerId = giftToUnpledge['pledgerId'];
+          DocumentSnapshot pledgerDoc = await _firestore.collection('users').doc(pledgerId).get();
+
+          if (pledgerDoc.exists) {
+            // Locate the eventId in the events_list
+            List eventsList = List.from(pledgerDoc['events_list'] ?? []);
+            String eventId = giftToUnpledge['eventId'];
+            String giftId = giftToUnpledge['giftId'];
+
+            for (var event in eventsList) {
+              if (event['eventId'] == eventId) {
+                // Find the gift in the event's gifts array
+                List giftsList = List.from(event['gifts'] ?? []);
+                for (var gift in giftsList) {
+                  if (gift['giftId'] == giftId) {
+                    // Update the pledgerId field to null
+                    gift['pledgedBy'] = null;
+                    gift['status'] = "Available";
+                    break;
+                  }
+                }
+
+                // Update Firestore with the modified gifts array
+                await _firestore.collection('users').doc(pledgerId).update({
+                  'events_list': eventsList,
+                });
+
+                print("Gift unpledged and pledgerId set to null.");
+                break;
+              }
+            }
+          }
+
+          // Update the local UI
+          setState(() {
+            pledgedGifts.removeAt(index);
+          });
+        }
+      } else {
+        print("Gift is not in pending status.");
+      }
+    } catch (e) {
+      print("Error unpledging gift: $e");
+    }
   }
+
+
 
   void _showUnpledgeDialog(int index) {
     showDialog(
