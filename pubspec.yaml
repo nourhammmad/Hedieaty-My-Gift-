@@ -50,7 +50,10 @@ dependencies:
   flutter_image_compress: ^2.3.0
   http: ^1.2.2
   cached_network_image: ^3.4.1
-
+  firebase_messaging: ^15.1.6
+  googleapis: ^13.2.0
+  googleapis_auth: ^1.6.0
+  firebase_analytics: ^11.3.6
 
 dev_dependencies:
   flutter_test:

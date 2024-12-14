@@ -1,9 +1,12 @@
+import 'dart:convert';
 import 'dart:ffi';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
+import 'PushNotifications.dart';
 
 class FriendsGiftList extends StatefulWidget {
   final String userId;
@@ -22,7 +25,6 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
   List<Map<String, dynamic>> gifts = [];
   bool isLoading = true; // To show a loading indicator
 
-  @override
   @override
   void initState() {
     super.initState();
@@ -177,6 +179,10 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
       }
 
       final pledgerId = currentUser.uid;
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(pledgerId).get();
+
+         final displayName = userDoc.data()?['displayName']; // Assuming 'displayName' is the field name
+        print("User's Display Name: $displayName");
 
       // Find the selected gift from the list
       final gift = gifts.firstWhere(
@@ -189,8 +195,11 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
         return;
       }
 
-      final eventId = gift['eventId'];
 
+      final giftTitle = gift['title']; // Get the gift title
+      print("Gift Title: $giftTitle");
+
+      final eventId = gift['eventId'];
       if (eventId == null) {
         print("Error: Missing eventId.");
         return;
@@ -202,7 +211,7 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
 
       // Get the friend's document (not the current user)
       final friendUserId = gift['createdBy'];  // Assuming the gift creator (friend) has the 'createdBy' field
-      final userDocRef = FirebaseFirestore.instance.collection('users').doc(friendUserId); // Friend's userId
+      final userDocRef = FirebaseFirestore.instance.collection('users').doc(friendUserId);
 
       // Fetch the user's data (events and pledged gifts)
       final userDocSnapshot = await userDocRef.get();
@@ -220,6 +229,9 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
       }
 
       final event = eventsList[eventIndex];
+      final eventTitle = event['title']; // Get the event title
+      print("Event Title: $eventTitle");
+
       final giftsList = List<Map<String, dynamic>>.from(event['gifts'] ?? []);
       final giftIndex = giftsList.indexWhere((g) => g['giftId'] == giftId);
 
@@ -231,7 +243,6 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
       giftsList[giftIndex]['PledgedBy'] = pledgerId;  // The current user pledges the gift
       giftsList[giftIndex]['status'] = 'Pledged';
       eventsList[eventIndex]['gifts'] = giftsList;
-
 
       // Fetch the current user's document
       final currentUserDocRef = FirebaseFirestore.instance.collection('users').doc(pledgerId);
@@ -246,27 +257,36 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
         'pledgerId': friendUserId,  // The logged-in user who is pledging the gift
         'eventId': eventId,
         'giftId': giftId,
-        'status':"Pending",
+        'status': "Pending",
       });
 
       // Now, run the transaction to apply the changes
       await FirebaseFirestore.instance.runTransaction((transaction) async {
         // Update the friend's document with the updated events list
         transaction.update(userDocRef, {
-          'events_list': eventsList,  // Save the updated events list
+          'events_list': eventsList,
         });
 
         // Update the current user's pledged_gifts list
         transaction.update(currentUserDocRef, {
-          'pledged_gifts': currentUserPledgedGiftsList,  // Update pledged_gifts for current user
+          'pledged_gifts': currentUserPledgedGiftsList,
         });
       });
+
+      // Fetch the FCM token of the friend
+      final deviceToken = userDocSnapshot.data()?['fcmToken'];
+      print("==============device token: $deviceToken");
+
+      if (deviceToken != null && deviceToken.isNotEmpty) {
+        print("==============device token: $deviceToken");
+        await PushNotifications.SendNotificationToPledgedFriend(deviceToken, context, giftId,giftTitle,eventTitle,displayName);
+      }
 
       // Update the local state for the UI
       setState(() {
         final localGiftIndex = gifts.indexWhere((g) => g['giftId'] == giftId);
         if (localGiftIndex != -1) {
-          gifts[localGiftIndex]['PledgedBy'] = pledgerId;  // Current user pledges the gift
+          gifts[localGiftIndex]['PledgedBy'] = pledgerId;
           gifts[localGiftIndex]['status'] = 'Pledged';
         }
       });
@@ -276,6 +296,7 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
       print("Error pledging gift: $e");
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

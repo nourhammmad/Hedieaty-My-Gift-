@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
 import 'Database.dart';
@@ -28,16 +29,46 @@ class _HomePageState extends State<HomePage> {
   List<Map<String, String>> filteredFriends = []; // Filtered list for search results
 
   @override
-  void initState()  {
-    super.initState();
-    print("=======================DAKHALT EL HOME PAGE=====================");
-    _dbHelper = Databaseclass();
-    _firebaseDb=FirebaseDatabaseClass();
+    void initState()  {
+      super.initState();
+  
+      print("=======================DAKHALT EL HOME PAGE=====================");
+      _dbHelper = Databaseclass();
+      _firebaseDb=FirebaseDatabaseClass();
+  
+      //currentUserId = FirebaseAuth.instance.currentUser!.uid;
+      _dbHelper = Databaseclass();
+      _loadFriendsList();
+      
+      _requestNotificationPermission();
+  
+    }
+  void _requestNotificationPermission() async {
+    // Request permission for iOS devices
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
 
-    //currentUserId = FirebaseAuth.instance.currentUser!.uid;
-    _dbHelper = Databaseclass();
-    _loadFriendsList();
+    NotificationSettings settings = await messaging.requestPermission();
+
+    // Check if permission is granted
+    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      print("User granted permission for notifications.");
+      // If permission is granted, you can get the FCM token and store it.
+      String? token = await messaging.getToken();
+      print("FCM Token: $token");
+      _saveFcmTokenToFirestore(token!);
+      // Save token to your backend or Firestore here
+    } else {
+      print("User declined or has not accepted permission for notifications.");
+    }
   }
+  void _saveFcmTokenToFirestore(String token) async {
+    String userId = FirebaseAuth.instance.currentUser!.uid; // Replace with your user ID
+    await FirebaseFirestore.instance.collection('users').doc(userId).update({
+      'fcmToken': token,
+    });
+  }
+
+
   Future<String?> fetchPhotoURL(String userId) async {
     bool online = false; // Default value in case of failure
     try {

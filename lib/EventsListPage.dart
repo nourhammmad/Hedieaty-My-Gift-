@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
 import 'package:projecttrial/AddEvent.dart';
-
 import 'Database.dart';
 import 'GiftListPage.dart';
 import 'UserSession.dart';
@@ -22,10 +21,7 @@ class _EventsListPageState extends State<EventsListPage> {
   List<Map<String, dynamic>> events = [];
   late String currentUserId;
   late Databaseclass _dbHelper;
-  late bool online; // Default value in case of failure
-
-
-  // Sorting criteria
+  late bool online;
   String sortCriteria = 'Name';
 
   // Function to fetch events from Firestore
@@ -131,8 +127,7 @@ class _EventsListPageState extends State<EventsListPage> {
   }
 
   Future<String> _fetchEventImage(String eventId) async {
-    bool online = false; // Default value in case of failure
-    try {
+     try {
       var internetConnection = InternetConnection(); // Initialize safely
       if (internetConnection != null) {
         online = await internetConnection.hasInternetAccess ?? false;

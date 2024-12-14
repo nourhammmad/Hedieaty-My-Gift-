@@ -2,6 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
+
+import 'Database.dart';
 
 class MyPledgedGiftsPage extends StatefulWidget {
   const MyPledgedGiftsPage({super.key});
@@ -15,14 +18,26 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   late String _userId;
   List<Map<String, dynamic>> pledgedGifts = [];
+   late bool online;
 
   @override
   void initState() {
     super.initState();
     _userId = _auth.currentUser!.uid; // Get logged-in user's ID
-    _fetchPledgedGifts();
+     _fetchPledgedGifts();
   }
   Future<String> _fetchGiftImage(String PledgerId,String eventId, String giftId) async {
+    try {
+      var internetConnection = InternetConnection(); // Initialize safely
+      if (internetConnection != null) {
+        online = await internetConnection.hasInternetAccess ?? false;
+      }
+    } catch (e) {
+      // Handle exceptions, such as if the method throws an error
+      print("Error checking internet connection: $e");
+    }
+    if(!online)
+    {return '';}
     try {
       final FirebaseFirestore _firestore = FirebaseFirestore.instance;
       final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -61,80 +76,100 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
 
   Future<void> _fetchPledgedGifts() async {
     try {
-      // Fetch the logged-in user's document from Firestore
-      DocumentSnapshot userDoc = await _firestore.collection('users').doc(_userId).get();
+      var internetConnection = InternetConnection(); // Initialize safely
+      if (internetConnection != null) {
+        online = await internetConnection.hasInternetAccess;
+      }
+    } catch (e) {
+      print("Error checking internet connection: $e");
+    }
 
-      if (userDoc.exists) {
-        List pledgedGiftIds = userDoc['pledged_gifts'] ?? []; // List of pledged gifts data
+    try {
+      if (online) {
+        // Fetch the logged-in user's document from Firestore
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(
+            _userId).get();
 
-        // Initialize a list to store detailed pledged gifts data
-        List<Map<String, dynamic>> pledgedGiftsList = [];
+        if (userDoc.exists) {
+          List pledgedGiftIds = userDoc['pledged_gifts'] ??
+              []; // List of pledged gifts data
 
-        for (var pledgedGift in pledgedGiftIds) {
-          // Extract the pledgerId, giftId, eventId, and status from the pledged gift
-          String pledgerId = pledgedGift['pledgerId'];
-          String giftId = pledgedGift['giftId'];
-          String eventId = pledgedGift['eventId'];
-          String status = pledgedGift['status'];
+          // Initialize a list to store detailed pledged gifts data
+          List<Map<String, dynamic>> pledgedGiftsList = [];
 
-          // Fetch the pledger's user document
-          DocumentSnapshot pledgerDoc = await _firestore.collection('users').doc(pledgerId).get();
+          for (var pledgedGift in pledgedGiftIds) {
+            // Extract the pledgerId, giftId, eventId, and status from the pledged gift
+            String pledgerId = pledgedGift['pledgerId'];
+            String giftId = pledgedGift['giftId'];
+            String eventId = pledgedGift['eventId'];
+            String status = pledgedGift['status'];
 
-          if (pledgerDoc.exists) {
-            // Extract the pledger's name
-            String pledgerName = pledgerDoc['displayName'] ?? 'Unknown';
+            // Fetch the pledger's user document
+            DocumentSnapshot pledgerDoc = await _firestore.collection('users')
+                .doc(pledgerId)
+                .get();
 
-            // Fetch the event details using the eventId from the pledger's events_list
-            List eventsList = pledgerDoc['events_list'] ?? [];
-            String eventTitle = 'Unknown Event';
-            String giftTitle = 'Unknown Gift';
-            String dueTo = 'No due date';
-            String giftImage = '';  // To store the gift image URL
+            if (pledgerDoc.exists) {
+              // Extract the pledger's name
+              String pledgerName = pledgerDoc['displayName'] ?? 'Unknown';
 
-            for (var event in eventsList) {
-              if (event['eventId'] == eventId) {
-                eventTitle = event['title'] ?? 'Unknown Event';
+              // Fetch the event details using the eventId from the pledger's events_list
+              List eventsList = pledgerDoc['events_list'] ?? [];
+              String eventTitle = 'Unknown Event';
+              String giftTitle = 'Unknown Gift';
+              String dueTo = 'No due date';
+              String giftImage = ''; // To store the gift image URL
 
-                // Find the gift in the event's gifts array
-                for (var gift in event['gifts']) {
-                  if (gift['giftId'] == giftId) {
-                    giftTitle = gift['title'] ?? 'Unknown Gift';
-                    dueTo = gift['dueTo'] ?? 'No due date';
+              for (var event in eventsList) {
+                if (event['eventId'] == eventId) {
+                  eventTitle = event['title'] ?? 'Unknown Event';
 
-                    // Fetch the gift image using the _fetchGiftImage method
-                    giftImage = await _fetchGiftImage(pledgedGift['pledgerId'],eventId, giftId);
-                    break;
+                  // Find the gift in the event's gifts array
+                  for (var gift in event['gifts']) {
+                    if (gift['giftId'] == giftId) {
+                      giftTitle = gift['title'] ?? 'Unknown Gift';
+                      dueTo = gift['dueTo'] ?? 'No due date';
+
+                      // Fetch the gift image using the _fetchGiftImage method
+                      giftImage = await _fetchGiftImage(
+                          pledgedGift['pledgerId'], eventId, giftId);
+                      break;
+                    }
                   }
+                  break; // Stop once we find the matching event
                 }
-                break; // Stop once we find the matching event
               }
+
+              // Create the detailed pledged gift entry
+              pledgedGiftsList.add({
+                'pledgerName': pledgerName,
+                'pledgerId': pledgerId,
+                'eventId': eventId,
+                'title': giftTitle,
+                'giftId': giftId,
+                'eventTitle': eventTitle,
+                'dueTo': dueTo,
+                'status': status,
+                'photoURL': giftImage, // Add the gift image URL
+              });
             }
-
-            // Create the detailed pledged gift entry
-            pledgedGiftsList.add({
-              'pledgerName': pledgerName,
-              'pledgerId': pledgerId,
-              'eventId':eventId,
-              'title': giftTitle,
-              'giftId': giftId,
-              'eventTitle': eventTitle,
-              'dueTo': dueTo,
-              'status': status,
-              'photoURL': giftImage,  // Add the gift image URL
-            });
           }
-        }
 
-        // Update the UI with the fetched pledged gifts
-        setState(() {
-          print("===================$pledgedGiftsList");
-          pledgedGifts = pledgedGiftsList;
-        });
+          // Update the UI with the fetched pledged gifts
+          setState(() {
+            print("===================$pledgedGiftsList");
+            pledgedGifts = pledgedGiftsList;
+          });
+        }
+      }else{
+
+        print("YOU ARE OFFLINE");
       }
     } catch (e) {
       print("Error fetching pledged gifts: $e");
     }
   }
+
 
 
 

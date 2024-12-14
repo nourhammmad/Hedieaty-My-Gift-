@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'HomePage.dart';
 import 'FriendsGiftList.dart';
@@ -16,26 +16,63 @@ import 'AddGift.dart';
 import 'LoginPage.dart';
 import 'RegisterationPage.dart';
 import 'FriendsEvent.dart';
-
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    if (message.notification != null) {
+      String? title = message.notification?.title;
+      String? body = message.notification?.body;
 
-  // try {
-  //   // Test Firebase Auth
-  //   final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-  //     email: 'testuser@example.com',
-  //     password: 'password123',
-  //   );
-  //   print("User registered successfully with UID: ${credential.user?.uid}");
-  // } catch (e) {
-  //   print("Error during Firebase Authentication: $e");
-  // }
+      if (title != null && body != null) {
+        print("Foreground Notification Received: $title");
+        showDialog(
+          context: navigatorKey.currentContext!, // Replace with your app's navigation context
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text(title, style: TextStyle(
+                fontSize: 30,
+                color: Colors.indigo,
+              ),),
+              content: Text(body , style: TextStyle(
+                fontSize: 25,
+                color: Colors.black87,
+              ),),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: Text("OK",
+                    style: TextStyle(
+                      fontSize: 30,
+                      color: Colors.red,
+                    ),),
+                )
+              ],
+            );
+          },
+        );
+      } else {
+        print("Notification received but title or body is null");
+      }
+    }
+  });
 
-  runApp(const MyApp());
+  runApp(
+    MaterialApp(
+      navigatorKey: navigatorKey, // Set the global key here
+      home: MyApp(),
+    ),
+  );}
+
+
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  print('Handling a background message: ${message.messageId}');
 }
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
