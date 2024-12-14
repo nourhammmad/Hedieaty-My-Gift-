@@ -86,6 +86,29 @@ class Databaseclass {
   }
 
   // Method to insert friends into the database
+  Future<void> deleteFriendsNotInFirestore(String userId, List<String> firestoreFriendIds) async {
+    final Database db = await MyDataBase;
+
+    // Fetch all friends for the user from the local database
+    List<Map<String, dynamic>> localFriends = await db.query(
+      'Friends',
+      where: 'USER_FIREBASE_ID = ?',
+      whereArgs: [userId],
+    );
+
+    // Identify friends in the local database but not in Firestore
+    for (var localFriend in localFriends) {
+      if (!firestoreFriendIds.contains(localFriend['FRIEND_FIREBASE_ID'])) {
+        // Delete the friend from the local database
+        await db.delete(
+          'Friends',
+          where: 'USER_FIREBASE_ID = ? AND FRIEND_FIREBASE_ID = ?',
+          whereArgs: [userId, localFriend['FRIEND_FIREBASE_ID']],
+        );
+        print("Deleted friend ${localFriend['FRIEND_FIREBASE_ID']} for user $userId");
+      }
+    }
+  }
 
   Future<void> insertOrUpdateUser(Map<String, dynamic> userData) async {
     final Database db = await MyDataBase;
@@ -115,6 +138,36 @@ class Databaseclass {
       print("Error inserting or updating user: $e");
     }
   }
+
+
+// Function to delete friends that are not in Firestore
+
+
+
+  Future<void> deleteEventsNotInFirestore(String userId, List<String> firestoreEventIds) async {
+    final Database db = await MyDataBase;
+
+    // Fetch all events for the user
+    List<Map<String, dynamic>> localEvents = await db.query(
+      'Events',
+      where: 'FIRESTORE_USER_ID = ?',
+      whereArgs: [userId],
+    );
+
+    // Identify events in the local database but not in Firestore
+    for (var localEvent in localEvents) {
+      if (!firestoreEventIds.contains(localEvent['FIRESTORE_EVENT_ID'])) {
+        // Delete the event from the local database
+        await db.delete(
+          'Events',
+          where: 'FIRESTORE_USER_ID = ? AND FIRESTORE_EVENT_ID = ?',
+          whereArgs: [userId, localEvent['FIRESTORE_EVENT_ID']],
+        );
+        print("Deleted event ${localEvent['FIRESTORE_EVENT_ID']} for user $userId");
+      }
+    }
+  }
+
   Future<void> insertEvent(String currentUserId, Map<String, String> eventData) async {
     final Database db = await MyDataBase;
 
@@ -220,6 +273,27 @@ class Databaseclass {
         print("Gift updated for user $eventId");
       } else {
         print("No update needed for user $eventId");
+      }
+    }
+  }
+  Future<void> deleteRemovedGifts(String eventId, List<String> firestoreGiftIds) async {
+    final Database db = await MyDataBase;
+
+    // Query gifts for the given eventId
+    List<Map<String, dynamic>> localGifts = await db.query(
+      'Gifts',
+      where: 'FIRESTORE_EVENT_ID = ?',
+      whereArgs: [eventId],
+    );
+
+    for (var localGift in localGifts) {
+      if (!firestoreGiftIds.contains(localGift['FIRESTORE_GIFT_ID'])) {
+        await db.delete(
+          'Gifts',
+          where: 'FIRESTORE_EVENT_ID = ? AND FIRESTORE_GIFT_ID = ?',
+          whereArgs: [eventId, localGift['FIRESTORE_GIFT_ID']],
+        );
+        print("Deleted gift ${localGift['FIRESTORE_GIFT_ID']} from local database.");
       }
     }
   }
@@ -421,6 +495,7 @@ class Databaseclass {
         'title': event['name']!,
         'type': event['type']!,
         'status': event['status']!,
+        'eventId': event['FIRESTORE_EVENT_ID']!,
       };
     }).toList();
   }

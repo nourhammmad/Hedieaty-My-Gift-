@@ -70,17 +70,16 @@ class _GiftListPageState extends State<GiftListPage> {
   }
 
 
-// Function to load the gifts for the logged-in user
   Future<void> _loadGifts() async {
     try {
       var internetConnection = InternetConnection(); // Initialize safely
       if (internetConnection != null) {
         online = await internetConnection.hasInternetAccess;
       }
-    }catch (e) {
-      // Handle exceptions, such as if the method throws an error
+    } catch (e) {
       print("Error checking internet connection: $e");
     }
+
     try {
       if (online) {
         currentUserId = FirebaseAuth.instance.currentUser!.uid;
@@ -90,8 +89,8 @@ class _GiftListPageState extends State<GiftListPage> {
         User? user = _auth.currentUser;
         if (user != null) {
           String userId = user.uid;
-          DocumentSnapshot userDoc = await _firestore.collection('users').doc(
-              userId).get();
+          DocumentSnapshot userDoc =
+          await _firestore.collection('users').doc(userId).get();
 
           if (userDoc.exists) {
             List<dynamic> eventsList = userDoc['events_list'] ?? [];
@@ -104,6 +103,7 @@ class _GiftListPageState extends State<GiftListPage> {
 
             if (event != null && event['gifts'] != null) {
               List<Map<String, dynamic>> updatedGifts = [];
+              List<String> firestoreGiftIds = [];
 
               for (var gift in event['gifts']) {
                 String photoURL = await _fetchGiftImage(
@@ -121,6 +121,8 @@ class _GiftListPageState extends State<GiftListPage> {
                   'status': gift['status'],
                   'title': gift['title'],
                 });
+                firestoreGiftIds.add(gift['giftId']);
+
                 Map<String, String> giftData = {
                   'FIRESTORE_GIFT_ID': gift['giftId'] ?? '',
                   'giftName': gift['title'] ?? '',
@@ -131,34 +133,39 @@ class _GiftListPageState extends State<GiftListPage> {
                   'FIRESTORE_EVENT_ID': widget.eventId ?? '',
                 };
 
-                // Print the content of the eventData map
-
                 _dbHelper.insertGift(widget.eventId, giftData);
               }
 
+
+              // Delete gifts from local database that are not in Firestore
+              await _dbHelper.deleteRemovedGifts(widget.eventId, firestoreGiftIds);
+
+              List<Map<String, Object?>> localGifts = await _dbHelper.getGiftsByEventId(widget.eventId!);
+              print(localGifts);
               setState(() {
                 gifts = updatedGifts;
               });
             }
           }
         }
-      }else{
+      } else {
         _loadGiftsFromLocalDatabase();
         print("YOU ARE OFFLINE");
       }
-    }catch (e) {
+    } catch (e) {
       print('Error loading gifts: $e');
     }
   }
+
   Future<void> _loadGiftsFromLocalDatabase() async {
-    print("======================DALHALT BARDO-========");
+    print("======================DALHALT BARDO henaaaaaaaaa-========");
     try {
       print("Offline, fetching friends from local database");
       currentUserId = (await UserSession.getUserId())!;
 
 
       List<Map<String, Object?>> localGifts = await _dbHelper.getGiftsByEventId(widget.eventId!);
-
+      print("========offline gifts fetching=================$localGifts");
       // Clear the existing list of friends before adding new ones
       gifts.clear();
 

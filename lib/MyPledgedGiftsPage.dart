@@ -180,7 +180,9 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
                   if (gift['giftId'] == giftId) {
                     // Update the pledgerId field to null
                     gift['pledgedBy'] = null;
-                    gift['status'] = "Available";
+                    gift['status'] = "A"
+                        ""
+                        "vailable";
                     break;
                   }
                 }

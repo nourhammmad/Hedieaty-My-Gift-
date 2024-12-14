@@ -36,24 +36,26 @@ class _EventsListPageState extends State<EventsListPage> {
         online = await internetConnection.hasInternetAccess;
       }
     } catch (e) {
-      // Handle exceptions, such as if the method throws an error
       print("Error checking internet connection: $e");
     }
+
     try {
-      if(online) {
+      if (online) {
         currentUserId = FirebaseAuth.instance.currentUser!.uid;
 
         final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-        DocumentSnapshot userDoc = await _firestore.collection('users').doc(
-            userId).get();
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
 
         if (userDoc.exists) {
           List<dynamic> eventsList = userDoc['events_list'] ?? [];
 
-          // Fetch the event images asynchronously
+          // Fetch the event images asynchronously and keep track of Firestore event IDs
           List<Map<String, dynamic>> updatedEvents = [];
+          List<String> firestoreEventIds = [];
+
           for (var event in eventsList) {
+            firestoreEventIds.add(event['eventId']); // Track event IDs from Firestore
             String photoURL = await _fetchEventImage(event['eventId']);
             updatedEvents.add({
               'description': event['description'],
@@ -64,24 +66,26 @@ class _EventsListPageState extends State<EventsListPage> {
               'title': event['title'],
               'type': event['type'],
             });
+
             Map<String, String> eventData = {
               'type': event['type'],
               'title': event['title'],
               'eventId': event['eventId'],
-              'FIRESTORE_USER_ID':currentUserId,
-              'status':event['status'],
+              'FIRESTORE_USER_ID': currentUserId,
+              'status': event['status'],
             };
-            // Print the content of the eventData map
 
-            _dbHelper.insertEvent(currentUserId, eventData);  // Pass currentUserId to insertFriend
-
+            _dbHelper.insertEvent(currentUserId, eventData); // Save or update in the local DB
           }
+
+          // Delete events from local database if not in Firestore
+          await _dbHelper.deleteEventsNotInFirestore(currentUserId, firestoreEventIds);
 
           setState(() {
             events = updatedEvents;
           });
         }
-      }else{
+      } else {
         // If offline, load from local database
         _loadEventsFromLocalDatabase();
         print("YOU ARE OFFLINE");
@@ -90,6 +94,7 @@ class _EventsListPageState extends State<EventsListPage> {
       print("Error loading events: $e");
     }
   }
+
   Future<void> _loadEventsFromLocalDatabase() async {
     print("======================DALHALT BARDO-========");
     try {
@@ -114,6 +119,7 @@ class _EventsListPageState extends State<EventsListPage> {
           'title': eventData['title']?.toString() ?? '',
           'type': eventData['type']?.toString() ?? '',
           'status': eventData['status']?.toString() ?? '',
+          'eventId': eventData['eventId']?.toString() ?? '',
         });
       }
 
@@ -373,20 +379,11 @@ class _EventsListPageState extends State<EventsListPage> {
                   final event = events[index];
                   return InkWell(
                     onTap: () async {
-                      String? id;
-                      print("this is online status $online");
-
-                      if(online)
-                        {
-                          id=event['eventId'];}
-                      else{
-                        id=await UserSession.getUserId();
-                      }
 
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => GiftListPage(eventId: id!),
+                          builder: (context) => GiftListPage(eventId: event['eventId']!),
                         ),
                       );
                     },
