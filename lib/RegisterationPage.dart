@@ -206,7 +206,7 @@ if(user!=null) {
                       ? 'Name is required'
                       : null,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 19),
                 _buildTextField(
                   controller: emailController,
                   label: 'Email',
@@ -216,7 +216,7 @@ if(user!=null) {
                       ? 'Email is required'
                       : null,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 _buildTextField(
                   controller: passwordController,
                   label: 'Password',
@@ -226,7 +226,7 @@ if(user!=null) {
                       ? 'Password is required'
                       : null,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 _buildTextField(
                   controller: phoneController,
                   label: 'Phone Number',

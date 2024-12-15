@@ -58,7 +58,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
-    _dbHelper = Databaseclass();  // Initialize _dbHelper here
+    _dbHelper = Databaseclass(); // Initialize _dbHelper here
     //_dbHelper.mydeletedatabase();
   }
 
@@ -103,7 +103,7 @@ class _LoginPageState extends State<LoginPage> {
           // If internet is available, attempt Firebase authentication
           if (online) {
             try {
-               await FirebaseAuth.instance.signInWithEmailAndPassword(
+              await FirebaseAuth.instance.signInWithEmailAndPassword(
                 email: emailController.text,
                 password: passwordController.text,
               );
@@ -125,7 +125,8 @@ class _LoginPageState extends State<LoginPage> {
       // Step 2: If not found locally, attempt Firebase authentication
       if (online) {
         try {
-          final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+          final userCredential = await FirebaseAuth.instance
+              .signInWithEmailAndPassword(
             email: emailController.text,
             password: passwordController.text,
           );
@@ -140,11 +141,9 @@ class _LoginPageState extends State<LoginPage> {
               'PASSWORD': passwordController.text,
             });
             Navigator.pushReplacementNamed(context, '/HomePage');
-
           } else {
             print("Firebase user is null.");
           }
-
         } catch (e) {
           // Handle Firebase errors (e.g., wrong credentials, user not found)
           _showErrorDialog('Incorrect email or password');
@@ -186,7 +185,6 @@ class _LoginPageState extends State<LoginPage> {
         backgroundColor: Colors.indigo.shade50,
         title: const Row(
           mainAxisAlignment: MainAxisAlignment.center, // Centers the content
-
           children: [
             Text(
               "Hedieaty",
@@ -200,90 +198,104 @@ class _LoginPageState extends State<LoginPage> {
             Icon(Icons.lock, color: Colors.indigo, size: 25),
           ],
         ),
-        // titleSpacing: 125.0,
-        // toolbarHeight: 70,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Center(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    "Welcome Back!",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 40,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: "Lobster",
-                      color: Colors.indigo.shade300,
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // This is the icon decoration inserted between the AppBar and body
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 10.0),
+              child: Expanded(
+                child: Icon(Icons.card_giftcard_outlined, color: Colors.indigo.shade100,
+                    size: 260),
+              ), // Insert your icon here
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Form(
+                key: _formKey,
+                child: Center(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Welcome Back!",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 40,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: "Lobster",
+                            color: Colors.indigo.shade300,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        TextFormField(
+                          controller: emailController,
+                          decoration: InputDecoration(
+                            labelText: 'Email',
+                            prefixIcon: Icon(Icons.email,
+                                color: Colors.indigo.shade200),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(30.0),
+                            ),
+                          ),
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Email is required';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 19),
+                        TextFormField(
+                          controller: passwordController,
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            prefixIcon: Icon(Icons.lock,
+                                color: Colors.indigo.shade200),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(30.0),
+                            ),
+                          ),
+                          obscureText: true,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Password is required';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                        ElevatedButton(
+                          onPressed: _login,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.indigo,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30.0),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 16.0),
+                          ),
+                          child: const Text(
+                            'Log In',
+                            style: TextStyle(
+                              fontSize: 30,
+                              fontFamily: "Lobster",
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        HoverEffectText(), // Use the HoverEffectText widget here
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  TextFormField(
-                    controller: emailController,
-                    decoration: InputDecoration(
-                      labelText: 'Email',
-                      prefixIcon: Icon(Icons.email, color: Colors.indigo.shade200),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30.0),
-                      ),
-                    ),
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Email is required';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: passwordController,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      prefixIcon: Icon(Icons.lock, color: Colors.indigo.shade200),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30.0),
-                      ),
-                    ),
-                    obscureText: true,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Password is required';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: _login,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.indigo,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30.0),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 16.0),
-                    ),
-                    child: const Text(
-                      'Log In',
-                      style: TextStyle(
-                        fontSize: 30,
-                        fontFamily: "Lobster",
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  HoverEffectText(), // Use the HoverEffectText widget here
-                ],
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
