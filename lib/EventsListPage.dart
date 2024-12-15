@@ -444,6 +444,7 @@ class _EventsListPageState extends State<EventsListPage> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
+                              if (event['status'] != 'Past')
                               IconButton(
                                 icon: const Icon(Icons.edit, color: Colors.green, size: 30),
                                 onPressed: () async {
