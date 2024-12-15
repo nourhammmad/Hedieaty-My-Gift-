@@ -98,7 +98,8 @@ class Databaseclass {
 
     // Identify friends in the local database but not in Firestore
     for (var localFriend in localFriends) {
-      if (!firestoreFriendIds.contains(localFriend['FRIEND_FIREBASE_ID'])) {
+      if (!firestoreFriendIds.contains(localFriend['FRIEND_FIREBASE_ID']))
+      {
         // Delete the friend from the local database
         await db.delete(
           'Friends',
@@ -321,7 +322,8 @@ class Databaseclass {
         },
         conflictAlgorithm: ConflictAlgorithm.ignore,  // Avoid inserting duplicates
       );
-      print("Friend inserted for user $currentUserId");
+      var x=friendData['friendId'];
+      print("Friend $x inserted for user $currentUserId");
     } else {
       // If the friend already exists, check if there are updates required (e.g., displayName, phoneNumber)
       bool needsUpdate = false;

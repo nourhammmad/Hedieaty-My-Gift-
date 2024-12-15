@@ -54,11 +54,16 @@ dependencies:
   googleapis: ^13.2.0
   googleapis_auth: ^1.6.0
   firebase_analytics: ^11.3.6
+  flutter_local_notifications: ^18.0.1
+
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "asset/icons/app_icon.png"
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your

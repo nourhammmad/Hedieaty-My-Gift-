@@ -307,6 +307,7 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
         iconTheme: const IconThemeData(color: Colors.indigo),
         backgroundColor: Colors.indigo.shade50,
         title: Row(
+          mainAxisAlignment: MainAxisAlignment.center, // Centers the content
           children: [
             Text(
               widget.userName,
@@ -320,8 +321,7 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
             Icon(Icons.card_giftcard, color: Colors.indigo, size: 25),
           ],
         ),
-        titleSpacing: 50.0,
-        toolbarHeight: 70,
+
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -359,84 +359,86 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
                     elevation: 4.0,
                     margin: const EdgeInsets.symmetric(vertical: 10.0),
                     color: _getCardColor(status), // Use the updated color logic
-                    child: Column(
-                      children: [
-                        Container(
-                          height: 200,
-                          decoration: BoxDecoration(
-                            borderRadius: const BorderRadius.vertical(top: Radius.circular(15.0)),
-
-                          ),
-                          child: gift['photoURL'] == null || gift['photoURL'].isEmpty
-                              ? Center(
-                            child: Icon(
-                              Icons.image_not_supported,
-                              color: Colors.red, // You can customize the icon color
-                              size: 100, // Customize the icon size
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          Container(
+                            height: 200,
+                            decoration: BoxDecoration(
+                              borderRadius: const BorderRadius.vertical(top: Radius.circular(15.0)),
+                      
                             ),
-                          )
-                              : Image.network(
-                            width: double.infinity, // Make sure image fills the width
-                            height: double.infinity, // Make
-                  gift['photoURL'],
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                  return Center(
-                  child: Icon(
-                  Icons.error,
-                  color: Colors.red,
-                  size: 50,
-                  ),
-                  );
-                  },
-                  ),
-                   // No icon if an image is available
-                        ),
-
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                gift['title'] ?? 'Unnamed Gift',
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.indigo,
+                            child: gift['photoURL'] == null || gift['photoURL'].isEmpty
+                                ? Center(
+                              child: Icon(
+                                Icons.image_not_supported,
+                                color: Colors.red, // You can customize the icon color
+                                size: 100, // Customize the icon size
+                              ),
+                            )
+                                : Image.network(
+                              width: double.infinity, // Make sure image fills the width
+                              height: double.infinity, // Make
+                                        gift['photoURL'],
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) {
+                                        return Center(
+                                        child: Icon(
+                                        Icons.error,
+                                        color: Colors.red,
+                                        size: 50,
+                                        ),
+                                        );
+                                        },
+                                        ),
+                                         // No icon if an image is available
+                          ),
+                      
+                          Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  gift['title'] ?? 'Unnamed Gift',
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.indigo,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 8.0),
-                              Text(
-                                "Category: ${gift['category'] ?? 'Uncategorized'}",
-                                style: const TextStyle(fontSize: 18),
-                              ),
-                              Text(
-                                "Status: ${status}",
-                                style: const TextStyle(fontSize: 18),
-                              ),
-                              Text(
-                                "Due Data: ${dueTo}",
-                                style: const TextStyle(fontSize: 18),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _getButtonColor(status),
-                            ),
-                            onPressed: isPledged ? null : () => _pledgeGift(gift['giftId']),  // Pass the giftId here
-                            child: Text(
-                              WhichText(status) ? 'Already Pledged' : 'Pledge Gift',
-                              style: TextStyle(color: Colors.indigo.shade50, fontFamily: "Lobster", fontSize: 30),
+                                const SizedBox(height: 8.0),
+                                Text(
+                                  "Category: ${gift['category'] ?? 'Uncategorized'}",
+                                  style: const TextStyle(fontSize: 18),
+                                ),
+                                Text(
+                                  "Status: ${status}",
+                                  style: const TextStyle(fontSize: 18),
+                                ),
+                                Text(
+                                  "Due Data: ${dueTo}",
+                                  style: const TextStyle(fontSize: 18),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-
-                      ],
+                          Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _getButtonColor(status),
+                              ),
+                              onPressed: isPledged ? null : () => _pledgeGift(gift['giftId']),  // Pass the giftId here
+                              child: Text(
+                                WhichText(status) ? 'Already Pledged' : 'Pledge Gift',
+                                style: TextStyle(color: Colors.indigo.shade50, fontFamily: "Lobster", fontSize: 30),
+                              ),
+                            ),
+                          ),
+                      
+                        ],
+                      ),
                     ),
                   );
                 },

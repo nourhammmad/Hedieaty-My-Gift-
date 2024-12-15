@@ -723,25 +723,26 @@ class FriendListItem extends StatelessWidget {
             .get();
 
         if (userDoc.exists) {
-          // Explicitly cast the data to Map<String, dynamic>
-          Map<String, dynamic>? data = userDoc.data() as Map<String, dynamic>?;
+          // Cast the data to Map<String, dynamic>
+          final data = userDoc.data() as Map<String, dynamic>?;
 
-          if (data != null && data.containsKey('events_list')) {
-            var eventsList = data['events_list'];
-            if (eventsList is List) {
+          if (data != null) {
+            // Check if 'events_list' exists and is a List
+            if (data['events_list'] is List) {
+              final eventsList = data['events_list'] as List;
               return eventsList.length;
             } else {
-              print('events_list is not a List');
               return 0;
             }
           } else {
-            print('events_list field does not exist');
+            print('Document data is null');
             return 0;
           }
         } else {
-          print('User document does not exist');
+          print('Document does not exist');
           return 0;
         }
+
       } catch (e) {
         print('Error fetching event count: $e');
         return 0; // Return 0 on error

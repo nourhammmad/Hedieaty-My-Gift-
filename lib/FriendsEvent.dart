@@ -206,6 +206,8 @@ class _FriendsEventState extends State<FriendsEvent> {
         iconTheme: const IconThemeData(color: Colors.indigo),
         backgroundColor: Colors.indigo.shade50,
         title: Row(
+          mainAxisAlignment: MainAxisAlignment.center, // Centers the content
+
           children: [
             Expanded(
               child: FittedBox(
@@ -225,8 +227,7 @@ class _FriendsEventState extends State<FriendsEvent> {
           ],
         ),
 
-        titleSpacing: 69.0,
-        toolbarHeight: 70,
+
 
       ),
       body: Padding(

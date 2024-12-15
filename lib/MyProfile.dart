@@ -1,10 +1,12 @@
   import 'dart:io';
   import 'package:cloud_firestore/cloud_firestore.dart';
   import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
   import 'package:flutter/cupertino.dart';
   import 'package:flutter/material.dart';
   import 'package:flutter_image_compress/flutter_image_compress.dart';
   import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
   import 'Database.dart';
   import 'imgur.dart';
   import 'FirebaseDatabaseClass.dart';
@@ -21,6 +23,63 @@
     bool notificationsEnabled = false;
     String? firstName;
     String? photoURL; // To store the user's photo URL
+    Future<void> _checkAndEnableNotifications() async {
+      try {
+        // Check if permission has already been granted
+        final settings = await FirebaseMessaging.instance.getNotificationSettings();
+
+        if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+          print("Notification Permission Already Granted!");
+
+          // If permission is granted, proceed with subscribing to topics and enabling notifications
+          final token = await FirebaseMessaging.instance.getToken();
+          print("Notification Enabled. Token: $token");
+
+          // Subscribe to a topic (you can subscribe to more topics or use direct token-based notifications)
+          await FirebaseMessaging.instance.subscribeToTopic("general");
+          print("Subscribed to 'general' topic.");
+
+        } else if (settings.authorizationStatus == AuthorizationStatus.denied) {
+          print("Notification Permission Denied!");
+          // Handle permission denial gracefully (e.g., show a message explaining the benefit of enabling notifications)
+        } else {
+          // Request permission if not determined yet
+          final newSettings = await FirebaseMessaging.instance.requestPermission();
+          if (newSettings.authorizationStatus == AuthorizationStatus.authorized) {
+            print("Notification Permission Granted!");
+
+            // Proceed with subscribing to topics and enabling notifications
+            final token = await FirebaseMessaging.instance.getToken();
+            print("Notification Enabled. Token: $token");
+
+            await FirebaseMessaging.instance.subscribeToTopic("general");
+            print("Subscribed to 'general' topic.");
+          } else {
+            print("Notification Permission Denied!");
+            // Handle permission denial gracefully
+          }
+        }
+      } catch (e) {
+        print("Error enabling notifications: $e");
+      }
+    }
+
+// Function to disable notifications (unsubscribing from topics)
+    Future<void> _disableNotifications() async {
+      try {
+        // Get the current token
+        final token = await FirebaseMessaging.instance.getToken();
+        print("Notification Disabled. Token: $token");
+
+        // Unsubscribe from topics (you can unsubscribe from multiple topics if needed)
+        await FirebaseMessaging.instance.unsubscribeFromTopic("general");
+        print("Unsubscribed from 'general' topic.");
+
+        // Optionally, you could delete the token or revoke its use here
+      } catch (e) {
+        print("Error disabling notifications: $e");
+      }
+    }
 
     late Databaseclass _dbHelper;
     late FirebaseDatabaseClass _firebaseDb;
@@ -39,6 +98,20 @@
       _fetchUserEvents(); // Fetch events when profile loads
       _fetchUserPhotoURL(); // Fetch user's photo URL
       print("===========================$firstName");
+      _loadNotificationsEnabled();  // Fetch the saved notification setting
+
+    }
+    Future<void> _saveNotificationsEnabled(bool value) async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('notificationsEnabled', value);
+    }
+
+    // Load the notifications enabled value
+    Future<void> _loadNotificationsEnabled() async {
+      final prefs = await SharedPreferences.getInstance();
+      setState(() {
+        notificationsEnabled = prefs.getBool('notificationsEnabled') ?? false;
+      });
     }
     Future<void> _pickImage() async {
       final XFile? image = await _imagePicker.pickImage(source: ImageSource.gallery);
@@ -280,22 +353,32 @@
               const SizedBox(height: 20),
 
               // Notification Toggle
-              SwitchListTile(
-                title: const Text(
-                  "Enable Notifications",
-                  style: TextStyle(
-                    fontSize: 30,
-                    fontFamily: "Lobster",
-                  ),
-                ),
-                value: notificationsEnabled,
-                onChanged: (bool value) {
-                  setState(() {
-                    notificationsEnabled = value;
-                  });
-                },
-                activeColor: Colors.indigo,
+          SwitchListTile(
+            title: const Text(
+              "Enable Notifications",
+              style: TextStyle(
+                fontSize: 30,
+                fontFamily: "Lobster",
               ),
+            ),
+            value: notificationsEnabled,
+            onChanged: (bool value) {
+              setState(() {
+                notificationsEnabled = value;
+              });
+
+              if (notificationsEnabled) {
+                // Enable notifications (e.g., subscribe to FCM topic or enable token)
+                _checkAndEnableNotifications();
+              } else {
+                // Disable notifications (e.g., unsubscribe from FCM topic or disable token)
+                _disableNotifications();
+              }
+              _saveNotificationsEnabled(notificationsEnabled);  // Save the updated setting
+
+            },
+            activeColor: Colors.indigo,
+          ),
               const SizedBox(height: 20),
 
               // Event and Gift List
