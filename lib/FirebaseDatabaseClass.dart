@@ -16,33 +16,40 @@
       var hashed = sha256.convert(bytes); // Hash the bytes using SHA-256
       return hashed.toString(); // Return the hash as a string
     }
-  
-    Future<User?> registerUser(String displayName,
-        String email,
-        String password,
-        String phoneNumber,String? photoUrl) async {
+
+    Future<User?> registerUser(String displayName, String email, String password, String phoneNumber, String? photoUrl) async {
       try {
-        // Create the user with Firebase Authentication
-        final credential = await FirebaseAuth.instance
-            .createUserWithEmailAndPassword(
+        // Step 1: Check if the phoneNumber already exists in Firestore
+        final querySnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .where('phoneNumber', isEqualTo: phoneNumber)
+            .get();
+
+        // Step 2: If a user with the same phoneNumber exists, stop registration
+        if (querySnapshot.docs.isNotEmpty) {
+          print("A user with this phone number already exists.");
+          return null; // Stop the registration process
+        }
+
+        // Step 3: Proceed with user creation
+        final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: email,
           password: password,
         );
-  
-        // Log UserCredential for debugging
+
         print("========================UserCredential: ${credential.toString()}");
-  
-        // After the user is created, get the current user
+
+        // Step 4: Retrieve the user object
         User? user = credential.user;
-  
+
         if (user != null) {
-          // Update the user's displayName in Firebase Authentication
+          // Update user's displayName in Firebase Authentication
           await user.updateProfile(displayName: displayName).then((_) {
             print("User's displayName updated in Firebase Authentication.");
           }).catchError((e) {
             print("Error updating displayName: $e");
           });
-  
+
           // Save user data to Firestore
           await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
             'displayName': displayName,
@@ -54,7 +61,7 @@
           }).catchError((e) {
             print("Error saving user data: $e");
           });
-  
+
           return user; // Return the user object after successful registration
         } else {
           print("User object is null after registration.");
@@ -63,9 +70,10 @@
         print("Error registering user: $e");
         print("Detailed Error: ${e.toString()}");
       }
-  
+
       return null; // Return null if registration fails
     }
+
 
     Future<void> updatePhotoURL(String userId, String? photoUrl) async {
       try {

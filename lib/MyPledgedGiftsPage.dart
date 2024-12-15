@@ -391,18 +391,19 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
                                     const SizedBox(height: 4),
                                     Text(
                                       'For: ${gift['pledgerName']}',
-                                      style: const TextStyle(fontSize: 16),
+                                      style: const TextStyle(fontSize: 17),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       'Due: ${gift['dueTo']}',
-                                      style: const TextStyle(fontSize: 16),
+                                      style: const TextStyle(fontSize: 17),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       'Status: ${gift['status']}',
                                       style: TextStyle(
-                                        fontSize: 16,
+                                        fontSize: 19,
+                                        fontWeight: FontWeight.bold,
                                         color: gift['status'] == 'Pending'
                                             ? Colors.red
                                             : Colors.green,
@@ -419,19 +420,76 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
                           Positioned(
                             right: 8,
                             top: 8,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.8), // Opaque white background
-                                borderRadius: BorderRadius.circular(20), // Rounded corners
-                              ),
-                              child: IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.red),
-                                onPressed: () {
-                                  _showUnpledgeDialog(index);
-                                },
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Status change icon button
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.8), // Opaque white background
+                                    borderRadius: BorderRadius.circular(20), // Rounded corners
+                                  ),
+                                  child: IconButton(
+                                    icon: const Icon(Icons.check_circle, color: Colors.green),
+                                    onPressed: () async {
+                                      try {
+                                        // Get the current user ID
+                                        final userId = FirebaseAuth.instance.currentUser?.uid;
+                                        if (userId == null) return;
+
+                                        // Reference to the user's document
+                                        final userDocRef = FirebaseFirestore.instance.collection('users').doc(userId);
+
+                                        // Fetch the user document
+                                        final userDoc = await userDocRef.get();
+                                        if (userDoc.exists) {
+                                          final pledgedGifts = List<Map<String, dynamic>>.from(userDoc.data()?['pledged_gifts'] ?? []);
+
+                                          // Find the specific gift in pledged gifts
+                                          final giftToUpdate = pledgedGifts.firstWhere(
+                                                (g) => g['giftId'] == gift['giftId'],
+                                            orElse: () => {},
+                                          );
+
+                                          if (giftToUpdate != null) {
+                                            // Update the status of the gift
+                                            giftToUpdate['status'] = 'Purchased';
+
+                                            // Update the pledged_gifts array in Firestore
+                                            await userDocRef.update({
+                                              'pledged_gifts': pledgedGifts,
+                                            });
+
+                                            // Update the local state
+                                            setState(() {
+                                              gift['status'] = 'Purchased';
+                                            });
+                                          }
+                                        }
+                                      } catch (e) {
+                                        print('Error updating gift status: $e');
+                                      }
+                                    },
+                                  ),
+                                ),
+
+                                // Existing delete button
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.8), // Opaque white background
+                                    borderRadius: BorderRadius.circular(20), // Rounded corners
+                                  ),
+                                  child: IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () {
+                                      _showUnpledgeDialog(index);
+                                    },
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
+
                       ],
                     ),
                   );

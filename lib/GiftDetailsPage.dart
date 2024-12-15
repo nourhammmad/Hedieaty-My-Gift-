@@ -65,21 +65,22 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
     isPledged = widget.status== 'Pledged';
   }
 
-  Future<void> _selectDueDate(BuildContext context) async {
-    // Implement your date picker logic here
-    DateTime? pickedDate = await showDatePicker(
+  void _selectDueDate(BuildContext context) async {
+    DateTime currentDate = DateTime.now();
+    DateTime? selectedDate = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
+      initialDate: currentDate,
+      firstDate: currentDate,  // Prevent past date selection
+      lastDate: DateTime(2101),  // Optional: specify an upper bound
     );
 
-    if (pickedDate != null) {
+    if (selectedDate != null && selectedDate != currentDate) {
       setState(() {
-        dueToController.text = pickedDate.toIso8601String().split('T')[0]; // Update controller
+        dueToController.text = '${selectedDate.toLocal()}'.split(' ')[0];  // format to display date
       });
     }
   }
+
   void updateGiftDetails({
     required bool isPledged,
     required String title,

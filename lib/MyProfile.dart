@@ -23,6 +23,8 @@ import 'package:shared_preferences/shared_preferences.dart';
     bool notificationsEnabled = false;
     String? firstName;
     String? photoURL; // To store the user's photo URL
+    TextEditingController NameController=TextEditingController();
+
     Future<void> _checkAndEnableNotifications() async {
       try {
         // Check if permission has already been granted
@@ -321,7 +323,7 @@ import 'package:shared_preferences/shared_preferences.dart';
                     child: TextField(
                       style: const TextStyle(fontFamily: "Lobster", fontSize: 25),
                       enabled: isFirstNameEditable,
-                      controller: TextEditingController(text: firstName),
+                      controller: NameController..text=firstName??" ",
                       decoration: InputDecoration(
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(30.0),
@@ -334,7 +336,7 @@ import 'package:shared_preferences/shared_preferences.dart';
                         });
                         User? user = FirebaseAuth.instance.currentUser;
                         if (user != null) {
-                          await _firestore.collection('users').doc(user.uid).update({'firstName': value});
+                          await _firestore.collection('users').doc(user.uid).update({'displayName': value});
                         }
                       },
 
@@ -342,12 +344,62 @@ import 'package:shared_preferences/shared_preferences.dart';
                   ),
                   IconButton(
                     icon: Icon(isFirstNameEditable ? Icons.check : Icons.edit),
-                    onPressed: () {
-                      setState(() {
-                        isFirstNameEditable = !isFirstNameEditable;
-                      });
+                    onPressed: () async {
+                      // Check if we are in the "editable" state and want to update the user's display name
+                      if (isFirstNameEditable) {
+                        try {
+                          final user = FirebaseAuth.instance.currentUser;
+
+                          if (user != null) {
+                            final updatedName = NameController.text.trim();
+
+                            // Ensure the name is not empty
+                            if (updatedName.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Name cannot be empty')),
+                              );
+                              return;
+                            }
+
+                            // Update the user's displayName in Firebase
+                            await user.updateProfile(displayName: updatedName);
+
+                            // Reload the user to fetch the updated profile information
+                            await user.reload();
+                            final updatedUser = FirebaseAuth.instance.currentUser;
+
+                            // After updating, toggle edit mode
+                            setState(() {
+                              isFirstNameEditable = !isFirstNameEditable;
+                            });
+
+                            // Optionally, display the updated name in the UI
+                            setState(() {
+                              // Update any state or UI with the new name if necessary
+                            });
+
+                            // Display success message
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Name updated successfully')),
+                            );
+                          }
+                        } catch (e) {
+                          // Handle any errors that occur during the update process
+                          print('Error updating displayName: $e');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Failed to update name')),
+                          );
+                        }
+                      } else {
+                        // Toggle to edit mode if not editable
+                        setState(() {
+                          isFirstNameEditable = !isFirstNameEditable;
+                        });
+                      }
                     },
-                  ),
+                  )
+
+
                 ],
               ),
               const SizedBox(height: 20),

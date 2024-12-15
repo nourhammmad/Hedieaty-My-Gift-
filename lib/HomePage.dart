@@ -779,10 +779,6 @@ class FriendListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     // Safe handling for nullable image
     final String imageUrl = image?.isNotEmpty == true ? image! : ''; // If image is null or empty, fallback to empty string
-
-    // Print image URL to console for debugging
-    //print('===============================Image URL: $imageUrl'); // Prints the image URL to the console
-
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 1.0, horizontal: 10.0),
       child: Row(

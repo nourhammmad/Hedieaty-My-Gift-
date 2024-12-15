@@ -110,6 +110,8 @@ class _LoginPageState extends State<LoginPage> {
               print("User authenticated with Firebase");
             } catch (e) {
               // Handle Firebase authentication failure
+              _showErrorDialog('Incorrect email or password');
+
               print("Firebase authentication failed: $e");
             }
           }
@@ -145,7 +147,7 @@ class _LoginPageState extends State<LoginPage> {
 
         } catch (e) {
           // Handle Firebase errors (e.g., wrong credentials, user not found)
-          _showErrorDialog('Firebase Authentication Failed: $e');
+          _showErrorDialog('Incorrect email or password');
         }
       } else {
         // No internet connection, show a message or handle offline behavior
@@ -174,6 +176,7 @@ class _LoginPageState extends State<LoginPage> {
       },
     );
   }
+
 
   @override
   Widget build(BuildContext context) {

@@ -59,18 +59,18 @@ class _AddGiftState extends State<AddGift> {
     }
   }
 
-  // Function to pick the date
-  Future<void> _selectDueDate(BuildContext context) async {
-    final DateTime? selectedDate = await showDatePicker(
+  void _selectDueDate(BuildContext context) async {
+    DateTime currentDate = DateTime.now();
+    DateTime? selectedDate = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(1900),
-      lastDate: DateTime(2100),
+      initialDate: currentDate,
+      firstDate: currentDate,  // Prevent past date selection
+      lastDate: DateTime(2101),  // Optional: specify an upper bound
     );
 
-    if (selectedDate != null && selectedDate != DateTime.now()) {
+    if (selectedDate != null && selectedDate != currentDate) {
       setState(() {
-        dueToController.text = "${selectedDate.toLocal()}".split(' ')[0]; // Format date to YYYY-MM-DD
+        dueToController.text = '${selectedDate.toLocal()}'.split(' ')[0];  // format to display date
       });
     }
   }
@@ -286,7 +286,7 @@ class _AddGiftState extends State<AddGift> {
               onPressed: _addGift,
               child: const Text(
                 'Add Gift',
-                style: TextStyle(fontSize: 20),
+                style: TextStyle(fontSize: 30,fontFamily: "Lobster",color: Colors.indigo),
               ),
             ),
           ],

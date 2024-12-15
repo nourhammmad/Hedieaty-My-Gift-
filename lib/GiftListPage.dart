@@ -211,12 +211,7 @@ class _GiftListPageState extends State<GiftListPage> {
   }
 
 
-  // Function to navigate to the GiftDetailsPage
-  void _navigateToGiftDetails(int index) {
 
-  }
-
-  // Function to delete a gift
   Future<void> _deleteGift(String giftId, String eventId) async {
     try {
       final userId = FirebaseAuth.instance.currentUser?.uid;
@@ -229,6 +224,7 @@ class _GiftListPageState extends State<GiftListPage> {
       final userDoc = await userDocRef.get();
       if (userDoc.exists) {
         final eventsList = userDoc.data()?['events_list'] as List<dynamic>?;
+
         if (eventsList != null) {
           // Find the specific event by eventId
           final event = eventsList.firstWhere(
@@ -240,12 +236,41 @@ class _GiftListPageState extends State<GiftListPage> {
             final giftList = List<Map<String, dynamic>>.from(event['gifts']);
             final giftToDelete = giftList.firstWhere(
                   (gift) => gift['giftId'] == giftId,
-              orElse: () => {}, // Return null if no gift found
+              orElse: () => {}, // Return an empty map if no gift found
             );
 
             if (giftToDelete != null) {
+              // Check if the gift is pledged by someone
+              final pledgedBy = giftToDelete['PledgedBy'];
+              if (pledgedBy != null) {
+                // Reference to the pledged user's document
+                final pledgedUserDocRef = FirebaseFirestore.instance.collection('users').doc(pledgedBy);
+
+                // Find the pledged gifts list of the user
+                final pledgedUserDoc = await pledgedUserDocRef.get();
+                if (pledgedUserDoc.exists) {
+                  final pledgedGiftsList = pledgedUserDoc.data()?['pledged_gifts'] as List<dynamic>?;
+                  if (pledgedGiftsList != null) {
+                    // Find the gift in the pledged gifts list
+                    final pledgedGiftToDelete = pledgedGiftsList.firstWhere(
+                          (gift) => gift['giftId'] == giftId,
+                      orElse: () => null, // Return null if gift is not found
+                    );
+
+                    if (pledgedGiftToDelete != null) {
+                      // Remove the gift from the pledged gifts list
+                      pledgedGiftsList.remove(pledgedGiftToDelete);
+
+                      // Update the pledged gifts in Firestore
+                      await pledgedUserDocRef.update({'pledged_gifts': pledgedGiftsList});
+                    }
+                  }
+                }
+              }
+
               // Remove the gift from the event's gift list
               event['gifts'].remove(giftToDelete);
+
               // Update the event in Firestore
               await userDocRef.update({'events_list': eventsList});
 
@@ -261,6 +286,7 @@ class _GiftListPageState extends State<GiftListPage> {
       print('Error deleting gift: $e');
     }
   }
+
 
 
   // Function to show a confirmation dialog before deleting a gift
@@ -452,6 +478,7 @@ class _GiftListPageState extends State<GiftListPage> {
                               icon: const Icon(Icons.delete, color: Colors.red, size: 40),
                               onPressed: () => _showDeleteDialog(gift['giftId'],gift['eventId']), // Show delete confirmation dialog
                             ),
+
                           ],
                         ),
                       ],

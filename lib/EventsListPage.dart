@@ -270,16 +270,16 @@ class _EventsListPageState extends State<EventsListPage> {
   void _sortEvents() {
     switch (sortCriteria) {
       case 'Name':
-        events.sort((a, b) => (a['name'] ?? '').compareTo(b['name'] ?? ''));
+        events.sort((a, b) => (a['title']?.toLowerCase() ?? '').compareTo(b['title']?.toLowerCase() ?? ''));
         break;
-      case 'type':
-        events.sort((a, b) =>
-            (a['type'] ?? '').compareTo(b['type'] ?? ''));
+      case 'Category': // Update to 'type' since 'category' is not defined
+        events.sort((a, b) => (a['type'] ?? '').compareTo(b['type'] ?? ''));
         break;
       case 'Status':
         events.sort((a, b) => (a['status'] ?? '').compareTo(b['status'] ?? ''));
         break;
     }
+
   }
 
   @override
@@ -359,6 +359,7 @@ class _EventsListPageState extends State<EventsListPage> {
                       if (value != null) {
                         sortCriteria = value;
                       }
+                      _sortEvents();
                     });
                   },
                 ),

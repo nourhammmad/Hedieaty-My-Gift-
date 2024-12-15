@@ -86,22 +86,22 @@ class _RegistrationPageState extends State<RegistrationPage> {
         }
         User? user = await _firebaseDb.registerUser(displayName, email, password, phone,photoUrl);
 
-        // Save user data to Firestore
-        // await FirebaseFirestore.instance.collection('users').add({
-        //   'displayName': displayName,
-        //   'email': email,
-        //   'password': password, // Password should be hashed for real apps
-        //   'phone': phone,
-        //   'photoUrl': photoUrl, // Save the Imgur URL here
-        // });
+if(user!=null) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text('User registered successfully'),
+      backgroundColor: Colors.green,
+    ),
+  );
+  Navigator.pushNamed(context, '/Login');
+}else{ ScaffoldMessenger.of(context).showSnackBar(
+  const SnackBar(
+    content: Text('A user exists with the same phonenumber'),
+    backgroundColor: Colors.red,
+  ),
+);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('User registered successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.pushNamed(context, '/Login');
+}
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
