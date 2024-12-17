@@ -430,7 +430,7 @@ class _GiftListPageState extends State<GiftListPage> {
                                 ),
                               ),
                               Text(
-                                "Due Date: ${gift['dueTo']??'Unknown'}",
+                                "Due Date: ${duedate??'Unknown'}",
                                 style: const TextStyle(fontSize: 30,          fontFamily: "Lobster",
                                 ),
                               ),
@@ -459,7 +459,7 @@ class _GiftListPageState extends State<GiftListPage> {
                                       image: gift['photoURL'],
                                       category: gift['category'],
                                       price: gift['price'],
-                                      date: gift['dueTo'],
+
                                     ),
                                   ),
                                 );

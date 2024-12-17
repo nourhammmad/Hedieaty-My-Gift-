@@ -16,6 +16,9 @@ class AddEvent extends StatefulWidget {
   final String? status;
   final String? type;
   final String? imageUrl;
+  final String? date;
+
+
 
   const AddEvent({
     Key? key,
@@ -25,6 +28,7 @@ class AddEvent extends StatefulWidget {
     this.status,
     this.type,
     this.imageUrl,
+    this.date
   }) : super(key: key);
 
   @override
@@ -33,6 +37,23 @@ class AddEvent extends StatefulWidget {
 class _AddEventState extends State<AddEvent> {
   late TextEditingController titleController;
   late TextEditingController descriptionController;
+  bool isPastStatus = false;
+  late TextEditingController dueToController; // New controller for Due Date
+  void _selectDueDate(BuildContext context) async {
+    DateTime currentDate = DateTime.now();
+    DateTime? selectedDate = await showDatePicker(
+      context: context,
+      initialDate: currentDate,
+      firstDate: currentDate,  // Prevent past date selection
+      lastDate: DateTime(2101),  // Optional: specify an upper bound
+    );
+
+    if (selectedDate != null && selectedDate != currentDate) {
+      setState(() {
+        dueToController.text = '${selectedDate.toLocal()}'.split(' ')[0];  // format to display date
+      });
+    }
+  }
   File? _eventImage;
 
   bool isPledged = false;
@@ -70,13 +91,20 @@ class _AddEventState extends State<AddEvent> {
       // Get the updated event details
       String title = titleController.text;
       String description = descriptionController.text;
+      String? dueTo = dueToController.text;
       String? photoUrl;
 
       if (_eventImage != null) {
         // Upload image to Imgur and get the URL
         photoUrl = await uploadImageToImgur(_eventImage!.path);
+      }else {
+        // Retain the existing image URL if no new image is selected
+        photoUrl = widget.imageUrl;
       }
-
+      if (dueTo == null) {
+        // Upload image to Imgur and get the URL
+        dueTo = widget.date;
+      }
       try {
         // Fetch the user's document
         DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
@@ -96,7 +124,8 @@ class _AddEventState extends State<AddEvent> {
               'status': eventStatus,
               'type': eventType,
               'photoURL': photoUrl, // Retain old photo URL if no new image
-              'gifts': eventsList[eventIndex]['gifts'], // Retain existing gifts
+              'gifts': eventsList[eventIndex]['gifts'],
+              'dueTo':dueTo// Retain existing gifts
             };
 
             // Replace the old event data with the updated data
@@ -150,9 +179,13 @@ class _AddEventState extends State<AddEvent> {
     // Initialize controllers with existing values if in edit mode
     titleController = TextEditingController(text: widget.title);
     descriptionController = TextEditingController(text: widget.description);
+    dueToController= TextEditingController(text: widget.date);
     eventStatus = widget.status ?? 'Upcoming';
     eventType = widget.type ?? 'Birthday';
-
+    isPastStatus = eventStatus == 'Past';
+    if (isPastStatus) {
+      dueToController.text = 'Not Applicable';
+    }
     // Load existing image if URL is provided
     if (widget.imageUrl != null) {
       // Here you can use a package like `cached_network_image` or similar to load the image
@@ -185,6 +218,7 @@ class _AddEventState extends State<AddEvent> {
         'status': eventStatus,
         'title': title,
         'type': eventType,
+        'dueTo': dueToController.text,
       };
 
       try {
@@ -291,7 +325,7 @@ class _AddEventState extends State<AddEvent> {
             // Event Name Field
             _buildTextField(
               controller: titleController,
-              label: 'Event Name',
+              label: 'Event Name', keyboardType: TextInputType.text,
             ),
             const SizedBox(height: 10),
 
@@ -299,7 +333,20 @@ class _AddEventState extends State<AddEvent> {
             _buildTextField(
               controller: descriptionController,
               label: 'Description',
-              maxLines: 3,
+              maxLines: 3, keyboardType: TextInputType.text,
+            ),
+            const SizedBox(height: 10),
+            GestureDetector(
+              onTap: () => !isPastStatus ? _selectDueDate(context) : null,
+              child: AbsorbPointer(
+                child: _buildTextField(
+                  controller: dueToController,
+                  label: 'Due To',
+                  keyboardType: TextInputType.datetime,
+                  enabled: !isPastStatus,
+
+                ),
+              ),
             ),
             const SizedBox(height: 10),
 
@@ -309,9 +356,12 @@ class _AddEventState extends State<AddEvent> {
               onChanged: (String? newValue) {
                 setState(() {
                   eventStatus = newValue!;
+                  isPastStatus = eventStatus == 'Past';
+                  // If status is 'Past', set dueTo to "Not Applicable"
+                  dueToController.text = isPastStatus ? 'Not Applicable' : dueToController.text;
                 });
               },
-              items: <String>['Past', 'Upcoming']
+              items: <String>['Past', 'Upcoming','Current']
                   .map<DropdownMenuItem<String>>((String value) {
                 return DropdownMenuItem<String>(value: value, child: Text(value));
               }).toList(),
@@ -359,7 +409,7 @@ class _AddEventState extends State<AddEvent> {
     required String label,
     int maxLines = 1,
     String? prefixText,
-    bool enabled = true,
+    bool enabled = true, required TextInputType keyboardType,
   }) {
     return Container(
       decoration: BoxDecoration(

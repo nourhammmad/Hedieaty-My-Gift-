@@ -402,25 +402,27 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
                                 Text(
                                   gift['title'] ?? 'Unnamed Gift',
                                   style: const TextStyle(
-                                    fontSize: 24,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.indigo,
+                                    fontSize: 35,
+                                    fontFamily: "Lobster",
+
                                   ),
                                 ),
                                 const SizedBox(height: 8.0),
                                 Text(
                                   "Category: ${gift['category'] ?? 'Uncategorized'}",
-                                  style: const TextStyle(fontSize: 18),
+                                    style: const TextStyle(fontSize: 30,          fontFamily: "Lobster",),
                                 ),
                                 Text(
                                   "Status: ${status}",
-                                  style: const TextStyle(fontSize: 18),
+                                    style: const TextStyle(fontSize: 30,          fontFamily: "Lobster",),
                                 ),
                                 Text(
                                   "Due Data: ${dueTo}",
-                                  style: const TextStyle(fontSize: 18),
-                                ),
-                              ],
+                  style: const TextStyle(fontSize: 30,          fontFamily: "Lobster",)),
+
+                  ],
                             ),
                           ),
                           Padding(

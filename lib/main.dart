@@ -169,7 +169,6 @@ class _MyAppState extends State<MyApp> {
                     image: '',
                     category: '',
                     price: '',
-                    date: '',
                   ),
                   '/EventDetailsPage': (context) => EventDetailsPage(),
                   '/AddEvent': (context) => AddEvent(),

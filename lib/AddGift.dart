@@ -19,7 +19,6 @@ class _AddGiftState extends State<AddGift> {
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController categoryController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
-  final TextEditingController dueToController = TextEditingController(); // New controller for Due Date
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   File? _giftImage;
   final ImagePicker _imagePicker = ImagePicker();
@@ -59,30 +58,8 @@ class _AddGiftState extends State<AddGift> {
     }
   }
 
-  void _selectDueDate(BuildContext context) async {
-    DateTime currentDate = DateTime.now();
-    DateTime? selectedDate = await showDatePicker(
-      context: context,
-      initialDate: currentDate,
-      firstDate: currentDate,  // Prevent past date selection
-      lastDate: DateTime(2101),  // Optional: specify an upper bound
-    );
-
-    if (selectedDate != null && selectedDate != currentDate) {
-      setState(() {
-        dueToController.text = '${selectedDate.toLocal()}'.split(' ')[0];  // format to display date
-      });
-    }
-  }
-
   Future<void> _addGift() async {
     try {
-      if (selectedEventId == null || dueToController.text.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please fill all required fields!')),
-        );
-        return;
-      }
 
       final userId = FirebaseAuth.instance.currentUser?.uid;
       if (userId == null) return;
@@ -101,12 +78,21 @@ class _AddGiftState extends State<AddGift> {
       String description = descriptionController.text;
       String category = categoryController.text;
       String price = priceController.text;
-      String dueTo = dueToController.text;
       String? photoUrl;
       if (_giftImage != null) {
         // Upload image to Imgur and get the URL
         photoUrl = await uploadImageToImgur(_giftImage!.path);
       }
+
+      // Find the dueTo date from the selected event
+      String dueTo = '';
+      for (var event in events) {
+        if (event['eventId'] == selectedEventId) {
+          dueTo = event['dueTo']; // Assuming 'dueTo' is a field in your event
+          break;
+        }
+      }
+
       Map<String, dynamic> giftData = {
         'giftId': giftId,
         'title': title,
@@ -115,10 +101,10 @@ class _AddGiftState extends State<AddGift> {
         'category': category,
         'price': price,
         'eventId': selectedEventId,
-        'dueTo': dueTo,  // Add the due date
+        'dueTo': dueTo,  // Assign the dueTo from the selected event
         'PledgedBy': null,
         'createdBy': userId,
-        'photoURL':photoUrl,
+        'photoURL': photoUrl,
       };
 
       // Update the `events` list locally
@@ -150,6 +136,7 @@ class _AddGiftState extends State<AddGift> {
       );
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -214,13 +201,7 @@ class _AddGiftState extends State<AddGift> {
             ),
           ),
         ),
-                  // FloatingActionButton(
-                  //   mini: true,
-                  //   onPressed: () {
-                  //     // Add image selection functionality
-                  //   },
-                  //   child: const Icon(Icons.add),
-                  // ),
+
                 ],
               ),
             ),
@@ -229,7 +210,9 @@ class _AddGiftState extends State<AddGift> {
             DropdownButtonFormField<String>(
               value: selectedEventId,
               hint: const Text('Select Event'),
-              items: events.map((event) {
+              items: events
+                  .where((event) => event['status'] != 'Past') // Filter out past events
+                  .map((event) {
                 return DropdownMenuItem<String>(
                   value: event['eventId'],
                   child: Text(event['title']),
@@ -241,6 +224,7 @@ class _AddGiftState extends State<AddGift> {
                 });
               },
             ),
+
             const SizedBox(height: 20),
 
             _buildTextField(
@@ -269,18 +253,6 @@ class _AddGiftState extends State<AddGift> {
             ),
             const SizedBox(height: 20),
 
-            // Date Picker Button for "Due To"
-            GestureDetector(
-              onTap: () => _selectDueDate(context),
-              child: AbsorbPointer(
-                child: _buildTextField(
-                  controller: dueToController,
-                  label: 'Due To',
-                  keyboardType: TextInputType.datetime,
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
 
             ElevatedButton(
               onPressed: _addGift,

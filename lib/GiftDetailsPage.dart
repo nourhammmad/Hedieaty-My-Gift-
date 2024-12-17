@@ -18,7 +18,7 @@ class GiftDetailsPage extends StatefulWidget {
   final String image;
   final String category;
   final String price;
-  final String date;
+
 
   const GiftDetailsPage({
     super.key,
@@ -30,7 +30,6 @@ class GiftDetailsPage extends StatefulWidget {
     required this.image,
     required this.category,
     required this.price,
-    required this.date,
   });
 
   @override
@@ -42,7 +41,6 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController categoryController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
-  late TextEditingController dueToController;
 
   File? _giftImage;
   final ImagePicker _imagePicker = ImagePicker();
@@ -58,37 +56,17 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
     descriptionController.text = widget.description;
     categoryController.text = widget.category;
     priceController.text = widget.price.toString();
-    dueToController = TextEditingController(text: widget.date);
 
 
     // Set the pledged status based on the passed status
     isPledged = widget.status== 'Pledged';
   }
-
-  void _selectDueDate(BuildContext context) async {
-    DateTime currentDate = DateTime.now();
-    DateTime? selectedDate = await showDatePicker(
-      context: context,
-      initialDate: currentDate,
-      firstDate: currentDate,  // Prevent past date selection
-      lastDate: DateTime(2101),  // Optional: specify an upper bound
-    );
-
-    if (selectedDate != null && selectedDate != currentDate) {
-      setState(() {
-        dueToController.text = '${selectedDate.toLocal()}'.split(' ')[0];  // format to display date
-      });
-    }
-  }
-
   void updateGiftDetails({
     required bool isPledged,
     required String title,
     required String description,
     required String category,
     required String price,
-    required String date,
- // The gift ID to access the specific gift
   }) async {
     final FirebaseFirestore _firestore = FirebaseFirestore.instance;
     final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -97,6 +75,9 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
     if (_giftImage != null) {
       // Upload image to Imgur and get the URL
       photoUrl = await uploadImageToImgur(_giftImage!.path);
+    } else {
+      // Retain the existing image URL if no new image is selected
+      photoUrl = widget.image;
     }
 
     // Get current user ID
@@ -111,8 +92,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
         'description': description,
         'category': category,
         'price': price,
-        'photoURL':photoUrl,
-        'dueTo':date,
+        'photoURL': photoUrl,
         'status': isPledged ? 'Pledged' : 'Available', // Update status based on isPledged
       };
 
@@ -138,6 +118,14 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
             var giftIndex = giftsList.indexWhere((gift) => gift['giftId'] == widget.id);
 
             if (giftIndex != -1) {
+              // Retrieve the existing gift to retain 'dueTo' value
+              var currentGift = giftsList[giftIndex];
+
+              // Preserve the 'dueTo' value if it exists
+              if (currentGift.containsKey('dueTo')) {
+                updatedGiftData['dueTo'] = currentGift['dueTo'];
+              }
+
               // Update the gift in the list
               if (isPledged) {
                 // If pledged, update only the status
@@ -154,7 +142,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
 
               // Show success message
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gift updated successfully!')));
-              Navigator.pop(context,'reload');
+              Navigator.pop(context, 'reload');
             } else {
               // Gift not found
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gift not found in this event.')));
@@ -174,6 +162,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
       }
     }
   }
+
   Future<void> _pickImage() async {
     final XFile? image = await _imagePicker.pickImage(source: ImageSource.gallery);
     if (image != null) {
@@ -312,17 +301,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
               enabled: !isPledged, // Disable if pledged
             ),
             const SizedBox(height: 20),
-            GestureDetector(
-              onTap: () => _selectDueDate(context), // Trigger date picker on tap
-              child: AbsorbPointer(
-                child: _buildTextField(
-                  controller: dueToController,
-                  label: 'Due To',
-                  //keyboardType: TextInputType.datetime,
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
+
 
             // Submit Button
             Container(
@@ -333,14 +312,14 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
                   String description = descriptionController.text;
                   String category = categoryController.text;
                   String price = priceController.text;
-                  String date = dueToController.text;
+
 
                   updateGiftDetails(
                     isPledged: isPledged,
                     title: title,
                     description: description,
                     category: category,
-                    price: price, date: date,
+                    price: price,
                   );                },
                 child: const Text(
                   'Save Gift Details',

@@ -61,6 +61,7 @@ class _EventsListPageState extends State<EventsListPage> {
               'status': event['status'],
               'title': event['title'],
               'type': event['type'],
+              'dueTo': event['dueTo'],
             });
 
             Map<String, String> eventData = {
@@ -169,9 +170,6 @@ class _EventsListPageState extends State<EventsListPage> {
     return '';  // Return an empty string if image fetching fails
   }
 
-
-
-
   // Function to show a confirmation dialog before deleting an event
   void _showDeleteConfirmationDialog(String eventId) {
     showDialog(
@@ -264,8 +262,6 @@ class _EventsListPageState extends State<EventsListPage> {
       print("YOU ARE OFFLINE");
     }
   }
-
-
   // Function to sort events
   void _sortEvents() {
     switch (sortCriteria) {
@@ -438,6 +434,10 @@ class _EventsListPageState extends State<EventsListPage> {
                                   "Status: ${event['status'] ?? 'Unknown'}",
                                   style: const TextStyle(fontSize: 30, fontFamily: "Lobster"),
                                 ),
+                                Text(
+                                  "Due Date: ${event['dueTo'] ?? 'Unknown'}",
+                                  style: const TextStyle(fontSize: 30, fontFamily: "Lobster"),
+                                ),
                               ],
                             ),
                           ),
@@ -451,7 +451,7 @@ class _EventsListPageState extends State<EventsListPage> {
                                   final result =await Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => AddEvent(id:event['eventId'],title: event['title'],description:event['description'],status:event['status'],type:event['type'] ,imageUrl:event['photoURL']),
+                                      builder: (context) => AddEvent(id:event['eventId'],title: event['title'],description:event['description'],status:event['status'],type:event['type'] ,imageUrl:event['photoURL'],date:event['dueTo']),
                                     ),
                                   );
                                   if (result != null && result == 'reload') {
