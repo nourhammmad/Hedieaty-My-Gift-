@@ -21,7 +21,6 @@ class AddEvent extends StatefulWidget {
 
 
   const AddEvent({
-    Key? key,
     this.id,
     this.title,
     this.description,
@@ -29,7 +28,7 @@ class AddEvent extends StatefulWidget {
     this.type,
     this.imageUrl,
     this.date
-  }) : super(key: key);
+  }) : super();
 
   @override
   State<AddEvent> createState() => _AddEventState();
@@ -231,7 +230,10 @@ class _AddEventState extends State<AddEvent> {
         });
 
         // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Event added successfully!')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+
+            content: Text(
+            'Event added successfully!')));
         Navigator.pop(context,'reload');
 
       } catch (e) {
@@ -245,6 +247,7 @@ class _AddEventState extends State<AddEvent> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: Key('addEventPage'),  // Assign a key here
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Colors.indigo),
         backgroundColor: Colors.indigo.shade50,
@@ -303,6 +306,7 @@ class _AddEventState extends State<AddEvent> {
                   ),
 
                   InkWell(
+                    key: const Key('addImageButton'), // Add a unique key here
                     onTap: _pickImage,
                     child: Container(
                       decoration: BoxDecoration(
@@ -324,6 +328,8 @@ class _AddEventState extends State<AddEvent> {
 
             // Event Name Field
             _buildTextField(
+              key: 'titleField',  // Assign a key here
+
               controller: titleController,
               label: 'Event Name', keyboardType: TextInputType.text,
             ),
@@ -331,6 +337,8 @@ class _AddEventState extends State<AddEvent> {
 
             // Description Field
             _buildTextField(
+              key: 'descriptionField',  // Assign a key here
+
               controller: descriptionController,
               label: 'Description',
               maxLines: 3, keyboardType: TextInputType.text,
@@ -340,6 +348,8 @@ class _AddEventState extends State<AddEvent> {
               onTap: () => !isPastStatus ? _selectDueDate(context) : null,
               child: AbsorbPointer(
                 child: _buildTextField(
+                  key: 'dueDateField',  // Assign a key here
+
                   controller: dueToController,
                   label: 'Due To',
                   keyboardType: TextInputType.datetime,
@@ -387,6 +397,8 @@ class _AddEventState extends State<AddEvent> {
 
             // Submit Button
             ElevatedButton(
+              key: Key('saveButton'),  // Assign a key here
+
               onPressed: isPledged
                   ? null
                   : () {
@@ -409,7 +421,7 @@ class _AddEventState extends State<AddEvent> {
     required String label,
     int maxLines = 1,
     String? prefixText,
-    bool enabled = true, required TextInputType keyboardType,
+    bool enabled = true, required TextInputType keyboardType, required String key,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -425,6 +437,7 @@ class _AddEventState extends State<AddEvent> {
         ],
       ),
       child: TextField(
+        key: Key(key),
         controller: controller,
         maxLines: maxLines,
         enabled: enabled,

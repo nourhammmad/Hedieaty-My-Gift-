@@ -17,6 +17,7 @@ class FriendsGiftList extends StatefulWidget {
 
   @override
   State<FriendsGiftList> createState() => _FriendsGiftListState();
+
 }
 
 class _FriendsGiftListState extends State<FriendsGiftList> {
@@ -306,20 +307,22 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Colors.indigo),
         backgroundColor: Colors.indigo.shade50,
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.center, // Centers the content
-          children: [
-            Text(
-              widget.userName,
-              style: const TextStyle(
-                fontSize: 40,
-                fontFamily: "Lobster",
-                fontWeight: FontWeight.bold,
-                color: Colors.indigo,
+        title: SingleChildScrollView(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center, // Centers the content
+            children: [
+              Text(
+                widget.userName,
+                style: const TextStyle(
+                  fontSize: 40,
+                  fontFamily: "Lobster",
+                  fontWeight: FontWeight.bold,
+                  color: Colors.indigo,
+                ),
               ),
-            ),
-            Icon(Icons.card_giftcard, color: Colors.indigo, size: 25),
-          ],
+              Icon(Icons.card_giftcard, color: Colors.indigo, size: 25),
+            ],
+          ),
         ),
 
       ),
@@ -327,17 +330,19 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            const Row(
-              children: [
-                CircleAvatar(backgroundColor: Colors.red, radius: 5),
-                SizedBox(width: 5),
-                Text("Pledged Gifts", style: TextStyle(fontFamily: "Lobster", fontSize: 25)),
-                SizedBox(width: 20),
-                CircleAvatar(backgroundColor: Colors.green, radius: 5),
-                SizedBox(width: 5),
-                Text("Available Gifts", style: TextStyle(fontFamily: "Lobster", fontSize: 25)),
-                SizedBox(width: 20),
-              ],
+            SingleChildScrollView(
+              child: const Row(
+                children: [
+                  CircleAvatar(backgroundColor: Colors.red, radius: 5),
+                  SizedBox(width: 5),
+                  Text("Pledged Gifts", style: TextStyle(fontFamily: "Lobster", fontSize: 25)),
+                  SizedBox(width: 20),
+                  CircleAvatar(backgroundColor: Colors.green, radius: 5),
+                  SizedBox(width: 5),
+                  Text("Available Gifts", style: TextStyle(fontFamily: "Lobster", fontSize: 25)),
+                  SizedBox(width: 20),
+                ],
+              ),
             ),
             const SizedBox(height: 10),
             isLoading
@@ -428,6 +433,7 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
                           Padding(
                             padding: const EdgeInsets.all(16.0),
                             child: ElevatedButton(
+                              key:Key(gift['title']),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: _getButtonColor(status),
                               ),

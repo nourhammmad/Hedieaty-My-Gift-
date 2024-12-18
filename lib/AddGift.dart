@@ -141,6 +141,7 @@ class _AddGiftState extends State<AddGift> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: Key('addGiftPage'),  // Assign a key here
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Colors.indigo),
         backgroundColor: Colors.indigo.shade50,
@@ -208,6 +209,7 @@ class _AddGiftState extends State<AddGift> {
             const SizedBox(height: 20),
 
             DropdownButtonFormField<String>(
+              key: Key('eventDropdown'),  // Add the key here
               value: selectedEventId,
               hint: const Text('Select Event'),
               items: events
@@ -228,33 +230,35 @@ class _AddGiftState extends State<AddGift> {
             const SizedBox(height: 20),
 
             _buildTextField(
+
               controller: titleController,
-              label: 'Gift Name',
+              label: 'Gift Name', key: 'titleField',
             ),
             const SizedBox(height: 10),
 
             _buildTextField(
               controller: descriptionController,
               label: 'Description',
-              maxLines: 3,
+              maxLines: 3, key: 'descriptionField',
             ),
             const SizedBox(height: 10),
 
             _buildTextField(
               controller: categoryController,
-              label: 'Category (e.g., Electronics)',
+              label: 'Category (e.g., Electronics)', key: 'Category',
             ),
             const SizedBox(height: 10),
 
             _buildTextField(
               controller: priceController,
               label: 'Price',
-              keyboardType: TextInputType.number,
+              keyboardType: TextInputType.number, key: 'Price',
             ),
             const SizedBox(height: 20),
 
 
             ElevatedButton(
+              key: Key('saveButton'),  // Add the key here
               onPressed: _addGift,
               child: const Text(
                 'Add Gift',
@@ -271,9 +275,10 @@ class _AddGiftState extends State<AddGift> {
     required TextEditingController controller,
     required String label,
     int maxLines = 1,
-    TextInputType keyboardType = TextInputType.text,
+    TextInputType keyboardType = TextInputType.text,required String key,
   }) {
     return TextField(
+      key: Key(key),  // Add the key here
       controller: controller,
       maxLines: maxLines,
       keyboardType: keyboardType,

@@ -271,6 +271,8 @@ class _FriendsEventState extends State<FriendsEvent> {
                 itemBuilder: (context, index) {
                   final event = events[index];
                   return InkWell(
+                    key: Key(event['title']),  // Add a unique key for each event
+
                     onTap: () {
                       // Navigate to the GiftListPage
                       Navigator.push(

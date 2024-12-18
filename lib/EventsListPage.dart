@@ -291,6 +291,7 @@ class _EventsListPageState extends State<EventsListPage> {
     _sortEvents(); // Sort events whenever the build method is called
 
     return Scaffold(
+      key: const Key('eventsListPage'), // Add Key for testing
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Colors.indigo),
         backgroundColor: Colors.indigo.shade50,
@@ -370,6 +371,7 @@ class _EventsListPageState extends State<EventsListPage> {
                 itemBuilder: (context, index) {
                   final event = events[index];
                   return InkWell(
+                    key: Key(event['eventId']),  // Add a unique key for each event
                     onTap: () async {
 
                       Navigator.push(

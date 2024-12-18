@@ -6,6 +6,7 @@ class GiftOrEvent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: Key('GiftOrEvent'),  // Assign a key here
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Colors.indigo),
         backgroundColor: Colors.indigo.shade50,
@@ -30,6 +31,8 @@ class GiftOrEvent extends StatelessWidget {
         children: [
           // Add Gift Option
           Expanded(
+            key: Key('addGiftButton'), // Added key here
+
             child: _buildListItem(
               context: context,
               title: 'Add Gift',
@@ -42,6 +45,8 @@ class GiftOrEvent extends StatelessWidget {
           ),
           // Add Event Option
           Expanded(
+            key: Key('addEventButton'), // Added key here
+
             child: _buildListItem(
               context: context,
               title: 'Add Event',
@@ -50,6 +55,7 @@ class GiftOrEvent extends StatelessWidget {
                 // Navigate to Add Event page
                 Navigator.pushNamed(context, '/AddEvent'); // Ensure route name is correct
               },
+
             ),
           ),
         ],

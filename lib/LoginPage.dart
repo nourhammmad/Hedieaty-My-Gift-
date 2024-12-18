@@ -205,10 +205,8 @@ class _LoginPageState extends State<LoginPage> {
             // This is the icon decoration inserted between the AppBar and body
             Container(
               padding: const EdgeInsets.symmetric(vertical: 10.0),
-              child: Expanded(
-                child: Icon(Icons.card_giftcard_outlined, color: Colors.indigo.shade100,
-                    size: 260),
-              ), // Insert your icon here
+              child: Icon(Icons.card_giftcard_outlined, color: Colors.indigo.shade100,
+                  size: 260), // Insert your icon here
             ),
             Padding(
               padding: const EdgeInsets.all(20.0),
@@ -232,6 +230,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         const SizedBox(height: 20),
                         TextFormField(
+                          key: Key('usernameField'),
                           controller: emailController,
                           decoration: InputDecoration(
                             labelText: 'Email',
@@ -251,6 +250,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         const SizedBox(height: 19),
                         TextFormField(
+                          key: Key('passwordField'),
                           controller: passwordController,
                           decoration: InputDecoration(
                             labelText: 'Password',
@@ -270,6 +270,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         const SizedBox(height: 20),
                         ElevatedButton(
+                          key: Key('loginButton'),
                           onPressed: _login,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.indigo,

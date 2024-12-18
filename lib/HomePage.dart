@@ -12,9 +12,10 @@ import 'imgur.dart';
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
+
   @override
   State<HomePage> createState() => _HomePageState();
-}
+ }
 
 class _HomePageState extends State<HomePage> {
   bool _isPressed = false; // Track the button state
@@ -31,17 +32,18 @@ class _HomePageState extends State<HomePage> {
   @override
     void initState()  {
       super.initState();
-  
+      key: Key('HomePage');  // Assign a key here
+
       print("=======================DAKHALT EL HOME PAGE=====================");
       _dbHelper = Databaseclass();
       _firebaseDb=FirebaseDatabaseClass();
-  
+
       //currentUserId = FirebaseAuth.instance.currentUser!.uid;
       _dbHelper = Databaseclass();
       _loadFriendsList();
-      
+
       _requestNotificationPermission();
-  
+
     }
   void _requestNotificationPermission() async {
     // Request permission for iOS devices
@@ -90,7 +92,9 @@ class _HomePageState extends State<HomePage> {
       return ''; // Return empty string if the fetch fails
     }
   }
-
+  Future<void> loadFriendsList() async {
+    return await _loadFriendsList();
+  }
   Future<void> _loadFriendsList() async {
 
     // Check connectivity status
@@ -415,6 +419,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: Key('HomePage'),  // Assign a key here
       appBar: AppBar(
         backgroundColor: Colors.indigo.shade50,
         title: _isSearching
@@ -479,7 +484,10 @@ class _HomePageState extends State<HomePage> {
         toolbarHeight: 70,
         leading: Builder(
           builder: (context) => IconButton(
+            key: Key('Drawer'), // Added key here
+
             onPressed: () {
+
               Scaffold.of(context).openDrawer(); // Open the drawer
             },
             alignment: Alignment.topLeft,
@@ -511,6 +519,7 @@ class _HomePageState extends State<HomePage> {
       ),
 
       drawer: Drawer(
+
         backgroundColor: Colors.indigo.shade50,
         child: ListView(
           padding: EdgeInsets.zero,
@@ -526,6 +535,8 @@ class _HomePageState extends State<HomePage> {
             ListTile(
               leading: Icon(Icons.event, color: Colors.indigo, size: 45),
               title: const Text(
+                key: Key('My Events'), // Added key here
+
                 'My Events',
                 style: TextStyle(
                     fontSize: 50,
@@ -566,10 +577,14 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       body: Stack(
+        key: Key('HomePage'), // Added key here
+
         children: [
           Column(
             children: [
               GestureDetector(
+                key: Key('createEventButton'), // Added key here
+
                 onTapDown: (_) {
                   setState(() {
                     _isPressed = true;
@@ -588,7 +603,7 @@ class _HomePageState extends State<HomePage> {
                   });
                 },
                 child: Container(
-                  height: 60,
+                   height: 60,
                   width: double.infinity,
                   margin: const EdgeInsets.all(10.0),
                   decoration: BoxDecoration(
@@ -596,6 +611,7 @@ class _HomePageState extends State<HomePage> {
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: Center(
+
 
                     child: Text(
                       'Create Your Own Event/List',
@@ -837,6 +853,7 @@ class FriendListItem extends StatelessWidget {
                 children: [
                   Text(
                     displayName,
+                    key: Key('$displayName'),  // Unique key for each friend
                     style: const TextStyle(
                       fontSize: 30,
                       fontWeight: FontWeight.bold,
