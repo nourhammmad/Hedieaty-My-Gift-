@@ -317,6 +317,8 @@ class _EventsListPageState extends State<EventsListPage> {
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () async {
+              if(online){
+
             final result =await Navigator.push(context,MaterialPageRoute(
       builder: (context) => AddEvent(),
        ),
@@ -325,7 +327,7 @@ class _EventsListPageState extends State<EventsListPage> {
           setState(() {
             _loadEvents(widget.userId);
           });
-     }
+     }}
      },
 
           ),

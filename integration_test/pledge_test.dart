@@ -32,7 +32,7 @@ void main() {
     // await tester.pumpAndSettle(); // Wait for any async tasks (data fetching, etc.) to complete
     print("Home page should be loaded now");
     //
-    final friendTile = find.byKey(Key('Nour Hammad'));
+    final friendTile = find.byKey(Key('Nina Yea'));
 
     // Step 2: Verify that Nour Hammad is present in the widget tree
     expect(friendTile, findsOneWidget);
@@ -46,7 +46,7 @@ void main() {
     final myEventTile = find.byKey(Key('My Birthday'));  // Find the first event tile by key
     await tester.tap(myEventTile);  // Tap on the "Test Event 1"
     await tester.pumpAndSettle(const Duration(seconds: 3));
-    final myGiftTile = find.byKey(Key('Dolce & Gabanna'));  // Find the first event tile by key
+    final myGiftTile = find.byKey(Key('D&G'));  // Find the first event tile by key
     await tester.tap(myGiftTile);  // Tap on the "Test Event 1"
     await tester.pumpAndSettle(const Duration(seconds: 10));//
 

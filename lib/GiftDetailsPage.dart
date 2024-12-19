@@ -87,7 +87,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
 
       // Prepare the updated gift data
       Map<String, dynamic> updatedGiftData = {
-        'createdBy':userId,
+        'createdBy': userId,
         'eventId': widget.eventId,
         'giftId': widget.id, // Using the passed giftId
         'title': title,
@@ -120,18 +120,16 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
             var giftIndex = giftsList.indexWhere((gift) => gift['giftId'] == widget.id);
 
             if (giftIndex != -1) {
-              // Retrieve the existing gift to retain 'dueTo' value
+              // Retrieve the existing gift to retain 'dueTo' and 'PledgedBy' values
               var currentGift = giftsList[giftIndex];
 
-              // Preserve the 'dueTo' value if it exists
+              // Preserve 'dueTo' and 'PledgedBy' values if they exist
               if (currentGift.containsKey('dueTo')) {
                 updatedGiftData['dueTo'] = currentGift['dueTo'];
               }
-              // Preserve the 'PledgedBy' value if it exists
               if (currentGift.containsKey('PledgedBy')) {
                 updatedGiftData['PledgedBy'] = currentGift['PledgedBy'];
               }
-
 
               // Update the gift in the list
               if (isPledged) {
@@ -144,7 +142,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
 
               // Update the events_list with the modified gifts list
               await userDocRef.update({
-                'events_list': eventsList, // Update the entire events list
+                'events_list': eventsList,
               });
 
               // Show success message

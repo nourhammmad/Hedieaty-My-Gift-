@@ -25,6 +25,8 @@ class _HomePageState extends State<HomePage> {
   late String currentUserId;
   bool isLoading = true;
   bool isOnline = false;
+  late bool online ;
+
   List<Map<String, String>> filteredFriends = []; // Filtered list for search results
 
   @override
@@ -55,7 +57,6 @@ class _HomePageState extends State<HomePage> {
     });
   }
   Future<String?> fetchPhotoURL(String userId) async {
-    bool online = false;
     try {
       var internetConnection = InternetConnection();
       if (internetConnection != null) {
@@ -495,7 +496,8 @@ class _HomePageState extends State<HomePage> {
                 onTapDown: (_) {
                   setState(() {
                     _isPressed = true;
-                    Navigator.pushNamed(context,'/GiftOrEvent');
+                    if(online){
+                    Navigator.pushNamed(context,'/GiftOrEvent');}
                   });
                 },
                 onTapUp: (_) {

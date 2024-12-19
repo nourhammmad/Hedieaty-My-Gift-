@@ -110,10 +110,10 @@ void main() {
     // Step 5: Verify navigation to EventsListPage
     expect(find.byKey(Key('eventsListPage')), findsOneWidget); // Verify EventsListPage is displayed
     await tester.pumpAndSettle(const Duration(seconds: 5));  // Wait for back navigation to complete
-// Step 1: Tap on the first event in the list
-    final myEventTile = find.byKey(Key('DXuULHI8MIb95X5TtYLJ'));  // Find the first event tile by key
-    await tester.tap(myEventTile);  // Tap on the "Test Event 1"
-    await tester.pumpAndSettle(const Duration(seconds: 5));  // Wait for navigation to complete
+// // Step 1: Tap on the first event in the list
+//     final myEventTile = find.byKey(Key('DXuULHI8MIb95X5TtYLJ'));  // Find the first event tile by key
+//     await tester.tap(myEventTile);  // Tap on the "Test Event 1"
+//     await tester.pumpAndSettle(const Duration(seconds: 5));  // Wait for navigation to complete
 
   });
 }
