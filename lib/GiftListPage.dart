@@ -220,7 +220,7 @@ class _GiftListPageState extends State<GiftListPage> {
       // Reference to the user's document
       final userDocRef = FirebaseFirestore.instance.collection('users').doc(userId);
 
-      // Find and remove the gift from Firestore
+      // Fetch the user's document
       final userDoc = await userDocRef.get();
       if (userDoc.exists) {
         final eventsList = userDoc.data()?['events_list'] as List<dynamic>?;
@@ -232,52 +232,61 @@ class _GiftListPageState extends State<GiftListPage> {
             orElse: () => null, // Return null if no event found
           );
 
-          if (event != null && event['gifts'] != null) {
-            final giftList = List<Map<String, dynamic>>.from(event['gifts']);
-            final giftToDelete = giftList.firstWhere(
-                  (gift) => gift['giftId'] == giftId,
-              orElse: () => {}, // Return an empty map if no gift found
-            );
+          if (event != null) {
+            final giftsList = event['gifts'] as List<dynamic>?;
 
-            if (giftToDelete != null) {
-              // Check if the gift is pledged by someone
-              final pledgedBy = giftToDelete['PledgedBy'];
-              if (pledgedBy != null) {
-                // Reference to the pledged user's document
-                final pledgedUserDocRef = FirebaseFirestore.instance.collection('users').doc(pledgedBy);
+            if (giftsList != null) {
+              // Find the specific gift by giftId
+              final giftToDelete = giftsList.firstWhere(
+                    (gift) => gift['giftId'] == giftId,
+                orElse: () => null, // Return null if no gift found
+              );
 
-                // Find the pledged gifts list of the user
-                final pledgedUserDoc = await pledgedUserDocRef.get();
-                if (pledgedUserDoc.exists) {
-                  final pledgedGiftsList = pledgedUserDoc.data()?['pledged_gifts'] as List<dynamic>?;
-                  if (pledgedGiftsList != null) {
-                    // Find the gift in the pledged gifts list
-                    final pledgedGiftToDelete = pledgedGiftsList.firstWhere(
-                          (gift) => gift['giftId'] == giftId,
-                      orElse: () => null, // Return null if gift is not found
-                    );
+              if (giftToDelete != null) {
+                // Check if the gift is pledged by someone
+                final pledgedBy = giftToDelete['PledgedBy'];
+                if (pledgedBy != null) {
+                  // Reference to the pledged user's document
+                  final pledgedUserDocRef = FirebaseFirestore.instance.collection('users').doc(pledgedBy);
 
-                    if (pledgedGiftToDelete != null) {
-                      // Remove the gift from the pledged gifts list
-                      pledgedGiftsList.remove(pledgedGiftToDelete);
+                  // Fetch the pledged user's document
+                  final pledgedUserDoc = await pledgedUserDocRef.get();
+                  if (pledgedUserDoc.exists) {
+                    final pledgedGiftsList = pledgedUserDoc.data()?['pledged_gifts'] as List<dynamic>?;
+                    if (pledgedGiftsList != null) {
+                      // Find the gift in the pledged gifts list
+                      final pledgedGiftToDelete = pledgedGiftsList.firstWhere(
+                            (gift) => gift['giftId'] == giftId,
+                        orElse: () => null, // Return null if gift is not found
+                      );
 
-                      // Update the pledged gifts in Firestore
-                      await pledgedUserDocRef.update({'pledged_gifts': pledgedGiftsList});
+                      if (pledgedGiftToDelete != null) {
+                        // Remove the gift from the pledged gifts list
+                        pledgedGiftsList.remove(pledgedGiftToDelete);
+
+                        // Update the pledged gifts in Firestore
+                        await pledgedUserDocRef.update({'pledged_gifts': pledgedGiftsList});
+                      }
                     }
                   }
                 }
+
+                // Remove the gift from the event's gift list
+                giftsList.remove(giftToDelete);
+
+                // Check if the gifts list is now empty
+                if (giftsList.isEmpty) {
+                  event['gifts'] = null; // Set gifts to null
+                }
+
+                // Update the event in Firestore
+                await userDocRef.update({'events_list': eventsList});
+
+                // Remove the gift from the local list as well
+                setState(() {
+                  gifts.removeWhere((gift) => gift['giftId'] == giftId);
+                });
               }
-
-              // Remove the gift from the event's gift list
-              event['gifts'].remove(giftToDelete);
-
-              // Update the event in Firestore
-              await userDocRef.update({'events_list': eventsList});
-
-              // Remove the gift from the local list as well
-              setState(() {
-                gifts.removeWhere((gift) => gift['giftId'] == giftId);
-              });
             }
           }
         }
@@ -363,7 +372,20 @@ class _GiftListPageState extends State<GiftListPage> {
               ],
             ),
             const SizedBox(height: 10),
-            if (gifts.isEmpty) const Center(child: Text('No gifts available.')) else Expanded(
+            gifts.isEmpty?         Expanded(
+    child: Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.card_giftcard, // Use an icon that represents no events
+          size: 200,
+          color: Colors.indigo.shade100, // A subtle color for the icon
+        ),
+      ],
+    ),
+    ),
+    ) : Expanded(
               child: ListView.builder(
                 itemCount: gifts.length,
                 itemBuilder: (context, index) {

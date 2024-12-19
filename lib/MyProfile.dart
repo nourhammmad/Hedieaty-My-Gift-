@@ -6,6 +6,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
   import 'package:flutter/material.dart';
   import 'package:flutter_image_compress/flutter_image_compress.dart';
   import 'package:image_picker/image_picker.dart';
+import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
   import 'Database.dart';
   import 'imgur.dart';
@@ -24,6 +25,7 @@ import 'package:shared_preferences/shared_preferences.dart';
     String? firstName;
     String? photoURL; // To store the user's photo URL
     TextEditingController NameController=TextEditingController();
+    late bool online;
 
     Future<void> _checkAndEnableNotifications() async {
       try {
@@ -65,8 +67,6 @@ import 'package:shared_preferences/shared_preferences.dart';
         print("Error enabling notifications: $e");
       }
     }
-
-// Function to disable notifications (unsubscribing from topics)
     Future<void> _disableNotifications() async {
       try {
         // Get the current token
@@ -99,8 +99,7 @@ import 'package:shared_preferences/shared_preferences.dart';
       _initializeDatabase();
       _fetchUserEvents(); // Fetch events when profile loads
       _fetchUserPhotoURL(); // Fetch user's photo URL
-      print("===========================$firstName");
-      _loadNotificationsEnabled();  // Fetch the saved notification setting
+       _loadNotificationsEnabled();  // Fetch the saved notification setting
 
     }
     Future<void> _saveNotificationsEnabled(bool value) async {
@@ -108,8 +107,7 @@ import 'package:shared_preferences/shared_preferences.dart';
       await prefs.setBool('notificationsEnabled', value);
     }
 
-    // Load the notifications enabled value
-    Future<void> _loadNotificationsEnabled() async {
+     Future<void> _loadNotificationsEnabled() async {
       final prefs = await SharedPreferences.getInstance();
       setState(() {
         notificationsEnabled = prefs.getBool('notificationsEnabled') ?? false;
@@ -119,12 +117,29 @@ import 'package:shared_preferences/shared_preferences.dart';
       final XFile? image = await _imagePicker.pickImage(source: ImageSource.gallery);
       if (image != null) {
         setState(() {
-          _profileImage = File(image.path);
+          _profileImage = File(image.path);  // Update local state immediately
         });
+
+        try {
+          // Upload image to Imgur
+          String imageUrl = await uploadImageToImgur(image.path);
+          // Update photoURL in Firebase
+          await _firebaseDb.updatePhotoURL(_firebaseDb.getCurrentUserId(), imageUrl);
+
+          // Update photoURL in the state immediately
+          setState(() {
+            photoURL = imageUrl;  // Reflect the uploaded image in the UI
+          });
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error uploading image: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
-
-
     Future<void> _initializeDatabase() async {
       await _dbHelper.initialize();
       String? firebaseDisplayName = await _firebaseDb.getFirebaseDisplayName();
@@ -132,36 +147,47 @@ import 'package:shared_preferences/shared_preferences.dart';
         setState(() {
           firstName = firebaseDisplayName;
 
-          print("========================================$firstName");
-        });
+         });
       }
     }
-
-    // Fetch events from Firestore for the current user
     Future<void> _fetchUserEvents() async {
-      print("========================================");
-
-      User? user = FirebaseAuth.instance.currentUser;
-      String? firebaseDisplayName = await _firebaseDb.getFirebaseDisplayName();
-      firstName = firebaseDisplayName;
-
-      if (user != null) {
-        try {
-          DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
-          if (userDoc.exists) {
-            var data = userDoc.data() as Map<String, dynamic>;
-            List<dynamic> eventsList = data['events_list'] ?? [];
-
-            setState(() {
-              events = eventsList.map((event) => Map<String, dynamic>.from(event)).toList();
-            });
-          }
-        } catch (e) {
-          print("Error fetching events: $e");
+      try {
+        var internetConnection = InternetConnection(); // Initialize safely
+        if (internetConnection != null) {
+          online = await internetConnection.hasInternetAccess;
         }
+      } catch (e) {
+        print("Error checking internet connection: $e");
+      }
+      if (online) {
+        User? user = FirebaseAuth.instance.currentUser;
+        String? firebaseDisplayName = await _firebaseDb
+            .getFirebaseDisplayName();
+        firstName = firebaseDisplayName;
+
+        if (user != null) {
+          try {
+            DocumentSnapshot userDoc = await _firestore.collection('users').doc(
+                user.uid).get();
+            if (userDoc.exists) {
+              var data = userDoc.data() as Map<String, dynamic>;
+              List<dynamic> eventsList = data['events_list'] ?? [];
+
+              setState(() {
+                events =
+                    eventsList.map((event) => Map<String, dynamic>.from(event))
+                        .toList();
+              });
+            }
+          } catch (e) {
+            print("Error fetching events: $e");
+          }
+        }
+      }else{
+        print("YOU ARE OFFLINE");
+
       }
     }
-
     // Fetch the photo URL for the current user from Firestore
   // Fetch the photo URL for the current user from Firestore
     Future<void> _fetchUserPhotoURL() async {
@@ -216,7 +242,9 @@ import 'package:shared_preferences/shared_preferences.dart';
             IconButton(
               icon: const Icon(Icons.star, color: Colors.indigo),
               onPressed: () {
-                Navigator.pushNamed(context, '/MyPledgedGiftsPage');
+                if(online) {
+                  Navigator.pushNamed(context, '/MyPledgedGiftsPage');
+                }
               },
             ),
           ],
@@ -230,41 +258,22 @@ import 'package:shared_preferences/shared_preferences.dart';
                 child: Stack(
                   alignment: Alignment.bottomRight,
                   children: [
-                    // Use FutureBuilder to fetch and display the user's photo
-                    FutureBuilder<String?>(
-                      future: getPhotoURL(FirebaseAuth.instance.currentUser!.uid), // Fetch photo URL
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return CircularProgressIndicator(); // Show loading indicator while fetching
-                        } else if (snapshot.hasError) {
-                          return ClipOval(
-                            child: Icon(
-                              Icons.person, // Default icon if there's an error or no URL
-                              size: 220,
-                              color: Colors.indigo, // Icon color
-                            ),
-                          );
-                        } else if (snapshot.hasData && snapshot.data != null && snapshot.data!.isNotEmpty) {
-                          // Display the photo URL if available
-                          return ClipOval(
-                            child: Image.network(
-                              snapshot.data!, // Photo URL from Firestore
-                              width: 220,
-                              height: 220,
-                              fit: BoxFit.cover,
-                            ),
-                          );
-                        } else {
-                          // If no data or URL is empty, show person icon
-                          return ClipOval(
-                            child: Icon(
-                              Icons.person, // Default icon if no photo URL
-                              size: 220,
-                              color: Colors.grey, // Icon color
-                            ),
-                          );
-                        }
-                      },
+                    // Use the photoURL from the state directly
+                    photoURL != null && photoURL!.isNotEmpty
+                        ? ClipOval(
+                      child: Image.network(
+                        photoURL!,  // Display the user's uploaded photo directly
+                        width: 220,
+                        height: 220,
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                        : ClipOval(
+                      child: Icon(
+                        Icons.person,  // Default icon if no photoURL
+                        size: 220,
+                        color: Colors.grey,  // Icon color
+                      ),
                     ),
 
                     Container(
@@ -279,37 +288,9 @@ import 'package:shared_preferences/shared_preferences.dart';
                           color: Colors.white,
                           size: 28,
                         ),
-                        onPressed: () async {
-                          // Pick an image from the gallery
-                          final XFile? image = await _imagePicker.pickImage(source: ImageSource.gallery);
-
-                          if (image != null) {
-                            // Upload image to Imgur
-                            try {
-                              String imageUrl = await uploadImageToImgur(image.path);
-                              // Optionally, do something with the uploaded image URL
-                              //print("Uploaded Image URL: $imageUrl");
-                              _firebaseDb.updatePhotoURL(_firebaseDb.getCurrentUserId(), imageUrl);
-
-                              // Handle the uploaded image URL, such as saving it or updating the UI
-                              setState(()  {
-                                _profileImage = File(image.path);  // Update the image to the selected one
-
-                              });
-                            } catch (e) {
-                              // Handle any errors
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Error uploading image: $e'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          }
-                        },
+                        onPressed: _pickImage,  // Call the function to pick and upload an image
                       ),
                     ),
-
                   ],
                 ),
               ),
@@ -330,61 +311,47 @@ import 'package:shared_preferences/shared_preferences.dart';
                         ),
                         hintText: firstName,
                       ),
-                      onChanged: (value) async {
-                        setState(() {
-                          firstName = value;
-                        });
-                        User? user = FirebaseAuth.instance.currentUser;
-                        if (user != null) {
-                          await _firestore.collection('users').doc(user.uid).update({'displayName': value});
-                        }
-                      },
 
                     ),
                   ),
                   IconButton(
                     icon: Icon(isFirstNameEditable ? Icons.check : Icons.edit),
                     onPressed: () async {
-                      // Check if we are in the "editable" state and want to update the user's display name
                       if (isFirstNameEditable) {
+                        // When done editing, save the new name and update Firebase
+                        final updatedName = NameController.text.trim();
+                        if (updatedName.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Name cannot be empty')),
+                          );
+                          return;
+                        }
+
                         try {
                           final user = FirebaseAuth.instance.currentUser;
-
                           if (user != null) {
-                            final updatedName = NameController.text.trim();
-
-                            // Ensure the name is not empty
-                            if (updatedName.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Name cannot be empty')),
-                              );
-                              return;
-                            }
-
-                            // Update the user's displayName in Firebase
+                            // Update displayName in Firebase Auth
                             await user.updateProfile(displayName: updatedName);
-
-                            // Reload the user to fetch the updated profile information
                             await user.reload();
                             final updatedUser = FirebaseAuth.instance.currentUser;
 
+                            // Optionally save the name to Firestore or your database here
+                            await _firestore.collection('users').doc(user.uid).update({
+                              'displayName': updatedName,
+                            });
+
                             // After updating, toggle edit mode
                             setState(() {
-                              isFirstNameEditable = !isFirstNameEditable;
+                              isFirstNameEditable = false; // Disable editing
+                              firstName = updatedName; // Update the UI with the new name
                             });
 
-                            // Optionally, display the updated name in the UI
-                            setState(() {
-                              // Update any state or UI with the new name if necessary
-                            });
-
-                            // Display success message
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text('Name updated successfully')),
                             );
                           }
                         } catch (e) {
-                          // Handle any errors that occur during the update process
+                          // Handle any errors
                           print('Error updating displayName: $e');
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text('Failed to update name')),
@@ -393,11 +360,13 @@ import 'package:shared_preferences/shared_preferences.dart';
                       } else {
                         // Toggle to edit mode if not editable
                         setState(() {
-                          isFirstNameEditable = !isFirstNameEditable;
+                          isFirstNameEditable = true;
                         });
                       }
                     },
-                  )
+                  ),
+
+
 
 
                 ],
@@ -498,10 +467,8 @@ import 'package:shared_preferences/shared_preferences.dart';
                                 shape: BoxShape.circle, // Makes the container circular
                               ),
                               child: ClipOval(
-                                child: (event['gifts'] != null &&
-                                    event['gifts'].isNotEmpty &&
-                                    event['gifts'][0]['photoURL'] != null &&
-                                    event['gifts'][0]['photoURL'].isNotEmpty)
+                                child: (event['gifts'] != null && event['gifts'].isNotEmpty &&
+                                    event['gifts'][0]['photoURL'] != null && event['gifts'][0]['photoURL'].isNotEmpty)
                                     ? Image.network(
                                   event['gifts'][0]['photoURL'], // Fetch the first gift's image URL
                                   fit: BoxFit.cover,
@@ -514,7 +481,8 @@ import 'package:shared_preferences/shared_preferences.dart';
                                   size: 70, // Icon size inside the circle
                                 ),
                               ),
-                            ),
+                            )
+
                           ],
                         ),
                       ),

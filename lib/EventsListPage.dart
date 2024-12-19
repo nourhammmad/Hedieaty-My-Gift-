@@ -23,6 +23,8 @@ class _EventsListPageState extends State<EventsListPage> {
   late Databaseclass _dbHelper;
   late bool online;
   String sortCriteria = 'Name';
+  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
+
 
   // Function to fetch events from Firestore
   Future<void> _loadEvents(String userId) async {
@@ -364,7 +366,20 @@ class _EventsListPageState extends State<EventsListPage> {
             ),
             const SizedBox(height: 10),
             events.isEmpty
-                ? const Center(child: Text('No events created yet.'))
+                ? Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.event_busy, // Use an icon that represents no events
+                      size: 200,
+                      color: Colors.indigo.shade100, // A subtle color for the icon
+                    ),
+                  ],
+                ),
+              ),
+            )
                 : Expanded(
               child: ListView.builder(
                 itemCount: events.length,

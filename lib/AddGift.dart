@@ -164,108 +164,110 @@ class _AddGiftState extends State<AddGift> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Center(
-              child: Stack(
-                alignment: Alignment.bottomRight,
-                children: [
-          CircleAvatar(
-          radius: 90,
-          backgroundColor: Colors.indigo.shade100,
-          child: _giftImage != null
-              ? ClipOval(
-            child: Image.file(
-              _giftImage!,
-              width: 160, // Match the CircleAvatar size
-              height: 160,
-              fit: BoxFit.cover,
-            ),
-          )
-              : Icon(
-            Icons.image_not_supported,
-            size: 80,
-            color: Colors.indigo.shade300,
-          ),
-        ),
-        InkWell(
-          onTap: _pickImage,
-          child: Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.indigo,
-            ),
-            child: const Icon(
-                Icons.add,
-                color: Colors.white,
-                size:40
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              Center(
+                child: Stack(
+                  alignment: Alignment.bottomRight,
+                  children: [
+            CircleAvatar(
+            radius: 90,
+            backgroundColor: Colors.indigo.shade100,
+            child: _giftImage != null
+                ? ClipOval(
+              child: Image.file(
+                _giftImage!,
+                width: 160, // Match the CircleAvatar size
+                height: 160,
+                fit: BoxFit.cover,
+              ),
+            )
+                : Icon(
+              Icons.image_not_supported,
+              size: 80,
+              color: Colors.indigo.shade300,
             ),
           ),
-        ),
-
-                ],
+          InkWell(
+            onTap: _pickImage,
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.indigo,
+              ),
+              child: const Icon(
+                  Icons.add,
+                  color: Colors.white,
+                  size:40
               ),
             ),
-            const SizedBox(height: 20),
-
-            DropdownButtonFormField<String>(
-              key: Key('eventDropdown'),  // Add the key here
-              value: selectedEventId,
-              hint: const Text('Select Event'),
-              items: events
-                  .where((event) => event['status'] != 'Past') // Filter out past events
-                  .map((event) {
-                return DropdownMenuItem<String>(
-                  value: event['eventId'],
-                  child: Text(event['title']),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  selectedEventId = value;
-                });
-              },
-            ),
-
-            const SizedBox(height: 20),
-
-            _buildTextField(
-
-              controller: titleController,
-              label: 'Gift Name', key: 'titleField',
-            ),
-            const SizedBox(height: 10),
-
-            _buildTextField(
-              controller: descriptionController,
-              label: 'Description',
-              maxLines: 3, key: 'descriptionField',
-            ),
-            const SizedBox(height: 10),
-
-            _buildTextField(
-              controller: categoryController,
-              label: 'Category (e.g., Electronics)', key: 'Category',
-            ),
-            const SizedBox(height: 10),
-
-            _buildTextField(
-              controller: priceController,
-              label: 'Price',
-              keyboardType: TextInputType.number, key: 'Price',
-            ),
-            const SizedBox(height: 20),
-
-
-            ElevatedButton(
-              key: Key('saveButton'),  // Add the key here
-              onPressed: _addGift,
-              child: const Text(
-                'Add Gift',
-                style: TextStyle(fontSize: 30,fontFamily: "Lobster",color: Colors.indigo),
+          ),
+          
+                  ],
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+          
+              DropdownButtonFormField<String>(
+                key: Key('eventDropdown'),  // Add the key here
+                value: selectedEventId,
+                hint: const Text('Select Event'),
+                items: events
+                    .where((event) => event['status'] != 'Past') // Filter out past events
+                    .map((event) {
+                  return DropdownMenuItem<String>(
+                    value: event['eventId'],
+                    child: Text(event['title']),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedEventId = value;
+                  });
+                },
+              ),
+          
+              const SizedBox(height: 20),
+          
+              _buildTextField(
+          
+                controller: titleController,
+                label: 'Gift Name', key: 'titleField',
+              ),
+              const SizedBox(height: 10),
+          
+              _buildTextField(
+                controller: descriptionController,
+                label: 'Description',
+                maxLines: 3, key: 'descriptionField',
+              ),
+              const SizedBox(height: 10),
+          
+              _buildTextField(
+                controller: categoryController,
+                label: 'Category (e.g., Electronics)', key: 'Category',
+              ),
+              const SizedBox(height: 10),
+          
+              _buildTextField(
+                controller: priceController,
+                label: 'Price',
+                keyboardType: TextInputType.number, key: 'Price',
+              ),
+              const SizedBox(height: 20),
+          
+          
+              ElevatedButton(
+                key: Key('saveButton'),  // Add the key here
+                onPressed: _addGift,
+                child: const Text(
+                  'Add Gift',
+                  style: TextStyle(fontSize: 30,fontFamily: "Lobster",color: Colors.indigo),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

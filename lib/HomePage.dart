@@ -12,7 +12,6 @@ import 'imgur.dart';
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
-
   @override
   State<HomePage> createState() => _HomePageState();
  }
@@ -26,40 +25,26 @@ class _HomePageState extends State<HomePage> {
   late String currentUserId;
   bool isLoading = true;
   bool isOnline = false;
-
   List<Map<String, String>> filteredFriends = []; // Filtered list for search results
 
   @override
     void initState()  {
       super.initState();
       key: Key('HomePage');  // Assign a key here
-
-      print("=======================DAKHALT EL HOME PAGE=====================");
       _dbHelper = Databaseclass();
       _firebaseDb=FirebaseDatabaseClass();
-
-      //currentUserId = FirebaseAuth.instance.currentUser!.uid;
       _dbHelper = Databaseclass();
       _loadFriendsList();
-
       _requestNotificationPermission();
-
     }
   void _requestNotificationPermission() async {
-    // Request permission for iOS devices
     FirebaseMessaging messaging = FirebaseMessaging.instance;
-
     NotificationSettings settings = await messaging.requestPermission();
-
-    // Check if permission is granted
-    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
       print("User granted permission for notifications.");
-      // If permission is granted, you can get the FCM token and store it.
-      String? token = await messaging.getToken();
-      print("FCM Token: $token");
-      _saveFcmTokenToFirestore(token!);
-      // Save token to your backend or Firestore here
-    } else {
+       String? token = await messaging.getToken();
+       _saveFcmTokenToFirestore(token!);
+     } else {
       print("User declined or has not accepted permission for notifications.");
     }
   }
@@ -69,106 +54,74 @@ class _HomePageState extends State<HomePage> {
       'fcmToken': token,
     });
   }
-
-
   Future<String?> fetchPhotoURL(String userId) async {
-    bool online = false; // Default value in case of failure
+    bool online = false;
     try {
-      var internetConnection = InternetConnection(); // Initialize safely
+      var internetConnection = InternetConnection();
       if (internetConnection != null) {
         online = await internetConnection.hasInternetAccess ?? false;
       }
     } catch (e) {
-      // Handle exceptions, such as if the method throws an error
-      print("Error checking internet connection: $e");
+       print("Error checking internet connection: $e");
     }
     if(!online)
       return '';
     try {
-      String? photoURL = await getPhotoURL(userId); // Fetch the URL using your function
-      return photoURL ?? ''; // Return empty string if photoURL is null
+      String? photoURL = await getPhotoURL(userId);
+      return photoURL ?? '';
     } catch (e) {
       print('Error fetching photo URL: $e');
-      return ''; // Return empty string if the fetch fails
+      return '';
     }
   }
-  Future<void> loadFriendsList() async {
-    return await _loadFriendsList();
-  }
   Future<void> _loadFriendsList() async {
-
-    // Check connectivity status
-    bool online = false; // Default value in case of failure
+    bool online = false;
     try {
       var internetConnection = InternetConnection(); // Initialize safely
       if (internetConnection != null) {
         online = await internetConnection.hasInternetAccess ?? false;
       }
     } catch (e) {
-      // Handle exceptions, such as if the method throws an error
-      print("Error checking internet connection: $e");
+       print("Error checking internet connection: $e");
     }
-    // If online, fetch from Firestore and update local database
-    if (online) {
+     if (online) {
       try {
         currentUserId = FirebaseAuth.instance.currentUser!.uid;
         print("Online, fetch from Firestore and update local database");
         DocumentSnapshot currentUserDoc = await FirebaseFirestore.instance.collection('friend_list').doc(currentUserId).get();
-
         if (currentUserDoc.exists) {
           List<dynamic> friendIds = currentUserDoc['friends'] ?? [];
           List<Future<void>> friendFetchTasks = [];
-
-          // Clear the current list of friends before adding new ones
           friends.clear();
           List<String> firestoreFriendIds = [];
-
           for (var friendId in friendIds) {
-
-            // Fetch user data for each friend
             friendFetchTasks.add(FirebaseFirestore.instance.collection('users').doc(friendId).get().then((doc) async {
               if (doc.exists) {
-                // Create friend data map
-                Map<String, String> friendData = {
+                 Map<String, String> friendData = {
                   'displayName': doc['displayName'],
                   'phoneNumber': doc['phoneNumber'],
                   'friendId': friendId,
                 };
-
-                // Add friend to the list (UI update)
-                friends.add(friendData);
-                firestoreFriendIds.add(friendData['friendId']!); // Track event IDs from Firestore
-
-                // Insert into local database for offline use
-                _dbHelper.insertFriend(currentUserId, friendData);  // Pass currentUserId to insertFriend
-
+                 friends.add(friendData);
+                firestoreFriendIds.add(friendData['friendId']!);
+                _dbHelper.insertFriend(currentUserId, friendData);
               }
-
             }));
           }
-          // Wait for all Firestore fetch tasks to complete
           await _dbHelper.deleteFriendsNotInFirestore(currentUserId, firestoreFriendIds);
-
           await Future.wait(friendFetchTasks);
           filteredFriends = List.from(friends);
-          // Once all friends are loaded, call setState to rebuild the UI
-          setState(() {});
+           setState(() {});
         }
       } catch (e) {
         print("Error fetching friends from Firestore: $e");
       }
     } else {
-      // If offline, load from local database
-      _loadFriendsFromLocalDatabase();
+       _loadFriendsFromLocalDatabase();
     }
   }
-
-
-
-// Load friends from local database when offline
-  Future<void> _loadFriendsFromLocalDatabase() async {
-    print("======================DALHALT BARDO-========");
-    try {
+   Future<void> _loadFriendsFromLocalDatabase() async {
+     try {
       print("Offline, fetching friends from local database");
       String? currentUserIdoff = await UserSession.getUserId();
       currentUserId=currentUserIdoff!;
@@ -176,15 +129,9 @@ class _HomePageState extends State<HomePage> {
         print("Error: currentUserId is null. Unable to load friends list.");
         return;
       }
-
       List<Map<String, Object?>> localFriends = await _dbHelper.getFriendsByUserId(currentUserIdoff!);
-
-      // Clear the existing list of friends before adding new ones
-      friends.clear();
-
+       friends.clear();
       for (var friendData in localFriends) {
-        // Add friend to the list (UI update)
-        // Ensure proper type casting from Object? to String
         friends.add({
           'friendId': friendData['friendId']?.toString() ?? '',
           'displayName': friendData['displayName']?.toString() ?? '',
@@ -192,28 +139,24 @@ class _HomePageState extends State<HomePage> {
         });
       }
       filteredFriends = List.from(friends);
-
-      // Update UI
       setState(() {});
     } catch (e) {
       print("Error loading friends from local database: $e");
     }
   }
-
-
   void _showAddFriendDialog(String currentUserId) {
     TextEditingController phoneNumberController = TextEditingController();
-
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: Center(
             child: Text("Add Friend",style: TextStyle(
-              fontSize: 35, // Adjust the font size as needed
-              fontFamily: "Lobster", // Optional: Adjust the font weight
-              color: Colors.indigo, // Optional: Adjust the text color
-            ),),
+              fontSize: 35,
+              fontFamily: "Lobster",
+              color: Colors.indigo,
+            ),
+            ),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -229,18 +172,15 @@ class _HomePageState extends State<HomePage> {
               onPressed: () async {
                 String phoneNumber = phoneNumberController.text.trim();
                 if (phoneNumber.isNotEmpty) {
-                  // Show a Snackbar while checking the user
-                  ScaffoldMessenger.of(context).showSnackBar(
+                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text("Checking user...")),
                   );
-
                   bool userExists = await _checkIfUserExistsByPhone(phoneNumber);
                   if (userExists) {
                     // Show a Snackbar while checking if friend is already in list
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text("Checking if already friends...")),
                     );
-
                     bool isAlreadyFriend = await _checkIfAlreadyFriend(currentUserId, phoneNumber);
                     if (isAlreadyFriend) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -248,48 +188,43 @@ class _HomePageState extends State<HomePage> {
                       );
                       Navigator.pop(context);  // Close the dialog
                     } else {
-                      // Show a Snackbar while adding the friend
-                      ScaffoldMessenger.of(context).showSnackBar(
+                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text("Adding friend...")),
                       );
-
                       _addFriendToFirestore(currentUserId, phoneNumber);
                       Navigator.pop(context);  // Close the dialog
-                      // Show success Snackbar
                       ScaffoldMessenger.of(context).showSnackBar(
-
                         SnackBar(content: Text("Friend added successfully!")),
                       );
                     }
                   } else {
                     print("No user found with this phone number.");
-                    // Show error Snackbar
-                    ScaffoldMessenger.of(context).showSnackBar(
+                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text("No user found with this phone number.")),
                     );
                   }
                 } else {
                   print("Phone number cannot be empty.");
-                  // Show error Snackbar
-                  ScaffoldMessenger.of(context).showSnackBar(
+                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text("Phone number cannot be empty.")),
                   );
                 }
               },
               child: Text("Add Friend" ,style: TextStyle(
-        fontSize: 26, // Adjust the font size as needed
-        fontFamily: "Lobster", // Optional: Adjust the font weight
-        color: Colors.indigo, // Optional: Adjust the text color
-        ),),
+        fontSize: 26,
+        fontFamily: "Lobster",
+        color: Colors.indigo,
+        ),
+              ),
             ),
             TextButton(
               onPressed: () {
-                Navigator.pop(context);  // Close the dialog without adding a friend
+                Navigator.pop(context);
               },
               child: Text("Cancel", style: TextStyle(
-        fontSize: 26, // Adjust the font size as needed
-        fontFamily: "Lobster", // Optional: Adjust the font weight
-        color: Colors.red, // Optional: Adjust the text color
+        fontSize: 26,
+        fontFamily: "Lobster",
+        color: Colors.red,
         ),),
             ),
           ],
@@ -301,42 +236,35 @@ class _HomePageState extends State<HomePage> {
   Future<bool> _checkIfUserExistsByPhone(String phoneNumber) async {
     try {
       QuerySnapshot snapshot = await FirebaseFirestore.instance
-          .collection('users')  // Assuming your users are stored in the 'users' collection
-          .where('phoneNumber', isEqualTo: phoneNumber)  // Query users by phone number field
+          .collection('users')
+          .where('phoneNumber', isEqualTo: phoneNumber)
           .get();
-
       if (snapshot.docs.isNotEmpty) {
-        return true;  // User with this phone number exists
+        return true;
       } else {
-        return false;  // No user with this phone number found
+        return false;
       }
     } catch (e) {
       print("Error checking phone number: $e");
       return false;
     }
   }
-
   Future<bool> _checkIfAlreadyFriend(String currentUserId, String friendPhoneNumber) async {
     try {
-      // Find the friendId using phone number
-      QuerySnapshot snapshot = await FirebaseFirestore.instance
+       QuerySnapshot snapshot = await FirebaseFirestore.instance
           .collection('users')
           .where('phoneNumber', isEqualTo: friendPhoneNumber)
           .get();
-
       if (snapshot.docs.isNotEmpty) {
         String friendId = snapshot.docs.first.id;  // Get the friend ID from the document
-
-        // Check if the friend is already in the current user's friend list
         DocumentSnapshot currentUserDoc = await FirebaseFirestore.instance.collection('friend_list').doc(currentUserId).get();
-
         if (currentUserDoc.exists) {
           List<dynamic> friendsList = currentUserDoc['friends'] ?? [];
           if (friendsList.contains(friendId)) {
-            return true;  // Friend already exists
+            return true;
           }
         }
-        return false;  // Friend does not exist in the list
+        return false;
       } else {
         print("No user found with this phone number.");
         return false;
@@ -349,34 +277,23 @@ class _HomePageState extends State<HomePage> {
 
   void _addFriendToFirestore(String currentUserId, String friendPhoneNumber) async {
     try {
-      // Reference to the user's friend list
       CollectionReference friendListRef = FirebaseFirestore.instance.collection('friend_list');
-
-      // Find the friendId using phone number
       QuerySnapshot snapshot = await FirebaseFirestore.instance
           .collection('users')
           .where('phoneNumber', isEqualTo: friendPhoneNumber)
           .get();
-
       if (snapshot.docs.isNotEmpty) {
         String friendId = snapshot.docs.first.id;  // Get the friend ID from the document
-
-        // Check if the friend list document for the current user exists
         DocumentSnapshot currentUserDoc = await friendListRef.doc(currentUserId).get();
-
         if (currentUserDoc.exists) {
-          // Update the friend's list for the current user
-          await friendListRef.doc(currentUserId).update({
+           await friendListRef.doc(currentUserId).update({
             'friends': FieldValue.arrayUnion([friendId]),
           });
         } else {
-          // If no document exists, create a new document with the friend's ID
-          await friendListRef.doc(currentUserId).set({
+           await friendListRef.doc(currentUserId).set({
             'friends': [friendId],
           });
         }
-
-        // Optionally, update the friend list for the friend as well
         DocumentSnapshot friendDoc = await friendListRef.doc(friendId).get();
         if (!friendDoc.exists) {
           await friendListRef.doc(friendId).set({
@@ -387,11 +304,8 @@ class _HomePageState extends State<HomePage> {
             'friends': FieldValue.arrayUnion([currentUserId]),
           });
         }
-
         print("Friend added successfully!");
-
-        // After adding the friend, reload the friends list
-        _loadFriendsList();  // Call _loadFriendsList() to refresh the UI
+        _loadFriendsList();
       } else {
         print("No user found with this phone number.");
         ScaffoldMessenger.of(context).showSnackBar(
@@ -419,8 +333,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: Key('HomePage'),  // Assign a key here
-      appBar: AppBar(
+       appBar: AppBar(
         backgroundColor: Colors.indigo.shade50,
         title: _isSearching
             ? AnimatedContainer(
@@ -440,7 +353,7 @@ class _HomePageState extends State<HomePage> {
                 child: TextField(
                   autofocus: true,
                   onChanged: (query) {
-                    _filterFriends(query); // Call the filtering function
+                    _filterFriends(query);
                   },
                   decoration: const InputDecoration(
                     hintText: 'Search friends',
@@ -517,9 +430,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-
       drawer: Drawer(
-
         backgroundColor: Colors.indigo.shade50,
         child: ListView(
           padding: EdgeInsets.zero,
@@ -536,7 +447,6 @@ class _HomePageState extends State<HomePage> {
               leading: Icon(Icons.event, color: Colors.indigo, size: 45),
               title: const Text(
                 key: Key('My Events'), // Added key here
-
                 'My Events',
                 style: TextStyle(
                     fontSize: 50,
@@ -569,7 +479,6 @@ class _HomePageState extends State<HomePage> {
                 // Navigate to the logout page or handle the logout functionality
                 await _firebaseDb.logout();
                 await UserSession.clearUserSession();
-
                 Navigator.pushNamed(context, '/Login'); // Example navigation
               },
             ),
@@ -578,18 +487,15 @@ class _HomePageState extends State<HomePage> {
       ),
       body: Stack(
         key: Key('HomePage'), // Added key here
-
         children: [
           Column(
             children: [
               GestureDetector(
                 key: Key('createEventButton'), // Added key here
-
                 onTapDown: (_) {
                   setState(() {
                     _isPressed = true;
                     Navigator.pushNamed(context,'/GiftOrEvent');
-
                   });
                 },
                 onTapUp: (_) {
@@ -611,8 +517,6 @@ class _HomePageState extends State<HomePage> {
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: Center(
-
-
                     child: Text(
                       'Create Your Own Event/List',
                       style: TextStyle(
@@ -633,20 +537,18 @@ class _HomePageState extends State<HomePage> {
                   itemBuilder: (context, index) {
                     final friend = friends[index];
                     return FutureBuilder<String?>(
-                      future: fetchPhotoURL(friend['friendId']!), // Fetch photo URL for each friend
+                      future: fetchPhotoURL(friend['friendId']!),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
-                          // While waiting for the photo URL, show a loading indicator
-                          return FriendListItem(
+                           return FriendListItem(
                             displayName: friend['displayName']!,
                             phoneNumber: friend['phoneNumber']!,
                             friendId: friend['friendId']!,
                             image: '', onFriendDeleted: null,
-                            currentUserId: currentUserId, // Pass an empty string or a placeholder image while loading
+                            currentUserId: currentUserId,
                           );
                         } else if (snapshot.hasError) {
-                          // Handle any errors that occur while fetching the photo URL
-                          return FriendListItem(
+                           return FriendListItem(
                             displayName: friend['displayName']!,
                             phoneNumber: friend['phoneNumber']!,
                             friendId: friend['friendId']!,
@@ -654,8 +556,7 @@ class _HomePageState extends State<HomePage> {
                             currentUserId: currentUserId,
                           );
                         } else if (snapshot.hasData) {
-                          // Successfully fetched the photo URL
-                          return FriendListItem(
+                           return FriendListItem(
                             displayName: friend['displayName']!,
                             phoneNumber: friend['phoneNumber']!,
                             friendId: friend['friendId']!,
@@ -663,8 +564,7 @@ class _HomePageState extends State<HomePage> {
                             currentUserId: currentUserId,
                           );
                         } else {
-                          // If no data is available, show a fallback
-                          return FriendListItem(
+                           return FriendListItem(
                             displayName: friend['displayName']!,
                             phoneNumber: friend['phoneNumber']!,
                             friendId: friend['friendId']!,
@@ -677,7 +577,6 @@ class _HomePageState extends State<HomePage> {
                   },
                 ),
               ),
-
             ],
           ),
           Positioned(
@@ -700,17 +599,13 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
-
-// Widget to display each friend with a fading image and info
 class FriendListItem extends StatelessWidget {
   final String displayName;
   final String phoneNumber;
-  final String? image; // image is nullable
+  final String? image;
   final String friendId;
   final dynamic onFriendDeleted;
-  final String currentUserId; // Add this field
-
-
+  final String currentUserId;
   const FriendListItem({
     Key? key,
     required this.displayName,
@@ -721,15 +616,14 @@ class FriendListItem extends StatelessWidget {
     required this.currentUserId,
   }) : super(key: key);
   Future<int> getEventCount(String userId) async {
-    bool online = false; // Default value in case of failure
+    bool online = false;
     try {
       var internetConnection = InternetConnection(); // Initialize safely
       if (internetConnection != null) {
         online = await internetConnection.hasInternetAccess ?? false;
       }
     } catch (e) {
-      // Handle exceptions, such as if the method throws an error
-      print("Error checking internet connection: $e");
+       print("Error checking internet connection: $e");
     }
     if (online) {
       try {
@@ -737,13 +631,9 @@ class FriendListItem extends StatelessWidget {
             .collection('users')
             .doc(userId)
             .get();
-
         if (userDoc.exists) {
-          // Cast the data to Map<String, dynamic>
-          final data = userDoc.data() as Map<String, dynamic>?;
-
+           final data = userDoc.data() as Map<String, dynamic>?;
           if (data != null) {
-            // Check if 'events_list' exists and is a List
             if (data['events_list'] is List) {
               final eventsList = data['events_list'] as List;
               return eventsList.length;
@@ -758,10 +648,9 @@ class FriendListItem extends StatelessWidget {
           print('Document does not exist');
           return 0;
         }
-
       } catch (e) {
         print('Error fetching event count: $e');
-        return 0; // Return 0 on error
+        return 0;
       }
     }else{
       return 0;
@@ -773,52 +662,45 @@ class FriendListItem extends StatelessWidget {
       await friendListRef.doc(currentUserId).update({
         'friends': FieldValue.arrayRemove([friendId]),
       });
-
       DocumentSnapshot friendDoc = await friendListRef.doc(friendId).get();
       if (friendDoc.exists) {
         await friendListRef.doc(friendId).update({
           'friends': FieldValue.arrayRemove([currentUserId]),
         });
       }
-
       print("Friend deleted successfully!");
-      onFriendDeleted(); // Trigger callback
+      onFriendDeleted();
     } catch (e) {
       print("Error deleting friend: $e");
 
     }
   }
-
-
-
   @override
   Widget build(BuildContext context) {
-    // Safe handling for nullable image
-    final String imageUrl = image?.isNotEmpty == true ? image! : ''; // If image is null or empty, fallback to empty string
+    final String imageUrl = image?.isNotEmpty == true ? image! : '';
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 1.0, horizontal: 10.0),
       child: Row(
         children: [
-          // Profile Image or fallback icon
-          Container(
+           Container(
             width: 100,
             height: 100,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
-              color: imageUrl.isEmpty ? Colors.indigo.shade100 : null, // Background color if no image
+              color: imageUrl.isEmpty ? Colors.indigo.shade100 : null,
               image: imageUrl.isNotEmpty
                   ? DecorationImage(
-                image: NetworkImage(imageUrl), // Assuming image is a URL
+                image: NetworkImage(imageUrl),
                 fit: BoxFit.cover,
               )
-                  : null, // No image, so no background image
+                  : null,
             ),
             child: imageUrl.isEmpty
                 ? const Center(
               child: Icon(
                 Icons.account_circle,
                 size: 60,
-                color: Colors.indigo, // Default icon color
+                color: Colors.indigo,
               ),
             )
                 : Container(
@@ -836,12 +718,10 @@ class FriendListItem extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 16),
-          // Friend Info
-          Expanded(
+           Expanded(
             child: GestureDetector(
               onTap: () {
-                // Navigate to Friend's Gift List
-                Navigator.push(
+                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => FriendsEvent(userId:friendId,userName: displayName ),
@@ -853,7 +733,7 @@ class FriendListItem extends StatelessWidget {
                 children: [
                   Text(
                     displayName,
-                    key: Key('$displayName'),  // Unique key for each friend
+                    key: Key('$displayName'),
                     style: const TextStyle(
                       fontSize: 30,
                       fontWeight: FontWeight.bold,
@@ -872,11 +752,10 @@ class FriendListItem extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   FutureBuilder<int>(
-                    future: getEventCount(friendId), // Ensure friendId is not null
+                    future: getEventCount(friendId),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        // Show a loading indicator while fetching data
-                        return const Text(
+                         return const Text(
                           "Loading events...",
                           style: TextStyle(
                             fontSize: 19,
@@ -885,8 +764,7 @@ class FriendListItem extends StatelessWidget {
                           ),
                         );
                       } else if (snapshot.hasError) {
-                        // Show an error message if something goes wrong
-                        return const Text(
+                         return const Text(
                           "Error loading events",
                           style: TextStyle(
                             fontSize: 19,
@@ -895,8 +773,7 @@ class FriendListItem extends StatelessWidget {
                           ),
                         );
                       } else if (!snapshot.hasData || snapshot.data == 0) {
-                        // Handle case when data is null or empty
-                        return const Text(
+                         return const Text(
                           "No Upcoming events",
                           style: TextStyle(
                             fontSize: 22,
@@ -905,8 +782,7 @@ class FriendListItem extends StatelessWidget {
                           ),
                         );
                       } else {
-                        // Successfully loaded event count
-                        return Text(
+                         return Text(
                           "Events: ${snapshot.data}",
                           style: const TextStyle(
                             fontSize: 22,
@@ -917,13 +793,10 @@ class FriendListItem extends StatelessWidget {
                       }
                     },
                   )
-
-
                 ],
               ),
             ),
           ),
-          // Delete Icon Button
           IconButton(
             icon: const Icon(Icons.delete, color: Colors.red),
             onPressed: () {

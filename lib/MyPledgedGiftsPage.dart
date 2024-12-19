@@ -320,7 +320,20 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
             const SizedBox(height: 16), // Space between heading and list
             Expanded(
               child: pledgedGifts.isEmpty
-                  ? const Center(child: Text('No pledged gifts yet!', style: TextStyle(fontSize: 20)))
+                  ? Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.card_giftcard, // Use an icon that represents no events
+                        size: 200,
+                        color: Colors.indigo.shade100, // A subtle color for the icon
+                      ),
+                    ],
+                  ),
+                ),
+              )
                   : GridView.builder(
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2, // Two gifts per row

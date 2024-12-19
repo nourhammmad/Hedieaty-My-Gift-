@@ -122,7 +122,7 @@ class _AddEventState extends State<AddEvent> {
               'description': description,
               'status': eventStatus,
               'type': eventType,
-              'photoURL': photoUrl, // Retain old photo URL if no new image
+              'photoURL': photoUrl == null || photoUrl.isEmpty ? null : photoUrl, // Set to null if empty
               'gifts': eventsList[eventIndex]['gifts'],
               'dueTo':dueTo// Retain existing gifts
             };
@@ -270,147 +270,149 @@ class _AddEventState extends State<AddEvent> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Profile image and plus icon
-            Center(
-              child: Stack(
-                alignment: Alignment.bottomRight,
-                children: [
-                  CircleAvatar(
-                    radius: 90,
-                    backgroundColor: Colors.indigo.shade100,
-                    child: _eventImage != null
-                        ? ClipOval(
-                      child: Image.file(
-                        _eventImage!,
-                        width: 160,
-                        height: 160,
-                        fit: BoxFit.cover,
-                      ),
-                    )
-                        : (widget.imageUrl != null && widget.imageUrl!.isNotEmpty)
-                        ? ClipOval(
-                      child: Image.network(
-                        widget.imageUrl!,
-                        width: 160,
-                        height: 160,
-                        fit: BoxFit.cover,
-                      ),
-                    )
-                        : Icon(
-                      Icons.image_not_supported,
-                      size: 80,
-                      color: Colors.indigo.shade300,
-                    ),
-                  ),
-
-                  InkWell(
-                    key: const Key('addImageButton'), // Add a unique key here
-                    onTap: _pickImage,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.indigo,
-                      ),
-                      child: const Icon(
-                          Icons.add,
-                          color: Colors.white,
-                          size:40
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // Profile image and plus icon
+              Center(
+                child: Stack(
+                  alignment: Alignment.bottomRight,
+                  children: [
+                    CircleAvatar(
+                      radius: 90,
+                      backgroundColor: Colors.indigo.shade100,
+                      child: _eventImage != null
+                          ? ClipOval(
+                        child: Image.file(
+                          _eventImage!,
+                          width: 160,
+                          height: 160,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                          : (widget.imageUrl != null && widget.imageUrl!.isNotEmpty)
+                          ? ClipOval(
+                        child: Image.network(
+                          widget.imageUrl!,
+                          width: 160,
+                          height: 160,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                          : Icon(
+                        Icons.image_not_supported,
+                        size: 80,
+                        color: Colors.indigo.shade300,
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Event Name Field
-            _buildTextField(
-              key: 'titleField',  // Assign a key here
-
-              controller: titleController,
-              label: 'Event Name', keyboardType: TextInputType.text,
-            ),
-            const SizedBox(height: 10),
-
-            // Description Field
-            _buildTextField(
-              key: 'descriptionField',  // Assign a key here
-
-              controller: descriptionController,
-              label: 'Description',
-              maxLines: 3, keyboardType: TextInputType.text,
-            ),
-            const SizedBox(height: 10),
-            GestureDetector(
-              onTap: () => !isPastStatus ? _selectDueDate(context) : null,
-              child: AbsorbPointer(
-                child: _buildTextField(
-                  key: 'dueDateField',  // Assign a key here
-
-                  controller: dueToController,
-                  label: 'Due To',
-                  keyboardType: TextInputType.datetime,
-                  enabled: !isPastStatus,
-
+          
+                    InkWell(
+                      key: const Key('addImageButton'), // Add a unique key here
+                      onTap: _pickImage,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.indigo,
+                        ),
+                        child: const Icon(
+                            Icons.add,
+                            color: Colors.white,
+                            size:40
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-            const SizedBox(height: 10),
-
-            // Event Status Dropdown
-            DropdownButton<String>(
-              value: eventStatus,
-              onChanged: (String? newValue) {
-                setState(() {
-                  eventStatus = newValue!;
-                  isPastStatus = eventStatus == 'Past';
-                  // If status is 'Past', set dueTo to "Not Applicable"
-                  dueToController.text = isPastStatus ? 'Not Applicable' : dueToController.text;
-                });
-              },
-              items: <String>['Past', 'Upcoming','Current']
-                  .map<DropdownMenuItem<String>>((String value) {
-                return DropdownMenuItem<String>(value: value, child: Text(value));
-              }).toList(),
-              hint: Text('Select Status'),
-            ),
-            const SizedBox(height: 10),
-
-            // Event Type Dropdown
-            DropdownButton<String>(
-              value: eventType,
-              onChanged: (String? newValue) {
-                setState(() {
-                  eventType = newValue!;
-                });
-              },
-              items: <String>['Birthday', 'Wedding Anniversary', 'Graduation']
-                  .map<DropdownMenuItem<String>>((String value) {
-                return DropdownMenuItem<String>(value: value, child: Text(value));
-              }).toList(),
-              hint: Text('Select Event Type'),
-            ),
-            const SizedBox(height: 10),
-
-            // Submit Button
-            ElevatedButton(
-              key: Key('saveButton'),  // Assign a key here
-
-              onPressed: isPledged
-                  ? null
-                  : () {
-                _saveEvent(); // Add event to Firestore
-              },
-              child: Text(
-                isEditMode ? 'Update Event' : 'Add Event',
-
-                style: const TextStyle(fontSize: 30, fontFamily: "Lobster", color: Colors.indigo),
+          
+              const SizedBox(height: 20),
+          
+              // Event Name Field
+              _buildTextField(
+                key: 'titleField',  // Assign a key here
+          
+                controller: titleController,
+                label: 'Event Name', keyboardType: TextInputType.text,
               ),
-            ),
-          ],
+              const SizedBox(height: 10),
+          
+              // Description Field
+              _buildTextField(
+                key: 'descriptionField',  // Assign a key here
+          
+                controller: descriptionController,
+                label: 'Description',
+                maxLines: 3, keyboardType: TextInputType.text,
+              ),
+              const SizedBox(height: 10),
+              GestureDetector(
+                onTap: () => !isPastStatus ? _selectDueDate(context) : null,
+                child: AbsorbPointer(
+                  child: _buildTextField(
+                    key: 'dueDateField',  // Assign a key here
+          
+                    controller: dueToController,
+                    label: 'Due To',
+                    keyboardType: TextInputType.datetime,
+                    enabled: !isPastStatus,
+          
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+          
+              // Event Status Dropdown
+              DropdownButton<String>(
+                value: eventStatus,
+                onChanged: (String? newValue) {
+                  setState(() {
+                    eventStatus = newValue!;
+                    isPastStatus = eventStatus == 'Past';
+                    // If status is 'Past', set dueTo to "Not Applicable"
+                    dueToController.text = isPastStatus ? 'Not Applicable' : dueToController.text;
+                  });
+                },
+                items: <String>['Past', 'Upcoming','Current']
+                    .map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(value: value, child: Text(value));
+                }).toList(),
+                hint: Text('Select Status'),
+              ),
+              const SizedBox(height: 10),
+          
+              // Event Type Dropdown
+              DropdownButton<String>(
+                value: eventType,
+                onChanged: (String? newValue) {
+                  setState(() {
+                    eventType = newValue!;
+                  });
+                },
+                items: <String>['Birthday', 'Wedding Anniversary', 'Graduation']
+                    .map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(value: value, child: Text(value));
+                }).toList(),
+                hint: Text('Select Event Type'),
+              ),
+              const SizedBox(height: 10),
+          
+              // Submit Button
+              ElevatedButton(
+                key: Key('saveButton'),  // Assign a key here
+          
+                onPressed: isPledged
+                    ? null
+                    : () {
+                  _saveEvent(); // Add event to Firestore
+                },
+                child: Text(
+                  isEditMode ? 'Update Event' : 'Add Event',
+          
+                  style: const TextStyle(fontSize: 30, fontFamily: "Lobster", color: Colors.indigo),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

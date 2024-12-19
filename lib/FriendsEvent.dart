@@ -21,6 +21,7 @@ class FriendsEvent extends StatefulWidget {
 class _FriendsEventState extends State<FriendsEvent> {
   // List to store events fetched from Firestore
   List<Map<String, dynamic>> events = [];
+  bool _isLoading = true;
 
   // Sorting criteria
   String sortCriteria = 'Name';
@@ -32,12 +33,23 @@ class _FriendsEventState extends State<FriendsEvent> {
     try {
       final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+      // Fetch user document
       DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
 
       if (userDoc.exists) {
+        // Get the list of events or an empty list
         List<dynamic> eventsList = userDoc['events_list'] ?? [];
 
-        // Fetch the event images asynchronously
+        // Handle case where there are no events
+        if (eventsList.isEmpty) {
+          setState(() {
+            _isLoading = false;
+            events = []; // Clear events
+          });
+          return; // Exit early
+        }
+
+        // Fetch event images asynchronously
         List<Map<String, dynamic>> updatedEvents = [];
         for (var event in eventsList) {
           String photoURL = await _fetchEventImage(event['eventId']);
@@ -51,13 +63,26 @@ class _FriendsEventState extends State<FriendsEvent> {
             'type': event['type'],
           });
         }
-        setState(() {
 
+        // Update state with fetched events
+        setState(() {
+          _isLoading = false;
           events = updatedEvents;
+        });
+      } else {
+        // User document doesn't exist
+        setState(() {
+          _isLoading = false;
+          events = []; // No events to display
         });
       }
     } catch (e) {
+      // Handle errors and update state
       print("Error loading events: $e");
+      setState(() {
+        _isLoading = false;
+        events = []; // Clear events on error
+      });
     }
   }
 
@@ -90,90 +115,6 @@ class _FriendsEventState extends State<FriendsEvent> {
     return '';  // Return an empty string if image fetching fails
   }
 
-
-
-  // Function to show a confirmation dialog before deleting an event
-  void _showDeleteConfirmationDialog(String eventId) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Delete Event',
-              style: TextStyle(fontSize: 25, color: Colors.red)),
-          content: const Text('Are you sure you want to delete this event?',
-              style: TextStyle(fontSize: 28)),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context)
-                    .pop(); // Close the dialog without doing anything
-              },
-              child: const Text('Cancel', style: TextStyle(fontSize: 25)),
-            ),
-            TextButton(
-              onPressed: () {
-                _deleteEvent(eventId);
-                Navigator.of(context).pop(); // Close the dialog after deletion
-              },
-              child: const Text(
-                  'Delete', style: TextStyle(color: Colors.red, fontSize: 25)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  // Function to delete an event
-  void _deleteEvent(String eventId) async {
-    final FirebaseAuth _auth = FirebaseAuth.instance;
-    final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-    User? user = _auth.currentUser;
-    if (user != null) {
-      try {
-        String userId = user.uid;
-
-        // Reference to the user's document in Firestore
-        DocumentReference userDocRef = _firestore.collection('users').doc(
-            userId);
-
-        // Find the index of the event in the list based on eventId
-        int eventIndex = events.indexWhere((event) =>
-        event['eventId'] == eventId);
-
-        if (eventIndex != -1) {
-          // Debugging: Print out eventId to confirm
-          print(
-              "Attempting to delete event with ID: $eventId at index $eventIndex");
-
-          // Get the event to delete (from the found index)
-          var eventToDelete = events[eventIndex];
-          print("================================$eventToDelete");
-          // Remove the event from the events_list in Firestore based on its index
-          await userDocRef.update({
-            'events_list': FieldValue.arrayRemove([eventToDelete]),
-          }).then((_) {
-            print("Event deleted successfully from Firestore.");
-
-            // Remove the event from the UI (locally)
-            setState(() {
-              events.removeAt(eventIndex); // Remove event based on its index
-            });
-          }).catchError((error) {
-            print("Error deleting event from Firestore: $error");
-          });
-        } else {
-          print("Event with ID $eventId not found in local events.");
-        }
-      } catch (e) {
-        print("Error deleting event: $e");
-      }
-    } else {
-      print("No user is currently logged in.");
-    }
-  }
-
   // Function to sort events
   void _sortEvents() {
     switch (sortCriteria) {
@@ -197,10 +138,8 @@ class _FriendsEventState extends State<FriendsEvent> {
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
     _sortEvents(); // Sort events whenever the build method is called
-
     return Scaffold(
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Colors.indigo),
@@ -226,11 +165,9 @@ class _FriendsEventState extends State<FriendsEvent> {
             Icon(Icons.card_giftcard, color: Colors.indigo, size: 25),
           ],
         ),
-
-
-
       ),
-      body: Padding(
+      body:  _isLoading?const Center(child: CircularProgressIndicator())
+      :Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
@@ -264,7 +201,20 @@ class _FriendsEventState extends State<FriendsEvent> {
             ),
             const SizedBox(height: 10),
             events.isEmpty
-                ? const Center(child: Text('No events created yet.'))
+                  ?  Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.event_busy, // Use an icon that represents no events
+                      size: 200,
+                      color: Colors.indigo.shade100, // A subtle color for the icon
+                    ),
+                  ],
+                ),
+              ),
+            )
                 : Expanded(
               child: ListView.builder(
                 itemCount: events.length,
@@ -340,23 +290,6 @@ class _FriendsEventState extends State<FriendsEvent> {
                               ],
                             ),
                           ),
-                          // Row(
-                          //   mainAxisAlignment: MainAxisAlignment.end,
-                          //   children: [
-                          //     IconButton(
-                          //       icon: const Icon(Icons.edit, color: Colors.green, size: 30),
-                          //       onPressed: () {
-                          //         Navigator.pushNamed(context, '/EditEvent', arguments: event);
-                          //       },
-                          //     ),
-                          //     IconButton(
-                          //       icon: const Icon(Icons.delete, color: Colors.red, size: 30),
-                          //       onPressed: () {
-                          //         _showDeleteConfirmationDialog(event['eventId']);
-                          //       },
-                          //     ),
-                          //   ],
-                          // ),
                         ],
                       ),
                     ),

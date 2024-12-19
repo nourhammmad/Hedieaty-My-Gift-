@@ -188,7 +188,7 @@ class _MyAppState extends State<MyApp> {
                   right: 0,
                   child: Container(
                     color: Colors.indigo,
-                    padding: const EdgeInsets.all(15.0),
+                    padding: const EdgeInsets.all(20.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [

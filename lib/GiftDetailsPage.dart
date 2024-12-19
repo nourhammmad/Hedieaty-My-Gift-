@@ -92,7 +92,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
         'description': description,
         'category': category,
         'price': price,
-        'photoURL': photoUrl,
+        'photoURL': photoUrl == null || photoUrl.isEmpty ? null : photoUrl, // Set to null if empty
         'status': isPledged ? 'Pledged' : 'Available', // Update status based on isPledged
       };
 
@@ -196,138 +196,140 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Stack for profile image and plus icon
-            Center(
-              child: Stack(
-                alignment: Alignment.bottomRight,
-                children: [
-                  CircleAvatar(
-                    radius: 90,
-                    backgroundColor: Colors.indigo.shade100,
-                    child: _giftImage != null
-                        ? ClipOval(
-                      child: Image.file(
-                        _giftImage!,
-                        width: 160,
-                        height: 160,
-                        fit: BoxFit.cover,
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // Stack for profile image and plus icon
+              Center(
+                child: Stack(
+                  alignment: Alignment.bottomRight,
+                  children: [
+                    CircleAvatar(
+                      radius: 90,
+                      backgroundColor: Colors.indigo.shade100,
+                      child: _giftImage != null
+                          ? ClipOval(
+                        child: Image.file(
+                          _giftImage!,
+                          width: 160,
+                          height: 160,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                          : widget.image != ''
+                          ? ClipOval(
+                        child: Image.network(
+                          widget.image!,
+                          width: 160,
+                          height: 160,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                          : Icon(
+                        Icons.image_not_supported,
+                        size: 80,
+                        color: Colors.indigo.shade300,
                       ),
-                    )
-                        : widget.image != ''
-                        ? ClipOval(
-                      child: Image.network(
-                        widget.image!,
-                        width: 160,
-                        height: 160,
-                        fit: BoxFit.cover,
-                      ),
-                    )
-                        : Icon(
-                      Icons.image_not_supported,
-                      size: 80,
-                      color: Colors.indigo.shade300,
+          
                     ),
-
-                  ),
-        InkWell(
-          onTap: _pickImage,
-          child: Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.indigo,
-            ),
-            child: const Icon(
-                Icons.add,
-                color: Colors.white,
-                size:40
+          InkWell(
+            onTap: _pickImage,
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.indigo,
+              ),
+              child: const Icon(
+                  Icons.add,
+                  color: Colors.white,
+                  size:40
+              ),
             ),
           ),
-        ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+          
+              // Status Toggle
+              Row(
+                children: [
+                  const Text("Status:", style: TextStyle(fontFamily: "Lobster", color: Colors.indigo, fontSize: 25)),
+                  Switch(
+                    value: isPledged,
+                    onChanged: (value) {
+                      setState(() {
+                        isPledged = value; // Update the status
+                      });
+                    },
+                    activeColor: Colors.indigo,
+                  ),
+                  const Text("Pledged", style: TextStyle(fontFamily: "Lobster", color: Colors.indigo, fontSize: 25)),
                 ],
               ),
-            ),
-            const SizedBox(height: 20),
-
-            // Status Toggle
-            Row(
-              children: [
-                const Text("Status:", style: TextStyle(fontFamily: "Lobster", color: Colors.indigo, fontSize: 25)),
-                Switch(
-                  value: isPledged,
-                  onChanged: (value) {
-                    setState(() {
-                      isPledged = value; // Update the status
-                    });
-                  },
-                  activeColor: Colors.indigo,
-                ),
-                const Text("Pledged", style: TextStyle(fontFamily: "Lobster", color: Colors.indigo, fontSize: 25)),
-              ],
-            ),
-            const SizedBox(height: 20),
-
-            // Gift Name Field
-            _buildTextField(
-              controller: titleController,
-              label: 'Gift Name',
-              enabled: !isPledged, // Disable if pledged
-            ),
-            const SizedBox(height: 10),
-
-            // Description Field
-            _buildTextField(
-              controller: descriptionController,
-              label: 'Description',
-              maxLines: 3,
-              enabled: !isPledged, // Disable if pledged
-            ),
-            const SizedBox(height: 10),
-
-            // Category Field
-            _buildTextField(
-              controller: categoryController,
-              label: 'Category (e.g., Electronics, Books)',
-              enabled: !isPledged, // Disable if pledged
-            ),
-            const SizedBox(height: 10),
-
-            // Price Field
-            _buildTextField(
-              controller: priceController,
-              label: 'Price',
-              prefixText: '\$', // Adds a dollar sign
-              enabled: !isPledged, // Disable if pledged
-            ),
-            const SizedBox(height: 20),
-
-
-            // Submit Button
-            Container(
-              child: ElevatedButton(
-                onPressed:  () {
-                  // Handle the submission logic here
-                  String title = titleController.text;
-                  String description = descriptionController.text;
-                  String category = categoryController.text;
-                  String price = priceController.text;
-
-
-                  updateGiftDetails(
-                    isPledged: isPledged,
-                    title: title,
-                    description: description,
-                    category: category,
-                    price: price,
-                  );                },
-                child: const Text(
-                  'Save Gift Details',
-                  style: TextStyle(fontSize: 30, fontFamily: "Lobster", color: Colors.indigo),
+              const SizedBox(height: 20),
+          
+              // Gift Name Field
+              _buildTextField(
+                controller: titleController,
+                label: 'Gift Name',
+                enabled: !isPledged, // Disable if pledged
+              ),
+              const SizedBox(height: 10),
+          
+              // Description Field
+              _buildTextField(
+                controller: descriptionController,
+                label: 'Description',
+                maxLines: 3,
+                enabled: !isPledged, // Disable if pledged
+              ),
+              const SizedBox(height: 10),
+          
+              // Category Field
+              _buildTextField(
+                controller: categoryController,
+                label: 'Category (e.g., Electronics, Books)',
+                enabled: !isPledged, // Disable if pledged
+              ),
+              const SizedBox(height: 10),
+          
+              // Price Field
+              _buildTextField(
+                controller: priceController,
+                label: 'Price',
+                prefixText: '\$', // Adds a dollar sign
+                enabled: !isPledged, // Disable if pledged
+              ),
+              const SizedBox(height: 20),
+          
+          
+              // Submit Button
+              Container(
+                child: ElevatedButton(
+                  onPressed:  () {
+                    // Handle the submission logic here
+                    String title = titleController.text;
+                    String description = descriptionController.text;
+                    String category = categoryController.text;
+                    String price = priceController.text;
+          
+          
+                    updateGiftDetails(
+                      isPledged: isPledged,
+                      title: title,
+                      description: description,
+                      category: category,
+                      price: price,
+                    );                },
+                  child: const Text(
+                    'Save Gift Details',
+                    style: TextStyle(fontSize: 30, fontFamily: "Lobster", color: Colors.indigo),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
