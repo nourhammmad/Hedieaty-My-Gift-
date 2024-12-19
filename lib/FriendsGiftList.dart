@@ -347,8 +347,21 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
             const SizedBox(height: 10),
             isLoading
                 ? const Center(child: CircularProgressIndicator()) // Show loading indicator
-                : gifts.isEmpty
-                ? const Center(child: Text('No gifts available.')) // Show no gifts message
+                : gifts.isEmpty?
+                    Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.card_giftcard, // Use an icon that represents no events
+                      size: 200,
+                      color: Colors.indigo.shade100, // A subtle color for the icon
+                    ),
+                  ],
+                ),
+              ),
+            )  // Show no gifts message
                 : Expanded(
               child: ListView.builder(
                 itemCount: gifts.length,
