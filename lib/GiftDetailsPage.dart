@@ -87,6 +87,8 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
 
       // Prepare the updated gift data
       Map<String, dynamic> updatedGiftData = {
+        'createdBy':userId,
+        'eventId': widget.eventId,
         'giftId': widget.id, // Using the passed giftId
         'title': title,
         'description': description,
@@ -125,6 +127,11 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
               if (currentGift.containsKey('dueTo')) {
                 updatedGiftData['dueTo'] = currentGift['dueTo'];
               }
+              // Preserve the 'PledgedBy' value if it exists
+              if (currentGift.containsKey('PledgedBy')) {
+                updatedGiftData['PledgedBy'] = currentGift['PledgedBy'];
+              }
+
 
               // Update the gift in the list
               if (isPledged) {

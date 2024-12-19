@@ -214,7 +214,7 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
                 for (var gift in giftsList) {
                   if (gift['giftId'] == giftId) {
                     // Update the pledgerId field to null
-                    gift['pledgedBy'] = null;
+                    gift['PledgedBy'] = null;
                     gift['status'] = "A"
                         ""
                         "vailable";
