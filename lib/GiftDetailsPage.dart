@@ -41,55 +41,43 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController categoryController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
-
   File? _giftImage;
   final ImagePicker _imagePicker = ImagePicker();
-
-  bool isPledged = false; // Track whether the gift is pledged
+  bool isPledged = false;
 
   @override
-
   void initState() {
     super.initState();
-    // Initialize the controllers with the passed values
-    titleController.text = widget.giftName;
+     titleController.text = widget.giftName;
     descriptionController.text = widget.description;
     categoryController.text = widget.category;
     priceController.text = widget.price.toString();
-
-
-    // Set the pledged status based on the passed status
     isPledged = widget.status== 'Pledged';
   }
+
   void updateGiftDetails({
     required bool isPledged,
     required String title,
     required String description,
     required String category,
     required String price,
-  }) async {
+  }) async
+  {
     final FirebaseFirestore _firestore = FirebaseFirestore.instance;
     final FirebaseAuth _auth = FirebaseAuth.instance;
     String? photoUrl;
-
     if (_giftImage != null) {
-      // Upload image to Imgur and get the URL
-      photoUrl = await uploadImageToImgur(_giftImage!.path);
+       photoUrl = await uploadImageToImgur(_giftImage!.path);
     } else {
-      // Retain the existing image URL if no new image is selected
-      photoUrl = widget.image;
+       photoUrl = widget.image;
     }
-
-    // Get current user ID
     User? user = _auth.currentUser;
     if (user != null) {
       String userId = user.uid;
-
-      // Prepare the updated gift data
       Map<String, dynamic> updatedGiftData = {
         'createdBy': userId,
         'eventId': widget.eventId,
-        'giftId': widget.id, // Using the passed giftId
+        'giftId': widget.id,
         'title': title,
         'description': description,
         'category': category,
@@ -99,15 +87,10 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
       };
 
       try {
-        // Reference to the user's collection
-        DocumentReference userDocRef = _firestore.collection('users').doc(userId);
-
-        // Retrieve the user's events_list
+         DocumentReference userDocRef = _firestore.collection('users').doc(userId);
         DocumentSnapshot userSnapshot = await userDocRef.get();
         if (userSnapshot.exists) {
           List<dynamic> eventsList = userSnapshot['events_list'];
-
-          // Find the event with the given eventId
           var event = eventsList.firstWhere(
                 (event) => event['eventId'] == widget.eventId,
             orElse: () => null,
@@ -115,54 +98,36 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
 
           if (event != null) {
             List<dynamic> giftsList = event['gifts'] ?? [];
-
-            // Find the gift within the event using giftId
             var giftIndex = giftsList.indexWhere((gift) => gift['giftId'] == widget.id);
-
             if (giftIndex != -1) {
-              // Retrieve the existing gift to retain 'dueTo' and 'PledgedBy' values
               var currentGift = giftsList[giftIndex];
-
-              // Preserve 'dueTo' and 'PledgedBy' values if they exist
               if (currentGift.containsKey('dueTo')) {
                 updatedGiftData['dueTo'] = currentGift['dueTo'];
               }
               if (currentGift.containsKey('PledgedBy')) {
                 updatedGiftData['PledgedBy'] = currentGift['PledgedBy'];
               }
-
-              // Update the gift in the list
               if (isPledged) {
-                // If pledged, update only the status
                 giftsList[giftIndex]['status'] = 'Pledged';
               } else {
-                // Otherwise, update all gift details
                 giftsList[giftIndex] = updatedGiftData;
               }
-
-              // Update the events_list with the modified gifts list
               await userDocRef.update({
                 'events_list': eventsList,
               });
-
-              // Show success message
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gift updated successfully!')));
               Navigator.pop(context, 'reload');
             } else {
-              // Gift not found
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gift not found in this event.')));
             }
           } else {
-            // Event not found
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Event not found.')));
           }
         } else {
-          // User not found
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('User not found.')));
+           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('User not found.')));
         }
       } catch (e) {
-        // Handle errors
-        print("Error updating gift: $e");
+         print("Error updating gift: $e");
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('An error occurred while updating the gift.')));
       }
     }
@@ -176,6 +141,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
       });
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

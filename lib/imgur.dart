@@ -21,11 +21,10 @@ Future<String?> getPhotoURL(String userId) async {
   }
 }
 Future<String> uploadImageToImgur(String imagePath) async {
-  final String clientId = 'f9d1ca87570ca34'; // Replace with your Client ID
+  final String clientId = 'f9d1ca87570ca34';
   final Uri url = Uri.parse('https://api.imgur.com/3/image');
   final imageBytes = File(imagePath).readAsBytesSync();
   final base64Image = base64Encode(imageBytes);
-
   try {
     final response = await http.post(
       url,

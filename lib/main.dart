@@ -9,8 +9,7 @@ import 'MyPledgedGiftsPage.dart';
 import 'EventsListPage.dart';
 import 'GiftListPage.dart';
 import 'GiftDetailsPage.dart';
-import 'EventDetailsPage.dart';
-import 'AddEvent.dart';
+ import 'AddEvent.dart';
 import 'GiftOrEvent.dart';
 import 'AddGift.dart';
 import 'LoginPage.dart';
@@ -55,10 +54,10 @@ void main() async {
 
 void _createNotificationChannel() async {
   const AndroidNotificationChannel channel = AndroidNotificationChannel(
-    'default_channel_id', // Channel ID
-    'Default', // Channel Name
-    description: 'Default notification channel', // Channel Description
-    importance: Importance.high, // Ensures heads-up notifications
+    'default_channel_id',
+    'Default',
+    description: 'Default notification channel',
+    importance: Importance.high,
   );
 
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -76,12 +75,12 @@ void _showForegroundNotification(String title, String body) {
     print('Notification received in app: $title, $body');
     const AndroidNotificationDetails androidNotificationDetails =
     AndroidNotificationDetails(
-      'default_channel_id', // Match the channel ID
+      'default_channel_id',
       'Default',
       channelDescription: 'Default notification channel',
-      importance: Importance.high, // High importance for heads-up
-      priority: Priority.high, // High priority for heads-up
-      visibility: NotificationVisibility.public, // Makes it visible on lock screen
+      importance: Importance.high,
+      priority: Priority.high,
+      visibility: NotificationVisibility.public,
     );
 
     const NotificationDetails notificationDetails =
@@ -111,14 +110,12 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  final List<Map<String, String>> notificationList = []; // To store past notifications
-  late Stream<Map<String, String>> notificationStream; // Your notification stream
+  final List<Map<String, String>> notificationList = [];
+  late Stream<Map<String, String>> notificationStream;
   void _dismissNotification(Map<String, String> notification) {
-    // Add to notification list
-    notificationList.add(notification);
+     notificationList.add(notification);
 
-    // Clear the notification from the stream after a delay
-    Future.delayed(const Duration(seconds: 5), () {
+     Future.delayed(const Duration(seconds: 5), () {
       _notificationStreamController.add({});
     });
   }
@@ -142,7 +139,7 @@ class _MyAppState extends State<MyApp> {
           bool hasNotification = snapshot.hasData && snapshot.data!.isNotEmpty;
 
           if (hasNotification) {
-            _dismissNotification(snapshot.data!); // Handle dismissal logic
+            _dismissNotification(snapshot.data!);
           }
 
           return Stack(
@@ -170,8 +167,7 @@ class _MyAppState extends State<MyApp> {
                     category: '',
                     price: '',
                   ),
-                  '/EventDetailsPage': (context) => EventDetailsPage(),
-                  '/AddEvent': (context) => AddEvent(),
+                   '/AddEvent': (context) => AddEvent(),
                   '/GiftOrEvent': (context) => GiftOrEvent(),
                   '/AddGift': (context) => AddGift(),
                   '/FriendsGiftList': (context) =>

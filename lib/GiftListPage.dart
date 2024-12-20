@@ -20,17 +20,18 @@ class GiftListPage extends StatefulWidget {
 class _GiftListPageState extends State<GiftListPage> {
   List<Map<String, dynamic>> gifts = [];
   String sortCriteria = 'Name';
-  late bool online; // Default value in case of failure
+  late bool online;
   late String currentUserId;
   late Databaseclass _dbHelper;
+
   @override
   void initState() {
     super.initState();
     _dbHelper = Databaseclass();
     _loadGifts();
   }
-  // Function to fetch the gift image URL based on the gift ID
-  Future<String> _fetchGiftImage(String eventId, String giftId) async {
+
+   Future<String> _fetchGiftImage(String eventId, String giftId) async {
     if(!online)
     {return '';}
     try {
@@ -40,23 +41,15 @@ class _GiftListPageState extends State<GiftListPage> {
       User? user = _auth.currentUser;
       if (user != null) {
         String userId = user.uid;
-
-        // Fetch the user's document
         DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
 
         if (userDoc.exists) {
-          // Access the events array from the user's document
           List<dynamic> eventsList = userDoc['events_list'] ?? [];
-
-          // Find the event by its eventId
           var event = eventsList.firstWhere((event) => event['eventId'] == eventId, orElse: () => null);
-
           if (event != null) {
-            // Find the gift inside the event by its giftId
             var gift = event['gifts']?.firstWhere((gift) => gift['giftId'] == giftId, orElse: () => null);
 
             if (gift != null) {
-              // Return the photoURL from the gift
               return gift['photoURL'] ?? '';
             }
           }
@@ -66,13 +59,13 @@ class _GiftListPageState extends State<GiftListPage> {
       print("Error fetching gift image: $e");
     }
 
-    return '';  // Return an empty string if image fetching fails
+    return '';
   }
 
 
   Future<void> _loadGifts() async {
     try {
-      var internetConnection = InternetConnection(); // Initialize safely
+      var internetConnection = InternetConnection();
       if (internetConnection != null) {
         online = await internetConnection.hasInternetAccess;
       }
@@ -94,9 +87,7 @@ class _GiftListPageState extends State<GiftListPage> {
 
           if (userDoc.exists) {
             List<dynamic> eventsList = userDoc['events_list'] ?? [];
-
-            // Find the specific event by ID
-            var event = eventsList.firstWhere(
+             var event = eventsList.firstWhere(
                   (e) => e['eventId'] == widget.eventId,
               orElse: () => null,
             );
@@ -135,11 +126,7 @@ class _GiftListPageState extends State<GiftListPage> {
 
                 _dbHelper.insertGift(widget.eventId, giftData);
               }
-
-
-              // Delete gifts from local database that are not in Firestore
               await _dbHelper.deleteRemovedGifts(widget.eventId, firestoreGiftIds);
-
               List<Map<String, Object?>> localGifts = await _dbHelper.getGiftsByEventId(widget.eventId!);
               print(localGifts);
               setState(() {
@@ -158,15 +145,10 @@ class _GiftListPageState extends State<GiftListPage> {
   }
 
   Future<void> _loadGiftsFromLocalDatabase() async {
-    print("======================DALHALT BARDO henaaaaaaaaa-========");
-    try {
+     try {
       print("Offline, fetching friends from local database");
       currentUserId = (await UserSession.getUserId())!;
-
-
       List<Map<String, Object?>> localGifts = await _dbHelper.getGiftsByEventId(widget.eventId!);
-      print("========offline gifts fetching=================$localGifts");
-      // Clear the existing list of friends before adding new ones
       gifts.clear();
 
       for (var giftData in localGifts) {
@@ -180,14 +162,11 @@ class _GiftListPageState extends State<GiftListPage> {
         });
       }
 
-      // Update UI
-      setState(() {});
+       setState(() {});
     } catch (e) {
       print("Error loading gifts from local database: $e");
     }
   }
-
-
 
   void _sortGifts() {
     switch (sortCriteria) {
@@ -202,6 +181,7 @@ class _GiftListPageState extends State<GiftListPage> {
         break;
     }
   }
+
   Color _getCardColor(String status) {
     if (status == 'Pledged') {
       return Colors.red.shade100; // Color for pledged gifts
@@ -210,79 +190,51 @@ class _GiftListPageState extends State<GiftListPage> {
     }
   }
 
-
-
   Future<void> _deleteGift(String giftId, String eventId) async {
     try {
       final userId = FirebaseAuth.instance.currentUser?.uid;
       if (userId == null) return;
-
-      // Reference to the user's document
       final userDocRef = FirebaseFirestore.instance.collection('users').doc(userId);
-
-      // Fetch the user's document
       final userDoc = await userDocRef.get();
       if (userDoc.exists) {
         final eventsList = userDoc.data()?['events_list'] as List<dynamic>?;
-
         if (eventsList != null) {
-          // Find the specific event by eventId
-          final event = eventsList.firstWhere(
+           final event = eventsList.firstWhere(
                 (event) => event['eventId'] == eventId,
-            orElse: () => null, // Return null if no event found
+            orElse: () => null,
           );
-
           if (event != null) {
             final giftsList = event['gifts'] as List<dynamic>?;
-
             if (giftsList != null) {
-              // Find the specific gift by giftId
-              final giftToDelete = giftsList.firstWhere(
+               final giftToDelete = giftsList.firstWhere(
                     (gift) => gift['giftId'] == giftId,
-                orElse: () => null, // Return null if no gift found
+                orElse: () => null,
               );
-
               if (giftToDelete != null) {
-                // Check if the gift is pledged by someone
                 final pledgedBy = giftToDelete['PledgedBy'];
                 if (pledgedBy != null) {
-                  // Reference to the pledged user's document
                   final pledgedUserDocRef = FirebaseFirestore.instance.collection('users').doc(pledgedBy);
-
-                  // Fetch the pledged user's document
                   final pledgedUserDoc = await pledgedUserDocRef.get();
                   if (pledgedUserDoc.exists) {
                     final pledgedGiftsList = pledgedUserDoc.data()?['pledged_gifts'] as List<dynamic>?;
                     if (pledgedGiftsList != null) {
-                      // Find the gift in the pledged gifts list
-                      final pledgedGiftToDelete = pledgedGiftsList.firstWhere(
+                       final pledgedGiftToDelete = pledgedGiftsList.firstWhere(
                             (gift) => gift['giftId'] == giftId,
-                        orElse: () => null, // Return null if gift is not found
+                        orElse: () => null,
                       );
 
                       if (pledgedGiftToDelete != null) {
-                        // Remove the gift from the pledged gifts list
                         pledgedGiftsList.remove(pledgedGiftToDelete);
-
-                        // Update the pledged gifts in Firestore
                         await pledgedUserDocRef.update({'pledged_gifts': pledgedGiftsList});
                       }
                     }
                   }
                 }
-
-                // Remove the gift from the event's gift list
                 giftsList.remove(giftToDelete);
-
-                // Check if the gifts list is now empty
                 if (giftsList.isEmpty) {
-                  event['gifts'] = null; // Set gifts to null
+                  event['gifts'] = null;
                 }
-
-                // Update the event in Firestore
                 await userDocRef.update({'events_list': eventsList});
-
-                // Remove the gift from the local list as well
                 setState(() {
                   gifts.removeWhere((gift) => gift['giftId'] == giftId);
                 });
@@ -296,9 +248,6 @@ class _GiftListPageState extends State<GiftListPage> {
     }
   }
 
-
-
-  // Function to show a confirmation dialog before deleting a gift
   void _showDeleteDialog(String giftId,String eventId) {
     showDialog(
       context: context,
@@ -312,14 +261,14 @@ class _GiftListPageState extends State<GiftListPage> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
+                Navigator.of(context).pop();
               },
               child: const Text("Cancel", style: TextStyle(fontSize: 25)),
             ),
             TextButton(
               onPressed: () {
-                _deleteGift(giftId,eventId); // Delete the gift
-                Navigator.of(context).pop(); // Close the dialog
+                _deleteGift(giftId,eventId);
+                Navigator.of(context).pop();
               },
               child: const Text("Delete", style: TextStyle(fontSize: 25, color: Colors.red)),
             ),
@@ -372,20 +321,21 @@ class _GiftListPageState extends State<GiftListPage> {
               ],
             ),
             const SizedBox(height: 10),
-            gifts.isEmpty?         Expanded(
-    child: Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          Icons.card_giftcard, // Use an icon that represents no events
-          size: 200,
-          color: Colors.indigo.shade100, // A subtle color for the icon
-        ),
-      ],
-    ),
-    ),
-    ) : Expanded(
+            gifts.isEmpty?Expanded(
+                child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.card_giftcard,
+                      size: 200,
+                      color: Colors.indigo.shade100,
+                    ),
+                  ],
+                ),
+                ),
+                )
+                : Expanded(
               child: ListView.builder(
                 itemCount: gifts.length,
                 itemBuilder: (context, index) {
@@ -399,7 +349,7 @@ class _GiftListPageState extends State<GiftListPage> {
                     ),
                     elevation: 4.0,
                     margin: const EdgeInsets.symmetric(vertical: 10.0),
-                    color: _getCardColor(status), // Using the status to determine the color
+                    color: _getCardColor(status),
                     child: Column(
                       children: [
                         Container(
@@ -411,17 +361,17 @@ class _GiftListPageState extends State<GiftListPage> {
                               ? ClipRRect(
                             borderRadius: const BorderRadius.vertical(top: Radius.circular(15.0)),
                             child: Image.network(
-                              gift['photoURL'], // Use the image URL if available
+                              gift['photoURL'],
                               fit: BoxFit.cover,
-                              alignment: Alignment.center, // Ensure the image is centered
-                              width: double.infinity, // Make sure image fills the width
-                              height: double.infinity, // Make sure image fills the height
+                              alignment: Alignment.center,
+                              width: double.infinity,
+                              height: double.infinity,
                             ),
                           )
                               : Icon(
-                            Icons.image_not_supported, // Show the default icon if no image is found
-                            size: 100, // Adjust size as needed
-                            color: Colors.red, // Set color of the icon
+                            Icons.image_not_supported,
+                            size: 100,
+                            color: Colors.red,
                           ),
                         ),
 
@@ -437,7 +387,6 @@ class _GiftListPageState extends State<GiftListPage> {
                                   color: Colors.indigo,
                                   fontSize: 40,
                                   fontFamily: "Lobster",
-
                                 ),
                               ),
                               const SizedBox(height: 8.0),
@@ -459,17 +408,14 @@ class _GiftListPageState extends State<GiftListPage> {
                             ],
                           ),
                         ),
-                        // Row for edit and delete buttons
-                        Row(
+                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            // Disable edit button if the gift is pledged
-                            if (!isPledged) // Show the edit icon only if the gift is not pledged
+                             if (!isPledged)
                               IconButton(
                               icon: const Icon(Icons.edit, color: Colors.indigo, size: 40),
                               onPressed: () async {
-                                // Navigate to GiftDetailsPage and wait for a result when coming back
-                                final result = await Navigator.push(
+                                 final result = await Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => GiftDetailsPage(
@@ -481,16 +427,13 @@ class _GiftListPageState extends State<GiftListPage> {
                                       image: gift['photoURL'],
                                       category: gift['category'],
                                       price: gift['price'],
-
                                     ),
                                   ),
                                 );
 
-                                // Check the result, and if you need to reload, you can trigger a setState
                                 if (result != null && result == 'reload') {
                                   setState(() {
-                                    // Reload the data here
-                                    _loadGifts();
+                                     _loadGifts();
                                   });
                                 }
                               },
@@ -498,9 +441,8 @@ class _GiftListPageState extends State<GiftListPage> {
 
                             IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red, size: 40),
-                              onPressed: () => _showDeleteDialog(gift['giftId'],gift['eventId']), // Show delete confirmation dialog
+                              onPressed: () => _showDeleteDialog(gift['giftId'],gift['eventId']),
                             ),
-
                           ],
                         ),
                       ],

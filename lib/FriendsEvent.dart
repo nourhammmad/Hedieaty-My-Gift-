@@ -22,35 +22,25 @@ class _FriendsEventState extends State<FriendsEvent> {
   // List to store events fetched from Firestore
   List<Map<String, dynamic>> events = [];
   bool _isLoading = true;
-
-  // Sorting criteria
   String sortCriteria = 'Name';
 
-  // Function to fetch events from Firestore
   Future<void> _loadEvents(String userId) async {
     print("Loading events for userId: $userId");
 
     try {
       final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-      // Fetch user document
-      DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
+       DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
 
       if (userDoc.exists) {
-        // Get the list of events or an empty list
-        List<dynamic> eventsList = userDoc['events_list'] ?? [];
-
-        // Handle case where there are no events
+         List<dynamic> eventsList = userDoc['events_list'] ?? [];
         if (eventsList.isEmpty) {
           setState(() {
             _isLoading = false;
-            events = []; // Clear events
+            events = [];
           });
-          return; // Exit early
+          return;
         }
-
-        // Fetch event images asynchronously
-        List<Map<String, dynamic>> updatedEvents = [];
+         List<Map<String, dynamic>> updatedEvents = [];
         for (var event in eventsList) {
           String photoURL = await _fetchEventImage(event['eventId']);
           updatedEvents.add({
@@ -63,22 +53,18 @@ class _FriendsEventState extends State<FriendsEvent> {
             'type': event['type'],
           });
         }
-
-        // Update state with fetched events
         setState(() {
           _isLoading = false;
           events = updatedEvents;
         });
       } else {
-        // User document doesn't exist
-        setState(() {
+         setState(() {
           _isLoading = false;
-          events = []; // No events to display
+          events = [];
         });
       }
     } catch (e) {
-      // Handle errors and update state
-      print("Error loading events: $e");
+       print("Error loading events: $e");
       setState(() {
         _isLoading = false;
         events = []; // Clear events on error
@@ -86,25 +72,17 @@ class _FriendsEventState extends State<FriendsEvent> {
     }
   }
 
-
   Future<String> _fetchEventImage(String eventId) async {
     try {
       final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-
-        // Fetch the user's document
         DocumentSnapshot userDoc = await _firestore.collection('users').doc(widget.userId).get();
 
         if (userDoc.exists) {
-          // Access the events array from the user's document
-          List<dynamic> eventsList = userDoc['events_list'] ?? [];
-
-          // Find the event by its eventId
-          var event = eventsList.firstWhere((event) => event['eventId'] == eventId, orElse: () => null);
+           List<dynamic> eventsList = userDoc['events_list'] ?? [];
+           var event = eventsList.firstWhere((event) => event['eventId'] == eventId, orElse: () => null);
 
           if (event != null) {
-            // Return the photoURL from the event
-            return event['photoURL'] ?? '';
+             return event['photoURL'] ?? '';
           }
         }
 
@@ -112,23 +90,21 @@ class _FriendsEventState extends State<FriendsEvent> {
       print("Error fetching event image: $e");
     }
 
-    return '';  // Return an empty string if image fetching fails
+    return '';
   }
 
-  // Function to sort events
-  void _sortEvents() {
-    switch (sortCriteria) {
-      case 'Name':
-        events.sort((a, b) => (a['name'] ?? '').compareTo(b['name'] ?? ''));
-        break;
-      case 'type':
-        events.sort((a, b) =>
-            (a['type'] ?? '').compareTo(b['type'] ?? ''));
-        break;
-      case 'Status':
-        events.sort((a, b) => (a['status'] ?? '').compareTo(b['status'] ?? ''));
-        break;
-    }
+   void _sortEvents() {
+     switch (sortCriteria) {
+       case 'Name':
+         events.sort((a, b) => (a['title']?.toLowerCase() ?? '').compareTo(b['title']?.toLowerCase() ?? ''));
+         break;
+       case 'Category':
+         events.sort((a, b) => (a['type'] ?? '').compareTo(b['type'] ?? ''));
+         break;
+       case 'Status':
+         events.sort((a, b) => (a['status'] ?? '').compareTo(b['status'] ?? ''));
+         break;
+     }
   }
 
   @override
@@ -139,14 +115,13 @@ class _FriendsEventState extends State<FriendsEvent> {
 
   @override
   Widget build(BuildContext context) {
-    _sortEvents(); // Sort events whenever the build method is called
+    _sortEvents();
     return Scaffold(
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Colors.indigo),
         backgroundColor: Colors.indigo.shade50,
         title: Row(
-          mainAxisAlignment: MainAxisAlignment.center, // Centers the content
-
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Expanded(
               child: FittedBox(
@@ -171,8 +146,7 @@ class _FriendsEventState extends State<FriendsEvent> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Dropdown for sorting criteria
-            Row(
+             Row(
               children: [
                 const Icon(Icons.sort, color: Colors.indigo, size: 40),
                 const SizedBox(width: 8),
@@ -207,9 +181,9 @@ class _FriendsEventState extends State<FriendsEvent> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      Icons.event_busy, // Use an icon that represents no events
+                      Icons.event_busy,
                       size: 200,
-                      color: Colors.indigo.shade100, // A subtle color for the icon
+                      color: Colors.indigo.shade100,
                     ),
                   ],
                 ),
@@ -221,11 +195,10 @@ class _FriendsEventState extends State<FriendsEvent> {
                 itemBuilder: (context, index) {
                   final event = events[index];
                   return InkWell(
-                    key: Key(event['title']),  // Add a unique key for each event
+                    key: Key(event['title']),
 
                     onTap: () {
-                      // Navigate to the GiftListPage
-                      Navigator.push(
+                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => FriendsGiftList(userId:widget.userId,eventId: event['eventId'],userName: widget.userName, ),
@@ -240,8 +213,7 @@ class _FriendsEventState extends State<FriendsEvent> {
                       margin: const EdgeInsets.symmetric(vertical: 10.0),
                       child: Column(
                         children: [
-                          // Check if image exists or not
-                          event['photoURL']?.isNotEmpty == true
+                           event['photoURL']?.isNotEmpty == true
                               ? Container(
                             height: 200,
                             decoration: BoxDecoration(
