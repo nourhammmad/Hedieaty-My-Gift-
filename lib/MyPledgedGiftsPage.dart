@@ -26,15 +26,15 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
     _userId = _auth.currentUser!.uid; // Get logged-in user's ID
      _fetchPledgedGifts();
   }
+
   Future<String> _fetchGiftImage(String PledgerId,String eventId, String giftId) async {
     try {
-      var internetConnection = InternetConnection(); // Initialize safely
+      var internetConnection = InternetConnection();
       if (internetConnection != null) {
         online = await internetConnection.hasInternetAccess ?? false;
       }
     } catch (e) {
-      // Handle exceptions, such as if the method throws an error
-      print("Error checking internet connection: $e");
+       print("Error checking internet connection: $e");
     }
     if(!online)
     {return '';}
@@ -44,25 +44,17 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
 
       User? user = _auth.currentUser;
       if (user != null) {
-        String userId = user.uid;
 
-        // Fetch the user's document
-        DocumentSnapshot userDoc = await _firestore.collection('users').doc(PledgerId).get();
-
+         DocumentSnapshot userDoc = await _firestore.collection('users').doc(PledgerId).get();
         if (userDoc.exists) {
-          // Access the events array from the user's document
-          List<dynamic> eventsList = userDoc['events_list'] ?? [];
-
-          // Find the event by its eventId
+           List<dynamic> eventsList = userDoc['events_list'] ?? [];
           var event = eventsList.firstWhere((event) => event['eventId'] == eventId, orElse: () => null);
 
           if (event != null) {
-            // Find the gift inside the event by its giftId
-            var gift = event['gifts']?.firstWhere((gift) => gift['giftId'] == giftId, orElse: () => null);
+             var gift = event['gifts']?.firstWhere((gift) => gift['giftId'] == giftId, orElse: () => null);
 
             if (gift != null) {
-              // Return the photoURL from the gift
-              return gift['photoURL'] ?? '';
+               return gift['photoURL'] ?? '';
             }
           }
         }
@@ -71,7 +63,7 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
       print("Error fetching gift image: $e");
     }
 
-    return '';  // Return an empty string if image fetching fails
+    return '';
   }
 
   Future<void> _fetchPledgedGifts() async {
@@ -86,62 +78,52 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
 
     try {
       if (online) {
-        // Fetch the logged-in user's document from Firestore
-        DocumentSnapshot userDoc = await _firestore.collection('users').doc(
+         DocumentSnapshot userDoc = await _firestore.collection('users').doc(
             _userId).get();
 
         if (userDoc.exists) {
           List pledgedGiftIds = userDoc['pledged_gifts'] ??
-              []; // List of pledged gifts data
+              [];
 
-          // Initialize a list to store detailed pledged gifts data
-          List<Map<String, dynamic>> pledgedGiftsList = [];
+           List<Map<String, dynamic>> pledgedGiftsList = [];
 
           for (var pledgedGift in pledgedGiftIds) {
-            // Extract the pledgerId, giftId, eventId, and status from the pledged gift
-            String pledgerId = pledgedGift['pledgerId'];
+             String pledgerId = pledgedGift['pledgerId'];
             String giftId = pledgedGift['giftId'];
             String eventId = pledgedGift['eventId'];
             String status = pledgedGift['status'];
 
-            // Fetch the pledger's user document
-            DocumentSnapshot pledgerDoc = await _firestore.collection('users')
+             DocumentSnapshot pledgerDoc = await _firestore.collection('users')
                 .doc(pledgerId)
                 .get();
 
             if (pledgerDoc.exists) {
-              // Extract the pledger's name
-              String pledgerName = pledgerDoc['displayName'] ?? 'Unknown';
-
-              // Fetch the event details using the eventId from the pledger's events_list
-              List eventsList = pledgerDoc['events_list'] ?? [];
+               String pledgerName = pledgerDoc['displayName'] ?? 'Unknown';
+               List eventsList = pledgerDoc['events_list'] ?? [];
               String eventTitle = 'Unknown Event';
               String giftTitle = 'Unknown Gift';
               String dueTo = 'No due date';
-              String giftImage = ''; // To store the gift image URL
+              String giftImage = '';
 
               for (var event in eventsList) {
                 if (event['eventId'] == eventId) {
                   eventTitle = event['title'] ?? 'Unknown Event';
 
-                  // Find the gift in the event's gifts array
-                  for (var gift in event['gifts']) {
+                   for (var gift in event['gifts']) {
                     if (gift['giftId'] == giftId) {
                       giftTitle = gift['title'] ?? 'Unknown Gift';
                       dueTo = gift['dueTo'] ?? 'No due date';
 
-                      // Fetch the gift image using the _fetchGiftImage method
-                      giftImage = await _fetchGiftImage(
+                       giftImage = await _fetchGiftImage(
                           pledgedGift['pledgerId'], eventId, giftId);
                       break;
                     }
                   }
-                  break; // Stop once we find the matching event
+                  break;
                 }
               }
 
-              // Create the detailed pledged gift entry
-              pledgedGiftsList.add({
+               pledgedGiftsList.add({
                 'pledgerName': pledgerName,
                 'pledgerId': pledgerId,
                 'eventId': eventId,
@@ -150,19 +132,16 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
                 'eventTitle': eventTitle,
                 'dueTo': dueTo,
                 'status': status,
-                'photoURL': giftImage, // Add the gift image URL
+                'photoURL': giftImage,
               });
             }
           }
 
-          // Update the UI with the fetched pledged gifts
-          setState(() {
-            print("===================$pledgedGiftsList");
-            pledgedGifts = pledgedGiftsList;
+           setState(() {
+             pledgedGifts = pledgedGiftsList;
           });
         }
       }else{
-
         print("YOU ARE OFFLINE");
       }
     } catch (e) {
@@ -170,51 +149,35 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
     }
   }
 
-
-
-
   Future<void> _unpledgeGift(int index) async {
     try {
-      // Retrieve the gift data using the index
-      var giftToUnpledge = pledgedGifts[index];
+       var giftToUnpledge = pledgedGifts[index];
       print(giftToUnpledge);
-
-      // Check if the gift status is pending
-      if (giftToUnpledge['status'] == 'Pending') {
-        // Fetch the logged-in user's document
-        DocumentSnapshot userDoc = await _firestore.collection('users').doc(_userId).get();
-
+       if (giftToUnpledge['status'] == 'Pending') {
+         DocumentSnapshot userDoc = await _firestore.collection('users').doc(_userId).get();
         if (userDoc.exists) {
-          // Get the current pledged gifts list
-          List pledgedGiftIds = List.from(userDoc['pledged_gifts'] ?? []);
+           List pledgedGiftIds = List.from(userDoc['pledged_gifts'] ?? []);
+           pledgedGiftIds.removeWhere((pledgedGift) =>
+           pledgedGift['giftId'] == giftToUnpledge['giftId']);
 
-          // Find and remove the corresponding gift from the Firestore data
-          pledgedGiftIds.removeWhere((pledgedGift) =>
-          pledgedGift['giftId'] == giftToUnpledge['giftId']);
-
-          // Update Firestore with the updated pledged gifts list
-          await _firestore.collection('users').doc(_userId).update({
+           await _firestore.collection('users').doc(_userId).update({
             'pledged_gifts': pledgedGiftIds,
           });
 
-          // Navigate to the pledgerId's document
-          String pledgerId = giftToUnpledge['pledgerId'];
+           String pledgerId = giftToUnpledge['pledgerId'];
           DocumentSnapshot pledgerDoc = await _firestore.collection('users').doc(pledgerId).get();
 
           if (pledgerDoc.exists) {
-            // Locate the eventId in the events_list
-            List eventsList = List.from(pledgerDoc['events_list'] ?? []);
+             List eventsList = List.from(pledgerDoc['events_list'] ?? []);
             String eventId = giftToUnpledge['eventId'];
             String giftId = giftToUnpledge['giftId'];
 
             for (var event in eventsList) {
               if (event['eventId'] == eventId) {
-                // Find the gift in the event's gifts array
-                List giftsList = List.from(event['gifts'] ?? []);
+                 List giftsList = List.from(event['gifts'] ?? []);
                 for (var gift in giftsList) {
                   if (gift['giftId'] == giftId) {
-                    // Update the pledgerId field to null
-                    gift['PledgedBy'] = null;
+                     gift['PledgedBy'] = null;
                     gift['status'] = "A"
                         ""
                         "vailable";
@@ -222,19 +185,16 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
                   }
                 }
 
-                // Update Firestore with the modified gifts array
-                await _firestore.collection('users').doc(pledgerId).update({
+                 await _firestore.collection('users').doc(pledgerId).update({
                   'events_list': eventsList,
                 });
-
                 print("Gift unpledged and pledgerId set to null.");
                 break;
               }
             }
           }
 
-          // Update the local UI
-          setState(() {
+           setState(() {
             pledgedGifts.removeAt(index);
           });
         }
@@ -246,8 +206,6 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
     }
   }
 
-
-
   void _showUnpledgeDialog(int index) {
     showDialog(
       context: context,
@@ -258,14 +216,14 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Close dialog
+                Navigator.of(context).pop();
               },
               child: const Text('Cancel', style: TextStyle(fontSize: 25)),
             ),
             TextButton(
               onPressed: () {
                 _unpledgeGift(index);
-                Navigator.of(context).pop(); // Close dialog after unpledging
+                Navigator.of(context).pop();
               },
               child: const Text(
                 'Unpledge',
@@ -317,7 +275,7 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 16), // Space between heading and list
+            const SizedBox(height: 16),
             Expanded(
               child: pledgedGifts.isEmpty
                   ? Expanded(
@@ -326,9 +284,9 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        Icons.card_giftcard, // Use an icon that represents no events
+                        Icons.card_giftcard,
                         size: 200,
-                        color: Colors.indigo.shade100, // A subtle color for the icon
+                        color: Colors.indigo.shade100,
                       ),
                     ],
                   ),
@@ -336,10 +294,10 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
               )
                   : GridView.builder(
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2, // Two gifts per row
+                  crossAxisCount: 2,
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 10,
-                  childAspectRatio: 3 / 4, // Adjust to your desired size
+                  childAspectRatio: 3 / 4,
                 ),
                 itemCount: pledgedGifts.length,
                 itemBuilder: (context, index) {
@@ -347,13 +305,13 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
                   return Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.vertical(top: Radius.circular(30), bottom: Radius.circular(20)), // Curved top and bottom
-                      color: Colors.white, // Card background color
+                      color: Colors.white,
                       boxShadow: [
                         BoxShadow(
                           color: Colors.grey.withOpacity(0.5),
                           spreadRadius: 2,
                           blurRadius: 5,
-                          offset: const Offset(0, 3), // Position of the shadow
+                          offset: const Offset(0, 3),
                         ),
                       ],
                     ),
@@ -361,24 +319,23 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
                       children: [
                         InkWell(
                           onTap: () {
-                            // Tap gesture is optional; you can keep it if you want
-                          },
+                           },
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               Expanded(
                                 child: ClipRRect(
-                                  borderRadius: BorderRadius.vertical(top: Radius.circular(30)), // Round the top corners
+                                  borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
                                   child: (gift['photoURL'] != null && gift['photoURL'].isNotEmpty)
                                       ? Image.network(
-                                    gift['photoURL'], // Assuming gift image URL
+                                    gift['photoURL'],
                                     fit: BoxFit.cover,
                                   )
                                       : Container(
-                                    color: Colors.grey[200], // Optional: background color for fallback
+                                    color: Colors.grey[200],
                                     child: Center(
                                       child: Icon(
-                                        Icons.image_not_supported, // Default icon when no image available
+                                        Icons.image_not_supported,
                                         size: 100,
                                         color: Colors.red,
                                       ),
@@ -428,53 +385,44 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
                             ],
                           ),
                         ),
-                        // Conditionally render the delete button for pending gifts only
-                        if (gift['status'] == 'Pending')
+                         if (gift['status'] == 'Pending')
                           Positioned(
                             right: 8,
                             top: 8,
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                // Status change icon button
-                                Container(
+                                 Container(
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.8), // Opaque white background
-                                    borderRadius: BorderRadius.circular(20), // Rounded corners
+                                    color: Colors.white.withOpacity(0.8),
+                                    borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: IconButton(
                                     icon: const Icon(Icons.check_circle, color: Colors.green),
                                     onPressed: () async {
                                       try {
-                                        // Get the current user ID
-                                        final userId = FirebaseAuth.instance.currentUser?.uid;
+                                         final userId = FirebaseAuth.instance.currentUser?.uid;
                                         if (userId == null) return;
 
-                                        // Reference to the user's document
-                                        final userDocRef = FirebaseFirestore.instance.collection('users').doc(userId);
+                                         final userDocRef = FirebaseFirestore.instance.collection('users').doc(userId);
 
-                                        // Fetch the user document
-                                        final userDoc = await userDocRef.get();
+                                         final userDoc = await userDocRef.get();
                                         if (userDoc.exists) {
                                           final pledgedGifts = List<Map<String, dynamic>>.from(userDoc.data()?['pledged_gifts'] ?? []);
 
-                                          // Find the specific gift in pledged gifts
-                                          final giftToUpdate = pledgedGifts.firstWhere(
+                                           final giftToUpdate = pledgedGifts.firstWhere(
                                                 (g) => g['giftId'] == gift['giftId'],
                                             orElse: () => {},
                                           );
 
                                           if (giftToUpdate != null) {
-                                            // Update the status of the gift
-                                            giftToUpdate['status'] = 'Purchased';
+                                             giftToUpdate['status'] = 'Purchased';
 
-                                            // Update the pledged_gifts array in Firestore
-                                            await userDocRef.update({
+                                             await userDocRef.update({
                                               'pledged_gifts': pledgedGifts,
                                             });
 
-                                            // Update the local state
-                                            setState(() {
+                                             setState(() {
                                               gift['status'] = 'Purchased';
                                             });
                                           }
@@ -486,11 +434,10 @@ class _MyPledgedGiftsPageState extends State<MyPledgedGiftsPage> {
                                   ),
                                 ),
 
-                                // Existing delete button
-                                Container(
+                                 Container(
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.8), // Opaque white background
-                                    borderRadius: BorderRadius.circular(20), // Rounded corners
+                                    color: Colors.white.withOpacity(0.8),
+                                    borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: IconButton(
                                     icon: const Icon(Icons.delete, color: Colors.red),

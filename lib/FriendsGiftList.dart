@@ -12,9 +12,7 @@ class FriendsGiftList extends StatefulWidget {
   final String userId;
   final String eventId;
   final String userName;
-
   const FriendsGiftList({Key? key, required this.userId, required this.eventId,required this.userName}) : super(key: key);
-
   @override
   State<FriendsGiftList> createState() => _FriendsGiftListState();
 
@@ -24,21 +22,20 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
 
 
   List<Map<String, dynamic>> gifts = [];
-  bool isLoading = true; // To show a loading indicator
+  bool isLoading = true;
+  String sortCriteria = 'Name';
+
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final arguments = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-
-
-
+      ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
       if (widget.userId.isNotEmpty && widget.eventId.isNotEmpty) {
         _loadGifts();
       } else {
         setState(() {
-          isLoading = false; // Stop loading if no valid arguments
+          isLoading = false;
         });
         print('Error: Missing or invalid arguments.');
       }
@@ -50,23 +47,17 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
       final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
       if (widget.userId != null) {
-        // Fetch the user's document
-        DocumentSnapshot userDoc = await _firestore.collection('users').doc(widget.userId).get();
+         DocumentSnapshot userDoc = await _firestore.collection('users').doc(widget.userId).get();
 
         if (userDoc.exists) {
-          // Access the events array from the user's document
-          List<dynamic> eventsList = userDoc['events_list'] ?? [];
-
-          // Find the event by its eventId
-          var event = eventsList.firstWhere((event) => event['eventId'] == widget.eventId, orElse: () => null);
+           List<dynamic> eventsList = userDoc['events_list'] ?? [];
+           var event = eventsList.firstWhere((event) => event['eventId'] == widget.eventId, orElse: () => null);
 
           if (event != null) {
-            // Find the gift inside the event by its giftId
-            var gift = event['gifts']?.firstWhere((gift) => gift['giftId'] == giftId, orElse: () => null);
+             var gift = event['gifts']?.firstWhere((gift) => gift['giftId'] == giftId, orElse: () => null);
 
             if (gift != null) {
-              // Return the photoURL from the gift
-              return gift['photoURL'] ?? '';
+               return gift['photoURL'] ?? '';
             }
           }
         }
@@ -75,7 +66,7 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
       print("Error fetching gift image: $e");
     }
 
-    return ''; // Return an empty string if image fetching fails
+    return '';
   }
 
   Future<void> _loadGifts() async {
@@ -112,7 +103,6 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
                 'title': gift['title'],
               });
             }
-
             setState(() {
               gifts = updatedGifts;
             });
@@ -123,14 +113,10 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
       print('Error loading gifts: $e');
     } finally {
       setState(() {
-        isLoading = false; // Stop the loading spinner regardless of success
+        isLoading = false;
       });
     }
   }
-
-
-
-  String sortCriteria = 'Name';
 
   void _sortGifts() {
     switch (sortCriteria) {
@@ -154,6 +140,7 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
       return Colors.green.shade100; // Color for available gifts
     }
   }
+
   Color _getButtonColor(String status) {
     if (status == 'Pledged') {
 
@@ -162,15 +149,15 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
       return Colors.indigo; // Color for available gifts
     }
   }
+
   bool WhichText(status){
-
     if (status == 'Pledged') {
-
-      return true; // Color for pledged gifts
+      return true;
     } else {
-      return false; // Color for available gifts
+      return false;
     }
   }
+
   void _pledgeGift(String giftId) async {
     try {
       final currentUser = FirebaseAuth.instance.currentUser;
@@ -178,14 +165,9 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
         print("Error: User is not logged in.");
         return;
       }
-
       final pledgerId = currentUser.uid;
       final userDoc = await FirebaseFirestore.instance.collection('users').doc(pledgerId).get();
-
-         final displayName = userDoc.data()?['displayName']; // Assuming 'displayName' is the field name
-        print("User's Display Name: $displayName");
-
-      // Find the selected gift from the list
+      final displayName = userDoc.data()?['displayName'];
       final gift = gifts.firstWhere(
             (gift) => gift['giftId'] == giftId,
         orElse: () => {},
@@ -196,25 +178,17 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
         return;
       }
 
-
       final giftTitle = gift['title']; // Get the gift title
-      print("Gift Title: $giftTitle");
-
       final eventId = gift['eventId'];
+
       if (eventId == null) {
         print("Error: Missing eventId.");
         return;
       }
 
-      // Debugging: Print gift and eventId
-      print("Gift being pledged: $gift");
-      print("Searching for eventId: $eventId");
-
-      // Get the friend's document (not the current user)
-      final friendUserId = gift['createdBy'];  // Assuming the gift creator (friend) has the 'createdBy' field
+      final friendUserId = gift['createdBy'];
       final userDocRef = FirebaseFirestore.instance.collection('users').doc(friendUserId);
 
-      // Fetch the user's data (events and pledged gifts)
       final userDocSnapshot = await userDocRef.get();
       if (!userDocSnapshot.exists) {
         throw Exception("User document not found.");
@@ -223,14 +197,13 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
       final eventsList = List<Map<String, dynamic>>.from(userDocSnapshot.data()?['events_list'] ?? []);
       print("events_list: $eventsList");
 
-      // Find the correct event in the friend's event list
-      final eventIndex = eventsList.indexWhere((event) => event['eventId'] == eventId);
+       final eventIndex = eventsList.indexWhere((event) => event['eventId'] == eventId);
       if (eventIndex == -1) {
         throw Exception("Event not found.");
       }
 
       final event = eventsList[eventIndex];
-      final eventTitle = event['title']; // Get the event title
+      final eventTitle = event['title'];
       print("Event Title: $eventTitle");
 
       final giftsList = List<Map<String, dynamic>>.from(event['gifts'] ?? []);
@@ -240,13 +213,11 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
         throw Exception("Gift not found.");
       }
 
-      // Prepare the updates
-      giftsList[giftIndex]['PledgedBy'] = pledgerId;  // The current user pledges the gift
+       giftsList[giftIndex]['PledgedBy'] = pledgerId;
       giftsList[giftIndex]['status'] = 'Pledged';
       eventsList[eventIndex]['gifts'] = giftsList;
 
-      // Fetch the current user's document
-      final currentUserDocRef = FirebaseFirestore.instance.collection('users').doc(pledgerId);
+       final currentUserDocRef = FirebaseFirestore.instance.collection('users').doc(pledgerId);
       final currentUserDocSnapshot = await currentUserDocRef.get();
 
       if (!currentUserDocSnapshot.exists) {
@@ -255,36 +226,29 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
 
       final currentUserPledgedGiftsList = List<Map<String, dynamic>>.from(currentUserDocSnapshot.data()?['pledged_gifts'] ?? []);
       currentUserPledgedGiftsList.add({
-        'pledgerId': friendUserId,  // The logged-in user who is pledging the gift
+        'pledgerId': friendUserId,
         'eventId': eventId,
         'giftId': giftId,
         'status': "Pending",
       });
 
-      // Now, run the transaction to apply the changes
-      await FirebaseFirestore.instance.runTransaction((transaction) async {
-        // Update the friend's document with the updated events list
-        transaction.update(userDocRef, {
+       await FirebaseFirestore.instance.runTransaction((transaction) async {
+         transaction.update(userDocRef, {
           'events_list': eventsList,
         });
 
-        // Update the current user's pledged_gifts list
-        transaction.update(currentUserDocRef, {
+         transaction.update(currentUserDocRef, {
           'pledged_gifts': currentUserPledgedGiftsList,
         });
       });
 
-      // Fetch the FCM token of the friend
-      final deviceToken = userDocSnapshot.data()?['fcmToken'];
-      print("==============device token: $deviceToken");
+       final deviceToken = userDocSnapshot.data()?['fcmToken'];
 
       if (deviceToken != null && deviceToken.isNotEmpty) {
-        print("==============device token: $deviceToken");
-        await PushNotifications.SendNotificationToPledgedFriend(deviceToken, context, giftId,giftTitle,eventTitle,displayName);
+         await PushNotifications.SendNotificationToPledgedFriend(deviceToken, context, giftId,giftTitle,eventTitle,displayName);
       }
 
-      // Update the local state for the UI
-      setState(() {
+       setState(() {
         final localGiftIndex = gifts.indexWhere((g) => g['giftId'] == giftId);
         if (localGiftIndex != -1) {
           gifts[localGiftIndex]['PledgedBy'] = pledgerId;
@@ -301,7 +265,7 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
 
   @override
   Widget build(BuildContext context) {
-    _sortGifts(); // Sort gifts before building the UI
+    _sortGifts();
 
     return Scaffold(
       appBar: AppBar(
@@ -309,7 +273,7 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
         backgroundColor: Colors.indigo.shade50,
         title: SingleChildScrollView(
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.center, // Centers the content
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 widget.userName,
@@ -324,7 +288,6 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
             ],
           ),
         ),
-
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -346,7 +309,7 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
             ),
             const SizedBox(height: 10),
             isLoading
-                ? const Center(child: CircularProgressIndicator()) // Show loading indicator
+                ? const Center(child: CircularProgressIndicator())
                 : gifts.isEmpty?
                     Expanded(
               child: Center(
@@ -354,14 +317,14 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      Icons.card_giftcard, // Use an icon that represents no events
+                      Icons.card_giftcard,
                       size: 200,
-                      color: Colors.indigo.shade100, // A subtle color for the icon
+                      color: Colors.indigo.shade100,
                     ),
                   ],
                 ),
               ),
-            )  // Show no gifts message
+            )
                 : Expanded(
               child: ListView.builder(
                 itemCount: gifts.length,
@@ -376,7 +339,7 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
                     ),
                     elevation: 4.0,
                     margin: const EdgeInsets.symmetric(vertical: 10.0),
-                    color: _getCardColor(status), // Use the updated color logic
+                    color: _getCardColor(status),
                     child: SingleChildScrollView(
                       child: Column(
                         children: [
@@ -384,34 +347,31 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
                             height: 200,
                             decoration: BoxDecoration(
                               borderRadius: const BorderRadius.vertical(top: Radius.circular(15.0)),
-                      
                             ),
                             child: gift['photoURL'] == null || gift['photoURL'].isEmpty
                                 ? Center(
                               child: Icon(
                                 Icons.image_not_supported,
-                                color: Colors.red, // You can customize the icon color
-                                size: 100, // Customize the icon size
+                                color: Colors.red,
+                                size: 100,
                               ),
                             )
                                 : Image.network(
-                              width: double.infinity, // Make sure image fills the width
-                              height: double.infinity, // Make
-                                        gift['photoURL'],
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) {
-                                        return Center(
-                                        child: Icon(
-                                        Icons.error,
-                                        color: Colors.red,
-                                        size: 50,
-                                        ),
-                                        );
-                                        },
-                                        ),
-                                         // No icon if an image is available
-                          ),
-                      
+                              width: double.infinity,
+                              height: double.infinity,
+                                      gift['photoURL'],
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) {
+                                      return Center(
+                                      child: Icon(
+                                      Icons.error,
+                                      color: Colors.red,
+                                      size: 50,
+                                      ),
+                                      );
+                                      },
+                            ),
+                           ),
                           Padding(
                             padding: const EdgeInsets.all(16.0),
                             child: Column(
@@ -450,7 +410,7 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: _getButtonColor(status),
                               ),
-                              onPressed: isPledged ? null : () => _pledgeGift(gift['giftId']),  // Pass the giftId here
+                              onPressed: isPledged ? null : () => _pledgeGift(gift['giftId']),
                               child: Text(
                                 WhichText(status) ? 'Already Pledged' : 'Pledge Gift',
                                 style: TextStyle(color: Colors.indigo.shade50, fontFamily: "Lobster", fontSize: 30),

@@ -6,7 +6,7 @@ class GiftOrEvent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: Key('GiftOrEvent'),  // Assign a key here
+      key: Key('GiftOrEvent'),
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Colors.indigo),
         backgroundColor: Colors.indigo.shade50,
@@ -29,31 +29,26 @@ class GiftOrEvent extends StatelessWidget {
       ),
       body: Column(
         children: [
-          // Add Gift Option
           Expanded(
-            key: Key('addGiftButton'), // Added key here
-
+            key: Key('addGiftButton'),
             child: _buildListItem(
               context: context,
               title: 'Add Gift',
-              imageUrl: 'asset/giftc.jpg', // Ensure this path is correct
+              imageUrl: 'asset/giftc.jpg',
               onTap: () {
-                // Navigate to Add Gift page
-                Navigator.pushNamed(context, '/AddGift'); // Ensure route name is correct
+                 Navigator.pushNamed(context, '/AddGift');
               },
             ),
           ),
-          // Add Event Option
-          Expanded(
-            key: Key('addEventButton'), // Added key here
+           Expanded(
+            key: Key('addEventButton'),
 
             child: _buildListItem(
               context: context,
               title: 'Add Event',
-              imageUrl: 'asset/eventc.jpg', // Ensure this path is correct
+              imageUrl: 'asset/eventc.jpg',
               onTap: () {
-                // Navigate to Add Event page
-                Navigator.pushNamed(context, '/AddEvent'); // Ensure route name is correct
+                 Navigator.pushNamed(context, '/AddEvent');
               },
 
             ),
@@ -72,36 +67,35 @@ class GiftOrEvent extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8.0), // Margin between items
+        margin: const EdgeInsets.symmetric(vertical: 8.0),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(30.0), // Curved corners
+          borderRadius: BorderRadius.circular(30.0),
           boxShadow: [
             BoxShadow(
               color: Colors.grey.withOpacity(0.5),
               spreadRadius: 2,
               blurRadius: 5,
-              offset: const Offset(0, 3), // Position of the shadow
+              offset: const Offset(0, 3),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(30.0), // Curved corners
+          borderRadius: BorderRadius.circular(30.0),
           child: Stack(
             children: [
-              // Background Image
-              Image.asset(
+               Image.asset(
                 imageUrl,
                 fit: BoxFit.cover,
-                width: double.infinity, // Extend to full width
-                height: double.infinity, // Fill the available height
+                width: double.infinity,
+                height: double.infinity,
               ),
               // Centered Text
               Center(
                 child: Text(
                   title,
                   style:  TextStyle(
-                    color: Colors.indigo.shade200, // Change to white for better visibility
-                    fontSize: 100, // Adjust font size for better visibility
+                    color: Colors.indigo.shade200,
+                    fontSize: 100,
                     fontWeight: FontWeight.bold,
                     fontFamily: "Lobster"
                   ),

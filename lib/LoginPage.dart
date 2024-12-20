@@ -17,12 +17,12 @@ class _HoverEffectTextState extends State<HoverEffectText> {
     return MouseRegion(
       onEnter: (_) {
         setState(() {
-          _textColor = Colors.indigo.shade500; // Change color on hover
+          _textColor = Colors.indigo.shade500;
         });
       },
       onExit: (_) {
         setState(() {
-          _textColor = Colors.indigo.shade300; // Revert color when hover ends
+          _textColor = Colors.indigo.shade300;
         });
       },
       child: GestureDetector(
@@ -59,30 +59,26 @@ class _LoginPageState extends State<LoginPage> {
   void initState() {
     super.initState();
     _dbHelper = Databaseclass(); // Initialize _dbHelper here
-    //_dbHelper.mydeletedatabase();
-  }
+   }
 
   Future<void> _login() async {
-    bool online = false; // Default value in case of failure
+    bool online = false;
     try {
-      var internetConnection = InternetConnection(); // Initialize safely
+      var internetConnection = InternetConnection();
       if (internetConnection != null) {
-        online = await internetConnection.hasInternetAccess ?? false;
+        online = await internetConnection.hasInternetAccess;
       }
     } catch (e) {
-      // Handle exceptions, such as if the method throws an error
-      print("Error checking internet connection: $e");
+       print("Error checking internet connection: $e");
     }
     if (_formKey.currentState?.validate() ?? false) {
-      // Step 1: Check the local database for the user
-      bool isLocalValid = await _dbHelper.validateLogin(
+       bool isLocalValid = await _dbHelper.validateLogin(
         emailController.text,
         passwordController.text,
       );
 
       if (isLocalValid) {
-        // Fetch user details from the local database
-        var result = await _dbHelper.readData(
+         var result = await _dbHelper.readData(
           "SELECT * FROM Users WHERE EMAIL = ? AND PASSWORD = ?",
           [emailController.text, passwordController.text],
         );
@@ -94,14 +90,10 @@ class _LoginPageState extends State<LoginPage> {
             : 'Offline User';
 
         await UserSession.saveUserSession(userId, userName);
-        print("====================user id for user session$userId");
 
         if (result.isNotEmpty) {
-          // Local user found
-          print("User found locally");
-
-          // If internet is available, attempt Firebase authentication
-          if (online) {
+           print("User found locally");
+           if (online) {
             try {
               await FirebaseAuth.instance.signInWithEmailAndPassword(
                 email: emailController.text,
@@ -109,21 +101,17 @@ class _LoginPageState extends State<LoginPage> {
               );
               print("User authenticated with Firebase");
             } catch (e) {
-              // Handle Firebase authentication failure
-              _showErrorDialog('Incorrect email or password');
-
+               _showErrorDialog('Incorrect email or password');
               print("Firebase authentication failed: $e");
             }
           }
 
-          // Regardless of internet, navigate to the homepage
-          Navigator.pushReplacementNamed(context, '/HomePage');
-          return; // Stop further processing
+           Navigator.pushReplacementNamed(context, '/HomePage');
+          return;
         }
       }
 
-      // Step 2: If not found locally, attempt Firebase authentication
-      if (online) {
+       if (online) {
         try {
           final userCredential = await FirebaseAuth.instance
               .signInWithEmailAndPassword(
@@ -145,16 +133,13 @@ class _LoginPageState extends State<LoginPage> {
             print("Firebase user is null.");
           }
         } catch (e) {
-          // Handle Firebase errors (e.g., wrong credentials, user not found)
-          _showErrorDialog('Incorrect email or password');
+           _showErrorDialog('Incorrect email or password');
         }
       } else {
-        // No internet connection, show a message or handle offline behavior
-        print("No internet connection");
+         print("No internet connection");
       }
     }
   }
-
 
   void _showErrorDialog(String message) {
     showDialog(
@@ -181,10 +166,10 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false, // Removes the back button
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.indigo.shade50,
         title: const Row(
-          mainAxisAlignment: MainAxisAlignment.center, // Centers the content
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
               "Hedieaty",
@@ -202,11 +187,10 @@ class _LoginPageState extends State<LoginPage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // This is the icon decoration inserted between the AppBar and body
-            Container(
+             Container(
               padding: const EdgeInsets.symmetric(vertical: 10.0),
               child: Icon(Icons.card_giftcard_outlined, color: Colors.indigo.shade100,
-                  size: 260), // Insert your icon here
+                  size: 260),
             ),
             Padding(
               padding: const EdgeInsets.all(20.0),
@@ -289,7 +273,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        HoverEffectText(), // Use the HoverEffectText widget here
+                        HoverEffectText(),
                       ],
                     ),
                   ),

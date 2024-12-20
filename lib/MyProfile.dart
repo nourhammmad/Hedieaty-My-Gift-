@@ -7,6 +7,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
   import 'package:flutter_image_compress/flutter_image_compress.dart';
   import 'package:image_picker/image_picker.dart';
 import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
+import 'package:projecttrial/UserSession.dart';
 import 'package:shared_preferences/shared_preferences.dart';
   import 'Database.dart';
   import 'imgur.dart';
@@ -23,85 +24,68 @@ import 'package:shared_preferences/shared_preferences.dart';
     bool isFirstNameEditable = false;
     bool notificationsEnabled = false;
     String? firstName;
-    String? photoURL; // To store the user's photo URL
+    String? photoURL;
     TextEditingController NameController=TextEditingController();
     late bool online;
+    late Databaseclass _dbHelper;
+    late FirebaseDatabaseClass _firebaseDb;
+    final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+    List<Map<String, dynamic>> events = [];
+    File? _profileImage;
+    final ImagePicker _imagePicker = ImagePicker();
 
     Future<void> _checkAndEnableNotifications() async {
       try {
-        // Check if permission has already been granted
         final settings = await FirebaseMessaging.instance.getNotificationSettings();
-
         if (settings.authorizationStatus == AuthorizationStatus.authorized) {
           print("Notification Permission Already Granted!");
-
-          // If permission is granted, proceed with subscribing to topics and enabling notifications
           final token = await FirebaseMessaging.instance.getToken();
           print("Notification Enabled. Token: $token");
-
-          // Subscribe to a topic (you can subscribe to more topics or use direct token-based notifications)
           await FirebaseMessaging.instance.subscribeToTopic("general");
           print("Subscribed to 'general' topic.");
-
         } else if (settings.authorizationStatus == AuthorizationStatus.denied) {
           print("Notification Permission Denied!");
-          // Handle permission denial gracefully (e.g., show a message explaining the benefit of enabling notifications)
-        } else {
-          // Request permission if not determined yet
-          final newSettings = await FirebaseMessaging.instance.requestPermission();
+         } else {
+           final newSettings = await FirebaseMessaging.instance.requestPermission();
           if (newSettings.authorizationStatus == AuthorizationStatus.authorized) {
             print("Notification Permission Granted!");
-
-            // Proceed with subscribing to topics and enabling notifications
             final token = await FirebaseMessaging.instance.getToken();
             print("Notification Enabled. Token: $token");
-
             await FirebaseMessaging.instance.subscribeToTopic("general");
             print("Subscribed to 'general' topic.");
           } else {
             print("Notification Permission Denied!");
-            // Handle permission denial gracefully
-          }
+           }
         }
       } catch (e) {
         print("Error enabling notifications: $e");
       }
     }
+
     Future<void> _disableNotifications() async {
       try {
-        // Get the current token
         final token = await FirebaseMessaging.instance.getToken();
         print("Notification Disabled. Token: $token");
 
-        // Unsubscribe from topics (you can unsubscribe from multiple topics if needed)
         await FirebaseMessaging.instance.unsubscribeFromTopic("general");
         print("Unsubscribed from 'general' topic.");
 
-        // Optionally, you could delete the token or revoke its use here
-      } catch (e) {
+       } catch (e) {
         print("Error disabling notifications: $e");
       }
     }
 
-    late Databaseclass _dbHelper;
-    late FirebaseDatabaseClass _firebaseDb;
-    final FirebaseFirestore _firestore = FirebaseFirestore.instance; // Firestore instance
-    List<Map<String, dynamic>> events = []; // List to store fetched events
-
-    File? _profileImage;
-    final ImagePicker _imagePicker = ImagePicker();
     @override
     void initState() {
       super.initState();
       _dbHelper = Databaseclass();
       _firebaseDb = FirebaseDatabaseClass();
-
       _initializeDatabase();
       _fetchUserEvents(); // Fetch events when profile loads
       _fetchUserPhotoURL(); // Fetch user's photo URL
        _loadNotificationsEnabled();  // Fetch the saved notification setting
-
     }
+
     Future<void> _saveNotificationsEnabled(bool value) async {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('notificationsEnabled', value);
@@ -113,22 +97,18 @@ import 'package:shared_preferences/shared_preferences.dart';
         notificationsEnabled = prefs.getBool('notificationsEnabled') ?? false;
       });
     }
+
     Future<void> _pickImage() async {
       final XFile? image = await _imagePicker.pickImage(source: ImageSource.gallery);
       if (image != null) {
         setState(() {
-          _profileImage = File(image.path);  // Update local state immediately
+          _profileImage = File(image.path);
         });
-
         try {
-          // Upload image to Imgur
-          String imageUrl = await uploadImageToImgur(image.path);
-          // Update photoURL in Firebase
-          await _firebaseDb.updatePhotoURL(_firebaseDb.getCurrentUserId(), imageUrl);
-
-          // Update photoURL in the state immediately
-          setState(() {
-            photoURL = imageUrl;  // Reflect the uploaded image in the UI
+           String imageUrl = await uploadImageToImgur(image.path);
+           await _firebaseDb.updatePhotoURL(_firebaseDb.getCurrentUserId(), imageUrl);
+           setState(() {
+            photoURL = imageUrl;
           });
         } catch (e) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -140,19 +120,20 @@ import 'package:shared_preferences/shared_preferences.dart';
         }
       }
     }
+
     Future<void> _initializeDatabase() async {
       await _dbHelper.initialize();
       String? firebaseDisplayName = await _firebaseDb.getFirebaseDisplayName();
       if (firebaseDisplayName != null) {
         setState(() {
           firstName = firebaseDisplayName;
-
          });
       }
     }
+
     Future<void> _fetchUserEvents() async {
       try {
-        var internetConnection = InternetConnection(); // Initialize safely
+        var internetConnection = InternetConnection();
         if (internetConnection != null) {
           online = await internetConnection.hasInternetAccess;
         }
@@ -184,31 +165,29 @@ import 'package:shared_preferences/shared_preferences.dart';
           }
         }
       }else{
+        firstName=await UserSession.getUserName();
         print("YOU ARE OFFLINE");
-
       }
     }
-    // Fetch the photo URL for the current user from Firestore
-  // Fetch the photo URL for the current user from Firestore
+
     Future<void> _fetchUserPhotoURL() async {
       User? user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         try {
-          // Fetch the photo URL, if available
-          String? url = await getPhotoURL(user.uid); // Use String? to handle null values
+           String? url = await getPhotoURL(user.uid);
           if (url != null && url.isNotEmpty) {
             setState(() {
-              photoURL = url; // Update the state with the fetched URL
+              photoURL = url;
             });
           } else {
             setState(() {
-              photoURL = null; // Set to null if no photo URL is available
+              photoURL = null;
             });
           }
         } catch (e) {
           print("Error fetching photo URL: $e");
           setState(() {
-            photoURL = null; // In case of an error, set to null
+            photoURL = null;
           });
         }
       }
@@ -217,7 +196,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
     @override
     Widget build(BuildContext context) {
-
       return Scaffold(
         appBar: AppBar(
           iconTheme: const IconThemeData(color: Colors.indigo),
@@ -253,16 +231,14 @@ import 'package:shared_preferences/shared_preferences.dart';
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-              // Profile image and edit button
-              Center(
+               Center(
                 child: Stack(
                   alignment: Alignment.bottomRight,
                   children: [
-                    // Use the photoURL from the state directly
-                    photoURL != null && photoURL!.isNotEmpty
+                     photoURL != null && photoURL!.isNotEmpty
                         ? ClipOval(
                       child: Image.network(
-                        photoURL!,  // Display the user's uploaded photo directly
+                        photoURL!,
                         width: 220,
                         height: 220,
                         fit: BoxFit.cover,
@@ -270,9 +246,9 @@ import 'package:shared_preferences/shared_preferences.dart';
                     )
                         : ClipOval(
                       child: Icon(
-                        Icons.person,  // Default icon if no photoURL
+                        Icons.person,
                         size: 220,
-                        color: Colors.grey,  // Icon color
+                        color: Colors.grey,
                       ),
                     ),
 
@@ -288,7 +264,7 @@ import 'package:shared_preferences/shared_preferences.dart';
                           color: Colors.white,
                           size: 28,
                         ),
-                        onPressed: _pickImage,  // Call the function to pick and upload an image
+                        onPressed: _pickImage,
                       ),
                     ),
                   ],
@@ -297,7 +273,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
               const SizedBox(height: 20),
 
-              // First Name Field
               Row(
                 children: [
                   Expanded(
@@ -318,8 +293,7 @@ import 'package:shared_preferences/shared_preferences.dart';
                     icon: Icon(isFirstNameEditable ? Icons.check : Icons.edit),
                     onPressed: () async {
                       if (isFirstNameEditable) {
-                        // When done editing, save the new name and update Firebase
-                        final updatedName = NameController.text.trim();
+                         final updatedName = NameController.text.trim();
                         if (updatedName.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text('Name cannot be empty')),
@@ -330,20 +304,15 @@ import 'package:shared_preferences/shared_preferences.dart';
                         try {
                           final user = FirebaseAuth.instance.currentUser;
                           if (user != null) {
-                            // Update displayName in Firebase Auth
-                            await user.updateProfile(displayName: updatedName);
+                             await user.updateProfile(displayName: updatedName);
                             await user.reload();
-                            final updatedUser = FirebaseAuth.instance.currentUser;
-
-                            // Optionally save the name to Firestore or your database here
-                            await _firestore.collection('users').doc(user.uid).update({
+                             await _firestore.collection('users').doc(user.uid).update({
                               'displayName': updatedName,
                             });
 
-                            // After updating, toggle edit mode
-                            setState(() {
-                              isFirstNameEditable = false; // Disable editing
-                              firstName = updatedName; // Update the UI with the new name
+                             setState(() {
+                              isFirstNameEditable = false;
+                              firstName = updatedName;
                             });
 
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -351,29 +320,21 @@ import 'package:shared_preferences/shared_preferences.dart';
                             );
                           }
                         } catch (e) {
-                          // Handle any errors
-                          print('Error updating displayName: $e');
+                           print('Error updating displayName: $e');
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text('Failed to update name')),
                           );
                         }
                       } else {
-                        // Toggle to edit mode if not editable
-                        setState(() {
+                         setState(() {
                           isFirstNameEditable = true;
                         });
                       }
                     },
                   ),
-
-
-
-
                 ],
               ),
               const SizedBox(height: 20),
-
-              // Notification Toggle
           SwitchListTile(
             title: const Text(
               "Enable Notifications",
@@ -387,13 +348,10 @@ import 'package:shared_preferences/shared_preferences.dart';
               setState(() {
                 notificationsEnabled = value;
               });
-
               if (notificationsEnabled) {
-                // Enable notifications (e.g., subscribe to FCM topic or enable token)
-                _checkAndEnableNotifications();
+                 _checkAndEnableNotifications();
               } else {
-                // Disable notifications (e.g., unsubscribe from FCM topic or disable token)
-                _disableNotifications();
+                 _disableNotifications();
               }
               _saveNotificationsEnabled(notificationsEnabled);  // Save the updated setting
 
@@ -401,7 +359,6 @@ import 'package:shared_preferences/shared_preferences.dart';
             activeColor: Colors.indigo,
           ),
               const SizedBox(height: 20),
-
               // Event and Gift List
               Expanded(
                 child: ListView.builder(
@@ -417,10 +374,10 @@ import 'package:shared_preferences/shared_preferences.dart';
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Container(
-                              width: 70, // Specify the width of the circle
-                              height: 70, // Specify the height of the circle
+                              width: 70,
+                              height: 70,
                               decoration: BoxDecoration(
-                                shape: BoxShape.circle, // Makes the container circular
+                                shape: BoxShape.circle,
                               ),
                               child: ClipOval(
                                 child: event['photoURL'] != null
@@ -432,8 +389,8 @@ import 'package:shared_preferences/shared_preferences.dart';
                                 )
                                     : Icon(
                                   Icons.image_not_supported,
-                                  color: Colors.red, // Customize the icon color
-                                  size: 70, // Icon size inside the circle
+                                  color: Colors.red,
+                                  size: 70,
                                 ),
                               ),
                             ),
@@ -461,24 +418,24 @@ import 'package:shared_preferences/shared_preferences.dart';
                               ),
                             ),
                             Container(
-                              width: 70, // Specify the width of the circle
-                              height: 70, // Specify the height of the circle
+                              width: 70,
+                              height: 70,
                               decoration: BoxDecoration(
-                                shape: BoxShape.circle, // Makes the container circular
+                                shape: BoxShape.circle,
                               ),
                               child: ClipOval(
                                 child: (event['gifts'] != null && event['gifts'].isNotEmpty &&
                                     event['gifts'][0]['photoURL'] != null && event['gifts'][0]['photoURL'].isNotEmpty)
                                     ? Image.network(
-                                  event['gifts'][0]['photoURL'], // Fetch the first gift's image URL
+                                  event['gifts'][0]['photoURL'],
                                   fit: BoxFit.cover,
                                   width: 70,
                                   height: 70,
                                 )
                                     : Icon(
                                   Icons.image_not_supported,
-                                  color: Colors.red, // Customize the icon color
-                                  size: 70, // Icon size inside the circle
+                                  color: Colors.red,
+                                  size: 70,
                                 ),
                               ),
                             )

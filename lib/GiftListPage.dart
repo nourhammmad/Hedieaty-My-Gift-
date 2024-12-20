@@ -65,7 +65,7 @@ class _GiftListPageState extends State<GiftListPage> {
 
   Future<void> _loadGifts() async {
     try {
-      var internetConnection = InternetConnection(); // Initialize safely
+      var internetConnection = InternetConnection();
       if (internetConnection != null) {
         online = await internetConnection.hasInternetAccess;
       }
@@ -87,9 +87,7 @@ class _GiftListPageState extends State<GiftListPage> {
 
           if (userDoc.exists) {
             List<dynamic> eventsList = userDoc['events_list'] ?? [];
-
-            // Find the specific event by ID
-            var event = eventsList.firstWhere(
+             var event = eventsList.firstWhere(
                   (e) => e['eventId'] == widget.eventId,
               orElse: () => null,
             );
@@ -323,20 +321,21 @@ class _GiftListPageState extends State<GiftListPage> {
               ],
             ),
             const SizedBox(height: 10),
-            gifts.isEmpty?         Expanded(
-    child: Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          Icons.card_giftcard,
-          size: 200,
-          color: Colors.indigo.shade100,
-        ),
-      ],
-    ),
-    ),
-    ) : Expanded(
+            gifts.isEmpty?Expanded(
+                child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.card_giftcard,
+                      size: 200,
+                      color: Colors.indigo.shade100,
+                    ),
+                  ],
+                ),
+                ),
+                )
+                : Expanded(
               child: ListView.builder(
                 itemCount: gifts.length,
                 itemBuilder: (context, index) {
@@ -388,7 +387,6 @@ class _GiftListPageState extends State<GiftListPage> {
                                   color: Colors.indigo,
                                   fontSize: 40,
                                   fontFamily: "Lobster",
-
                                 ),
                               ),
                               const SizedBox(height: 8.0),

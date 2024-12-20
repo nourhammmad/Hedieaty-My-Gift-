@@ -17,28 +17,27 @@ class HomePage extends StatefulWidget {
  }
 
 class _HomePageState extends State<HomePage> {
-  bool _isPressed = false; // Track the button state
-  bool _isSearching = false; // Track the state of the search bar
+  bool _isPressed = false;
+  bool _isSearching = false;
   late Databaseclass _dbHelper;
-  List<Map<String, String>> friends = []; // State variable for friends
-  late FirebaseDatabaseClass _firebaseDb; // Use FirebaseDatabaseClass
+  List<Map<String, String>> friends = [];
+  late FirebaseDatabaseClass _firebaseDb;
   late String currentUserId;
   bool isLoading = true;
   bool isOnline = false;
   late bool online ;
-
-  List<Map<String, String>> filteredFriends = []; // Filtered list for search results
+  List<Map<String, String>> filteredFriends = [];
 
   @override
     void initState()  {
       super.initState();
-      key: Key('HomePage');  // Assign a key here
-      _dbHelper = Databaseclass();
+       _dbHelper = Databaseclass();
       _firebaseDb=FirebaseDatabaseClass();
       _dbHelper = Databaseclass();
       _loadFriendsList();
       _requestNotificationPermission();
     }
+
   void _requestNotificationPermission() async {
     FirebaseMessaging messaging = FirebaseMessaging.instance;
     NotificationSettings settings = await messaging.requestPermission();
@@ -50,12 +49,14 @@ class _HomePageState extends State<HomePage> {
       print("User declined or has not accepted permission for notifications.");
     }
   }
+
   void _saveFcmTokenToFirestore(String token) async {
-    String userId = FirebaseAuth.instance.currentUser!.uid; // Replace with your user ID
+    String userId = FirebaseAuth.instance.currentUser!.uid;
     await FirebaseFirestore.instance.collection('users').doc(userId).update({
       'fcmToken': token,
     });
   }
+
   Future<String?> fetchPhotoURL(String userId) async {
     try {
       var internetConnection = InternetConnection();
@@ -75,12 +76,13 @@ class _HomePageState extends State<HomePage> {
       return '';
     }
   }
+
   Future<void> _loadFriendsList() async {
     bool online = false;
     try {
-      var internetConnection = InternetConnection(); // Initialize safely
+      var internetConnection = InternetConnection();
       if (internetConnection != null) {
-        online = await internetConnection.hasInternetAccess ?? false;
+        online = await internetConnection.hasInternetAccess;
       }
     } catch (e) {
        print("Error checking internet connection: $e");
@@ -121,6 +123,7 @@ class _HomePageState extends State<HomePage> {
        _loadFriendsFromLocalDatabase();
     }
   }
+
    Future<void> _loadFriendsFromLocalDatabase() async {
      try {
       print("Offline, fetching friends from local database");
@@ -130,6 +133,7 @@ class _HomePageState extends State<HomePage> {
         print("Error: currentUserId is null. Unable to load friends list.");
         return;
       }
+
       List<Map<String, Object?>> localFriends = await _dbHelper.getFriendsByUserId(currentUserIdoff!);
        friends.clear();
       for (var friendData in localFriends) {
@@ -145,6 +149,7 @@ class _HomePageState extends State<HomePage> {
       print("Error loading friends from local database: $e");
     }
   }
+
   void _showAddFriendDialog(String currentUserId) {
     TextEditingController phoneNumberController = TextEditingController();
     showDialog(
@@ -178,8 +183,7 @@ class _HomePageState extends State<HomePage> {
                   );
                   bool userExists = await _checkIfUserExistsByPhone(phoneNumber);
                   if (userExists) {
-                    // Show a Snackbar while checking if friend is already in list
-                    ScaffoldMessenger.of(context).showSnackBar(
+                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text("Checking if already friends...")),
                     );
                     bool isAlreadyFriend = await _checkIfAlreadyFriend(currentUserId, phoneNumber);
@@ -187,13 +191,13 @@ class _HomePageState extends State<HomePage> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text("You are already friends with this user.")),
                       );
-                      Navigator.pop(context);  // Close the dialog
+                      Navigator.pop(context);
                     } else {
                        ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text("Adding friend...")),
                       );
                       _addFriendToFirestore(currentUserId, phoneNumber);
-                      Navigator.pop(context);  // Close the dialog
+                      Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text("Friend added successfully!")),
                       );
@@ -212,10 +216,10 @@ class _HomePageState extends State<HomePage> {
                 }
               },
               child: Text("Add Friend" ,style: TextStyle(
-        fontSize: 26,
-        fontFamily: "Lobster",
-        color: Colors.indigo,
-        ),
+                fontSize: 26,
+                fontFamily: "Lobster",
+                color: Colors.indigo,
+                ),
               ),
             ),
             TextButton(
@@ -223,10 +227,10 @@ class _HomePageState extends State<HomePage> {
                 Navigator.pop(context);
               },
               child: Text("Cancel", style: TextStyle(
-        fontSize: 26,
-        fontFamily: "Lobster",
-        color: Colors.red,
-        ),),
+              fontSize: 26,
+              fontFamily: "Lobster",
+              color: Colors.red,
+              ),),
             ),
           ],
         );
@@ -250,6 +254,7 @@ class _HomePageState extends State<HomePage> {
       return false;
     }
   }
+
   Future<bool> _checkIfAlreadyFriend(String currentUserId, String friendPhoneNumber) async {
     try {
        QuerySnapshot snapshot = await FirebaseFirestore.instance
@@ -257,7 +262,7 @@ class _HomePageState extends State<HomePage> {
           .where('phoneNumber', isEqualTo: friendPhoneNumber)
           .get();
       if (snapshot.docs.isNotEmpty) {
-        String friendId = snapshot.docs.first.id;  // Get the friend ID from the document
+        String friendId = snapshot.docs.first.id;
         DocumentSnapshot currentUserDoc = await FirebaseFirestore.instance.collection('friend_list').doc(currentUserId).get();
         if (currentUserDoc.exists) {
           List<dynamic> friendsList = currentUserDoc['friends'] ?? [];
@@ -284,7 +289,7 @@ class _HomePageState extends State<HomePage> {
           .where('phoneNumber', isEqualTo: friendPhoneNumber)
           .get();
       if (snapshot.docs.isNotEmpty) {
-        String friendId = snapshot.docs.first.id;  // Get the friend ID from the document
+        String friendId = snapshot.docs.first.id;
         DocumentSnapshot currentUserDoc = await friendListRef.doc(currentUserId).get();
         if (currentUserDoc.exists) {
            await friendListRef.doc(currentUserId).update({
@@ -320,6 +325,7 @@ class _HomePageState extends State<HomePage> {
       );
     }
   }
+
   void _filterFriends(String query) {
     setState(() {
       filteredFriends = friends.where((friend) {
@@ -367,7 +373,7 @@ class _HomePageState extends State<HomePage> {
                 onPressed: () {
                   setState(() {
                     _isSearching = false;
-                    filteredFriends = List.from(friends); // Reset the list
+                    filteredFriends = List.from(friends);
                   });
                 },
               ),
@@ -398,11 +404,9 @@ class _HomePageState extends State<HomePage> {
         toolbarHeight: 70,
         leading: Builder(
           builder: (context) => IconButton(
-            key: Key('Drawer'), // Added key here
-
+            key: Key('Drawer'),
             onPressed: () {
-
-              Scaffold.of(context).openDrawer(); // Open the drawer
+              Scaffold.of(context).openDrawer();
             },
             alignment: Alignment.topLeft,
             icon: const Icon(Icons.menu, size: 35, color: Colors.indigo),
@@ -447,7 +451,7 @@ class _HomePageState extends State<HomePage> {
             ListTile(
               leading: Icon(Icons.event, color: Colors.indigo, size: 45),
               title: const Text(
-                key: Key('My Events'), // Added key here
+                key: Key('My Events'),
                 'My Events',
                 style: TextStyle(
                     fontSize: 50,
@@ -456,7 +460,7 @@ class _HomePageState extends State<HomePage> {
                     color: Colors.indigo),
               ),
               onTap: () {
-                Navigator.pop(context); // Close the drawer
+                Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -468,32 +472,32 @@ class _HomePageState extends State<HomePage> {
             ListTile(
               leading: Icon(Icons.logout, color: Colors.red, size: 45),
               title: const Text(
-                key: Key('logout'), // Added key here
+                key: Key('logout'),
                 'Logout',
                 style: TextStyle(
                     fontSize: 50,
                     fontFamily: "Lobster",
                     fontWeight: FontWeight.bold,
-                    color: Colors.red),
+                    color: Colors.red
+                ),
               ),
               onTap: () async {
-                Navigator.pop(context); // Close the drawer
-                // Navigate to the logout page or handle the logout functionality
+                Navigator.pop(context);
                 await _firebaseDb.logout();
                 await UserSession.clearUserSession();
-                Navigator.pushNamed(context, '/Login'); // Example navigation
+                Navigator.pushNamed(context, '/Login');
               },
             ),
           ],
         ),
       ),
       body: Stack(
-        key: Key('HomePage'), // Added key here
+        key: Key('HomePage'),
         children: [
           Column(
             children: [
               GestureDetector(
-                key: Key('createEventButton'), // Added key here
+                key: Key('createEventButton'),
                 onTapDown: (_) {
                   setState(() {
                     _isPressed = true;

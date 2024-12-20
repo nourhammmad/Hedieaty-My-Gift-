@@ -18,8 +18,6 @@ class AddEvent extends StatefulWidget {
   final String? imageUrl;
   final String? date;
 
-
-
   const AddEvent({
     this.id,
     this.title,
