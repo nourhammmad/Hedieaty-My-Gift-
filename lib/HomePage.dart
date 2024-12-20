@@ -468,6 +468,7 @@ class _HomePageState extends State<HomePage> {
             ListTile(
               leading: Icon(Icons.logout, color: Colors.red, size: 45),
               title: const Text(
+                key: Key('logout'), // Added key here
                 'Logout',
                 style: TextStyle(
                     fontSize: 50,

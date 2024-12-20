@@ -37,34 +37,31 @@ class _AddEventState extends State<AddEvent> {
   late TextEditingController titleController;
   late TextEditingController descriptionController;
   bool isPastStatus = false;
-  late TextEditingController dueToController; // New controller for Due Date
+  late TextEditingController dueToController;
+  File? _eventImage;
+  bool isPledged = false;
+  bool imageExists = false;
+  String eventStatus = 'Upcoming';
+  String eventType = 'Birthday';
+  final ImagePicker _imagePicker = ImagePicker();
+  bool isEditMode = false;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   void _selectDueDate(BuildContext context) async {
     DateTime currentDate = DateTime.now();
     DateTime? selectedDate = await showDatePicker(
       context: context,
       initialDate: currentDate,
-      firstDate: currentDate,  // Prevent past date selection
-      lastDate: DateTime(2101),  // Optional: specify an upper bound
+      firstDate: currentDate,
+      lastDate: DateTime(2101),
     );
-
     if (selectedDate != null && selectedDate != currentDate) {
       setState(() {
         dueToController.text = '${selectedDate.toLocal()}'.split(' ')[0];  // format to display date
       });
     }
   }
-  File? _eventImage;
 
-  bool isPledged = false;
-  bool imageExists = false;
-
-  String eventStatus = 'Upcoming';
-  String eventType = 'Birthday';
-  final ImagePicker _imagePicker = ImagePicker();
-
-  // Add the Firestore instance
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
   Future<void> _pickImage() async {
     final XFile? image = await _imagePicker.pickImage(source: ImageSource.gallery);
     if (image != null) {
@@ -73,7 +70,7 @@ class _AddEventState extends State<AddEvent> {
       });
     }
   }
-  bool isEditMode = false;
+
   void _saveEvent() async {
     // Logic for adding or editing the event
     if (isEditMode) {
@@ -82,83 +79,60 @@ class _AddEventState extends State<AddEvent> {
       _addEvent();
     }
   }
+
   void _updateEvent(String? eventId) async {
     User? user = _auth.currentUser;
     if (user != null) {
       String userId = user.uid;
-
-      // Get the updated event details
       String title = titleController.text;
       String description = descriptionController.text;
       String? dueTo = dueToController.text;
       String? photoUrl;
-
       if (_eventImage != null) {
-        // Upload image to Imgur and get the URL
         photoUrl = await uploadImageToImgur(_eventImage!.path);
       }else {
-        // Retain the existing image URL if no new image is selected
-        photoUrl = widget.imageUrl;
+         photoUrl = widget.imageUrl;
       }
       if (dueTo == null) {
-        // Upload image to Imgur and get the URL
-        dueTo = widget.date;
+         dueTo = widget.date;
       }
       try {
-        // Fetch the user's document
-        DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
+         DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
 
         if (userDoc.exists) {
           List<dynamic> eventsList = userDoc.get('events_list') ?? [];
-
-          // Find the event to update
           int eventIndex = eventsList.indexWhere((event) => event['eventId'] == eventId);
-
           if (eventIndex != -1) {
-            // Update the event data
             Map<String, dynamic> updatedEventData = {
-              'eventId': eventId, // Keep the same event ID
+              'eventId': eventId,
               'title': title,
               'description': description,
               'status': eventStatus,
               'type': eventType,
-              'photoURL': photoUrl == null || photoUrl.isEmpty ? null : photoUrl, // Set to null if empty
+              'photoURL': photoUrl == null || photoUrl.isEmpty ? null : photoUrl,
               'gifts': eventsList[eventIndex]['gifts'],
-              'dueTo':dueTo// Retain existing gifts
+              'dueTo':dueTo
             };
-
-            // Replace the old event data with the updated data
             eventsList[eventIndex] = updatedEventData;
-
-            // Update the user's events_list in Firestore
             await _firestore.collection('users').doc(userId).update({
               'events_list': eventsList,
             });
-
-            // Show success message
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Event updated successfully!')),
-
-
             );
             Navigator.pop(context,'reload');
 
-
-
           } else {
-            // Event not found
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Event not found.')),
             );
           }
         } else {
-          // User document not found
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('User document not found.')),
           );
         }
       } catch (e) {
-        // Handle errors
         print("Error updating event: $e");
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('An error occurred while updating the event.')),
@@ -171,12 +145,8 @@ class _AddEventState extends State<AddEvent> {
   @override
   void initState() {
     super.initState();
-
-    // Determine if this is edit mode
-    isEditMode = widget.title != null && widget.description != null;
-
-    // Initialize controllers with existing values if in edit mode
-    titleController = TextEditingController(text: widget.title);
+     isEditMode = widget.title != null && widget.description != null;
+     titleController = TextEditingController(text: widget.title);
     descriptionController = TextEditingController(text: widget.description);
     dueToController= TextEditingController(text: widget.date);
     eventStatus = widget.status ?? 'Upcoming';
@@ -185,33 +155,26 @@ class _AddEventState extends State<AddEvent> {
     if (isPastStatus) {
       dueToController.text = 'Not Applicable';
     }
-    // Load existing image if URL is provided
-    if (widget.imageUrl != null) {
-      // Here you can use a package like `cached_network_image` or similar to load the image
-      // For simplicity, we'll leave this as an indicator to show loading logic
+     if (widget.imageUrl != null) {
       imageExists = true;
     }
   }
-  // Function to add an event to Firestore
+
   void _addEvent() async {
     User? user = _auth.currentUser;
     if (user != null) {
       String userId = user.uid;
       String title = titleController.text;
       String description = descriptionController.text;
-
-      // Generate a unique event ID using Firestore document ID
       String eventId = _firestore.collection('users').doc().id;
 
       String? photoUrl;
       if (_eventImage != null) {
-        // Upload image to Imgur and get the URL
-        photoUrl = await uploadImageToImgur(_eventImage!.path);
+         photoUrl = await uploadImageToImgur(_eventImage!.path);
       }
-      // Prepare event data
-      Map<String, dynamic> eventData = {
+       Map<String, dynamic> eventData = {
         'description': description,
-        'eventId': eventId, // Unique ID for event
+        'eventId': eventId,
         'gifts':null,
         'photoURL':photoUrl != null ? photoUrl : null,
         'status': eventStatus,
@@ -221,24 +184,18 @@ class _AddEventState extends State<AddEvent> {
       };
 
       try {
-        // Reference to the user's events collection (document is the userId)
         CollectionReference eventsRef = _firestore.collection('users');
-
-        // Update the events array field in the user's document
         await eventsRef.doc(userId).update({
-          'events_list': FieldValue.arrayUnion([eventData]), // Add event to the list
+          'events_list': FieldValue.arrayUnion([eventData]),
         });
-
-        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-
             content: Text(
-            'Event added successfully!')));
+            'Event added successfully!')
+        ));
         Navigator.pop(context,'reload');
 
       } catch (e) {
-        // Handle errors
-        print("Error adding event: $e");
+         print("Error adding event: $e");
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('An error occurred while adding the event.')));
       }
     }
@@ -247,7 +204,7 @@ class _AddEventState extends State<AddEvent> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: Key('addEventPage'),  // Assign a key here
+      key: Key('addEventPage'),
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Colors.indigo),
         backgroundColor: Colors.indigo.shade50,
@@ -273,8 +230,7 @@ class _AddEventState extends State<AddEvent> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              // Profile image and plus icon
-              Center(
+               Center(
                 child: Stack(
                   alignment: Alignment.bottomRight,
                   children: [
@@ -326,20 +282,14 @@ class _AddEventState extends State<AddEvent> {
               ),
           
               const SizedBox(height: 20),
-          
-              // Event Name Field
-              _buildTextField(
-                key: 'titleField',  // Assign a key here
-          
+               _buildTextField(
+                key: 'titleField',
                 controller: titleController,
                 label: 'Event Name', keyboardType: TextInputType.text,
               ),
               const SizedBox(height: 10),
-          
-              // Description Field
-              _buildTextField(
-                key: 'descriptionField',  // Assign a key here
-          
+                        _buildTextField(
+                key: 'descriptionField',
                 controller: descriptionController,
                 label: 'Description',
                 maxLines: 3, keyboardType: TextInputType.text,
@@ -349,8 +299,7 @@ class _AddEventState extends State<AddEvent> {
                 onTap: () => !isPastStatus ? _selectDueDate(context) : null,
                 child: AbsorbPointer(
                   child: _buildTextField(
-                    key: 'dueDateField',  // Assign a key here
-          
+                    key: 'dueDateField',
                     controller: dueToController,
                     label: 'Due To',
                     keyboardType: TextInputType.datetime,
@@ -360,15 +309,12 @@ class _AddEventState extends State<AddEvent> {
                 ),
               ),
               const SizedBox(height: 10),
-          
-              // Event Status Dropdown
               DropdownButton<String>(
                 value: eventStatus,
                 onChanged: (String? newValue) {
                   setState(() {
                     eventStatus = newValue!;
                     isPastStatus = eventStatus == 'Past';
-                    // If status is 'Past', set dueTo to "Not Applicable"
                     dueToController.text = isPastStatus ? 'Not Applicable' : dueToController.text;
                   });
                 },
@@ -379,8 +325,6 @@ class _AddEventState extends State<AddEvent> {
                 hint: Text('Select Status'),
               ),
               const SizedBox(height: 10),
-          
-              // Event Type Dropdown
               DropdownButton<String>(
                 value: eventType,
                 onChanged: (String? newValue) {
@@ -395,19 +339,15 @@ class _AddEventState extends State<AddEvent> {
                 hint: Text('Select Event Type'),
               ),
               const SizedBox(height: 10),
-          
-              // Submit Button
-              ElevatedButton(
-                key: Key('saveButton'),  // Assign a key here
-          
+                        ElevatedButton(
+                key: Key('saveButton'),
                 onPressed: isPledged
                     ? null
                     : () {
-                  _saveEvent(); // Add event to Firestore
+                  _saveEvent();
                 },
                 child: Text(
                   isEditMode ? 'Update Event' : 'Add Event',
-          
                   style: const TextStyle(fontSize: 30, fontFamily: "Lobster", color: Colors.indigo),
                 ),
               ),

@@ -8,28 +8,22 @@ import 'GiftListPage.dart';
 import 'UserSession.dart';
 
 class EventsListPage extends StatefulWidget {
-  final String userId; // Add this parameter to pass the user ID
-
+  final String userId;
   const EventsListPage({super.key, required this.userId});
-
   @override
   State<EventsListPage> createState() => _EventsListPageState();
 }
 
 class _EventsListPageState extends State<EventsListPage> {
-  // List to store events fetched from Firestore
-  List<Map<String, dynamic>> events = [];
+   List<Map<String, dynamic>> events = [];
   late String currentUserId;
   late Databaseclass _dbHelper;
   late bool online;
   String sortCriteria = 'Name';
-  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
 
-
-  // Function to fetch events from Firestore
-  Future<void> _loadEvents(String userId) async {
+   Future<void> _loadEvents(String userId) async {
     try {
-      var internetConnection = InternetConnection(); // Initialize safely
+      var internetConnection = InternetConnection();
       if (internetConnection != null) {
         online = await internetConnection.hasInternetAccess;
       }
@@ -40,15 +34,10 @@ class _EventsListPageState extends State<EventsListPage> {
     try {
       if (online) {
         currentUserId = FirebaseAuth.instance.currentUser!.uid;
-
         final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
         DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
-
         if (userDoc.exists) {
           List<dynamic> eventsList = userDoc['events_list'] ?? [];
-
-          // Fetch the event images asynchronously and keep track of Firestore event IDs
           List<Map<String, dynamic>> updatedEvents = [];
           List<String> firestoreEventIds = [];
 
@@ -73,19 +62,14 @@ class _EventsListPageState extends State<EventsListPage> {
               'FIRESTORE_USER_ID': currentUserId,
               'status': event['status'],
             };
-
-            _dbHelper.insertEvent(currentUserId, eventData); // Save or update in the local DB
+            _dbHelper.insertEvent(currentUserId, eventData);
           }
-
-          // Delete events from local database if not in Firestore
           await _dbHelper.deleteEventsNotInFirestore(currentUserId, firestoreEventIds);
-
           setState(() {
             events = updatedEvents;
           });
         }
       } else {
-        // If offline, load from local database
         _loadEventsFromLocalDatabase();
         print("YOU ARE OFFLINE");
       }
@@ -95,7 +79,6 @@ class _EventsListPageState extends State<EventsListPage> {
   }
 
   Future<void> _loadEventsFromLocalDatabase() async {
-    print("======================DALHALT BARDO-========");
     try {
       print("Offline, fetching friends from local database");
       String? currentUserIdoff = await UserSession.getUserId();
@@ -104,16 +87,10 @@ class _EventsListPageState extends State<EventsListPage> {
         print("Error: currentUserId is null. Unable to load events list.");
         return;
       }
-      // Assuming currentUserId is already available
-      // Fetch friends of the current user from the local database
       List<Map<String, Object?>> localEvents = await _dbHelper.getEventsByUserId(currentUserIdoff!);
-
-      // Clear the existing list of friends before adding new ones
       events.clear();
 
       for (var eventData in localEvents) {
-        // Add friend to the list (UI update)
-        // Ensure proper type casting from Object? to String
         events.add({
           'title': eventData['title']?.toString() ?? '',
           'type': eventData['type']?.toString() ?? '',
@@ -122,7 +99,6 @@ class _EventsListPageState extends State<EventsListPage> {
         });
       }
 
-      // Update UI
       setState(() {});
     } catch (e) {
       print("Error loading events from local database: $e");
@@ -131,13 +107,12 @@ class _EventsListPageState extends State<EventsListPage> {
 
   Future<String> _fetchEventImage(String eventId) async {
      try {
-      var internetConnection = InternetConnection(); // Initialize safely
+      var internetConnection = InternetConnection();
       if (internetConnection != null) {
         online = await internetConnection.hasInternetAccess ?? false;
       }
     } catch (e) {
-      // Handle exceptions, such as if the method throws an error
-      print("Error checking internet connection: $e");
+       print("Error checking internet connection: $e");
     }
     if(!online)
       {return '';}
@@ -149,19 +124,15 @@ class _EventsListPageState extends State<EventsListPage> {
       if (user != null) {
         String userId = user.uid;
 
-        // Fetch the user's document
         DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
 
         if (userDoc.exists) {
-          // Access the events array from the user's document
-          List<dynamic> eventsList = userDoc['events_list'] ?? [];
+           List<dynamic> eventsList = userDoc['events_list'] ?? [];
 
-          // Find the event by its eventId
-          var event = eventsList.firstWhere((event) => event['eventId'] == eventId, orElse: () => null);
+           var event = eventsList.firstWhere((event) => event['eventId'] == eventId, orElse: () => null);
 
           if (event != null) {
-            // Return the photoURL from the event
-            return event['photoURL'] ?? '';
+             return event['photoURL'] ?? '';
           }
         }
       }
@@ -169,10 +140,9 @@ class _EventsListPageState extends State<EventsListPage> {
       print("Error fetching event image: $e");
     }
 
-    return '';  // Return an empty string if image fetching fails
+    return '';
   }
 
-  // Function to show a confirmation dialog before deleting an event
   void _showDeleteConfirmationDialog(String eventId) {
     showDialog(
       context: context,
@@ -186,14 +156,14 @@ class _EventsListPageState extends State<EventsListPage> {
             TextButton(
               onPressed: () {
                 Navigator.of(context)
-                    .pop(); // Close the dialog without doing anything
+                    .pop();
               },
               child: const Text('Cancel', style: TextStyle(fontSize: 25)),
             ),
             TextButton(
               onPressed: () {
                 _deleteEvent(eventId);
-                Navigator.of(context).pop(); // Close the dialog after deletion
+                Navigator.of(context).pop();
               },
               child: const Text(
                   'Delete', style: TextStyle(color: Colors.red, fontSize: 25)),
@@ -204,9 +174,8 @@ class _EventsListPageState extends State<EventsListPage> {
     );
   }
 
-  // Function to delete an event
   void _deleteEvent(String eventId) async {
-    bool online = false; // Default value in case of failure
+    bool online = false;
     try {
       var internetConnection = InternetConnection(); // Initialize safely
       if (internetConnection != null) {
@@ -224,29 +193,24 @@ class _EventsListPageState extends State<EventsListPage> {
         try {
           String userId = user.uid;
 
-          // Reference to the user's document in Firestore
-          DocumentReference userDocRef = _firestore.collection('users').doc(userId);
+           DocumentReference userDocRef = _firestore.collection('users').doc(userId);
 
-          // Find the event in the local list
-          int eventIndex = events.indexWhere((event) => event['eventId'] == eventId);
+           int eventIndex = events.indexWhere((event) => event['eventId'] == eventId);
 
           if (eventIndex != -1) {
             var eventToDelete = events[eventIndex];
 
-            // Ensure photoURL consistency for removal
-            if (eventToDelete['photoURL'] == null || eventToDelete['photoURL']!.isEmpty) {
+             if (eventToDelete['photoURL'] == null || eventToDelete['photoURL']!.isEmpty) {
               eventToDelete['photoURL'] = null; // Standardize missing image value
             }
 
             print("Deleting event: $eventToDelete");
 
-            // Remove the event from Firestore
-            await userDocRef.update({
+             await userDocRef.update({
               'events_list': FieldValue.arrayRemove([eventToDelete]),
             }).then((_) {
               print("Event deleted successfully from Firestore.");
-              setState(() {
-                events.removeAt(eventIndex); // Remove event locally
+              setState(() { // Remove event locally
               });
             }).catchError((error) {
               print("Error deleting event from Firestore: $error");
@@ -264,13 +228,12 @@ class _EventsListPageState extends State<EventsListPage> {
       print("YOU ARE OFFLINE");
     }
   }
-  // Function to sort events
-  void _sortEvents() {
+   void _sortEvents() {
     switch (sortCriteria) {
       case 'Name':
         events.sort((a, b) => (a['title']?.toLowerCase() ?? '').compareTo(b['title']?.toLowerCase() ?? ''));
         break;
-      case 'Category': // Update to 'type' since 'category' is not defined
+      case 'Category':
         events.sort((a, b) => (a['type'] ?? '').compareTo(b['type'] ?? ''));
         break;
       case 'Status':
@@ -287,13 +250,13 @@ class _EventsListPageState extends State<EventsListPage> {
     _loadEvents(widget.userId);
   }
 
-  @override
+
   @override
   Widget build(BuildContext context) {
-    _sortEvents(); // Sort events whenever the build method is called
+    _sortEvents();
 
     return Scaffold(
-      key: const Key('eventsListPage'), // Add Key for testing
+      key: const Key('eventsListPage'),
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Colors.indigo),
         backgroundColor: Colors.indigo.shade50,
@@ -337,8 +300,7 @@ class _EventsListPageState extends State<EventsListPage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Dropdown for sorting criteria
-            Row(
+             Row(
               children: [
                 const Icon(Icons.sort, color: Colors.indigo, size: 40),
                 const SizedBox(width: 8),
@@ -374,9 +336,9 @@ class _EventsListPageState extends State<EventsListPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      Icons.event_busy, // Use an icon that represents no events
+                      Icons.event_busy,
                       size: 200,
-                      color: Colors.indigo.shade100, // A subtle color for the icon
+                      color: Colors.indigo.shade100,
                     ),
                   ],
                 ),
@@ -388,7 +350,7 @@ class _EventsListPageState extends State<EventsListPage> {
                 itemBuilder: (context, index) {
                   final event = events[index];
                   return InkWell(
-                    key: Key(event['eventId']),  // Add a unique key for each event
+                    key: Key(event['title']),
                     onTap: () async {
 
                       Navigator.push(
@@ -406,8 +368,7 @@ class _EventsListPageState extends State<EventsListPage> {
                       margin: const EdgeInsets.symmetric(vertical: 10.0),
                       child: Column(
                         children: [
-                          // Check if image exists or not
-                          event['photoURL']?.isNotEmpty == true
+                           event['photoURL']?.isNotEmpty == true
                               ? Container(
                             height: 200,
                             decoration: BoxDecoration(
@@ -475,8 +436,7 @@ class _EventsListPageState extends State<EventsListPage> {
                                   );
                                   if (result != null && result == 'reload') {
                                     setState(() {
-                                      // Reload the data here
-                                      _loadEvents(widget.userId);
+                                       _loadEvents(widget.userId);
                                     });
                                   }
                                 },
