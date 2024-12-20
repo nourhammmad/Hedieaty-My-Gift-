@@ -34,27 +34,26 @@ class GiftOrEvent extends StatelessWidget {
             child: _buildListItem(
               context: context,
               title: 'Add Gift',
-              imageUrl: 'asset/giftc.jpg',
+              imageUrl: 'https://i.imgur.com/lF3pHSb.jpg', // Corrected direct link
               onTap: () {
-                 Navigator.pushNamed(context, '/AddGift');
+                Navigator.pushNamed(context, '/AddGift');
               },
             ),
           ),
-           Expanded(
+          Expanded(
             key: Key('addEventButton'),
-
             child: _buildListItem(
               context: context,
               title: 'Add Event',
-              imageUrl: 'asset/eventc.jpg',
+              imageUrl: 'https://i.imgur.com/jLGe4Yi.jpg', // Corrected direct link
               onTap: () {
-                 Navigator.pushNamed(context, '/AddEvent');
+                Navigator.pushNamed(context, '/AddEvent');
               },
-
             ),
           ),
         ],
       ),
+
     );
   }
 
@@ -83,7 +82,8 @@ class GiftOrEvent extends StatelessWidget {
           borderRadius: BorderRadius.circular(30.0),
           child: Stack(
             children: [
-               Image.asset(
+              // Use Image.network for network images
+              Image.network(
                 imageUrl,
                 fit: BoxFit.cover,
                 width: double.infinity,
@@ -93,11 +93,11 @@ class GiftOrEvent extends StatelessWidget {
               Center(
                 child: Text(
                   title,
-                  style:  TextStyle(
+                  style: TextStyle(
                     color: Colors.indigo.shade200,
                     fontSize: 100,
                     fontWeight: FontWeight.bold,
-                    fontFamily: "Lobster"
+                    fontFamily: "Lobster",
                   ),
                   textAlign: TextAlign.center, // Center text
                 ),
