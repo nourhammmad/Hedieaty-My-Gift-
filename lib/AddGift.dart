@@ -58,9 +58,31 @@ class _AddGiftState extends State<AddGift> {
     }
   }
 
-  Future<void> _addGift() async {
-    try {
 
+  Future<void> _addGift() async {
+    // Validate form fields
+    if (titleController.text.isEmpty) {
+      _showError('Please enter a gift name.');
+      return;
+    }
+    if (descriptionController.text.isEmpty) {
+      _showError('Please enter a description.');
+      return;
+    }
+    if (categoryController.text.isEmpty) {
+      _showError('Please enter a category.');
+      return;
+    }
+    if (priceController.text.isEmpty || double.tryParse(priceController.text) == null) {
+      _showError('Please enter a valid price.');
+      return;
+    }
+    if (selectedEventId == null) {
+      _showError('Please select an event.');
+      return;
+    }
+
+    try {
       final userId = FirebaseAuth.instance.currentUser?.uid;
       if (userId == null) return;
 
@@ -137,6 +159,11 @@ class _AddGiftState extends State<AddGift> {
     }
   }
 
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
