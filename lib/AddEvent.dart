@@ -70,13 +70,36 @@ class _AddEventState extends State<AddEvent> {
   }
 
   void _saveEvent() async {
-    // Logic for adding or editing the event
+    // Validate fields before proceeding
+    if (titleController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please enter the event name.')),
+      );
+      return;
+    }
+
+    if (descriptionController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please enter a description.')),
+      );
+      return;
+    }
+
+    if (dueToController.text.isEmpty && !isPastStatus) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please select a due date.')),
+      );
+      return;
+    }
+
+    // Proceed with adding or updating the event
     if (isEditMode) {
       _updateEvent(widget.id);
     } else {
       _addEvent();
     }
   }
+
 
   void _updateEvent(String? eventId) async {
     User? user = _auth.currentUser;
